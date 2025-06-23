@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import PageLoader from '@/components/layout/PageLoader';
 
+
 const DashboardLayout = lazy(() => import('@/components/layout/DashboardLayout'));
 const Homepage = lazy(() => import('@/pages/Homepage.jsx'));
 const Login = lazy(() => import('@/pages/Login.jsx'));
@@ -24,6 +25,7 @@ const Integrations = lazy(() => import('@/pages/Integrations.jsx'));
 const FloatingPool = lazy(() => import('@/pages/FloatingPool.jsx'));
 const SOPManagement = lazy(() => import('@/pages/SOPManagement.jsx'));
 const ChargeEntry = lazy(() => import('@/pages/ChargeEntry.jsx'));
+const Signup = lazy(() => import('@/pages/Signup.jsx'));
 
 function App() {
   return (
@@ -51,6 +53,7 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/integrations" element={<Integrations />} />
+          <Route path="/signup" element={<Signup />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
