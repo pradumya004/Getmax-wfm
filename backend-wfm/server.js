@@ -1,22 +1,31 @@
-const express = require("express");
-const app = express();
+// backend-wfm/server.js
 
+import dotenv from 'dotenv';
+dotenv.config();
 
+import connectDB from './src/config/connection.js';
+import { app } from './src/app.js';
 
-const cors = require("cors");
-const axios = require("axios");
-const server = http.createServer(app);
-const cookieParser = require("cookie-parser");
+const port = process.env.PORT || 8000;
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    console.log(`MongoDB Connected Successfully!`);
 
-const { connectToMongoDb } = require("./config/connection.js");
-connectToMongoDb();
+    app.listen(port, () => {
+      console.log(`Server is listening on port: ${port}`);
+    });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+    app.on('error', (error) => {
+      console.error(`Server Error: ${error}`);
+      throw error;
+    })
+
+  } catch (error) {
+    console.error(`❌ Failed to start server: ${err}`);
+    process.exit(1);
+  }
+};
+
+startServer();

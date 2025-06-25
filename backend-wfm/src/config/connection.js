@@ -1,4 +1,4 @@
-// backend/src/config/database.js
+// backend-wfm/src/config/connection.js
 
 import mongoose from 'mongoose';
 
