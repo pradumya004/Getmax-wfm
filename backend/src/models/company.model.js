@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-// import bcrypt from "bcrypt";
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { validate as validatePostalCode } from 'postal-codes-js';
+import { createToken } from '../utils/jwthelper.js';
 
 // Address Schema
 const addressSchema = new mongoose.Schema({
@@ -28,7 +28,7 @@ const addressSchema = new mongoose.Schema({
         validate: {
             validator: function (v) {
                 if (!v) return true;
-                const country = this.parent()?.address?.country || 'IN';
+                const country = this.parent()?.country || 'IN';
                 return validatePostalCode(country, v);
             },
             message: 'Invalid postal code format for this country'
@@ -37,28 +37,10 @@ const addressSchema = new mongoose.Schema({
     country: {
         type: String,
         trim: true,
-        default: 'India'
+        default: 'India',
+        enum: ['India', 'United States', 'Canada', 'United Kingdom']
     },
 }, { _id: false });
-
-// Business Schema
-// const businessSchema = new mongoose.Schema({
-//     startTime: {
-//         type: String,
-//         default: '09:00',
-//         match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Start time must be in HH:MM format (e.g. - 09:00, 21:05, etc.)']
-//     },
-//     endTime: {
-//         type: String,
-//         default: '17:00',
-//         match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'End time must be in HH:MM format (e.g. - 09:00, 21:05, etc.)']
-//     },
-//     workingDays: {
-//         type: [String],
-//         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-//         default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-//     }
-// }, { _id: false });
 
 // Company Schema
 const companySchema = new mongoose.Schema({
@@ -81,30 +63,39 @@ const companySchema = new mongoose.Schema({
     },
     taxID: {
         type: String,
-        // required: true,
         trim: true,
-        // match: [/^\d{2}-\d{7}$/, 'Tax ID must be in format XX-XXXXXXX (e.g., 12-3456789)']
     },
     website: {
         type: String,
         trim: true,
         lowercase: true,
-        // match: [/^https?:\/\/.+\..+/, 'Website must be a valid URL (e.g., https://example.com)']
     },
 
     // Contact Info - Company Contact, Not Owner
     contactEmail: {
         type: String,
         required: [true, 'Contact email is required'],
-        // unique: true,
         trim: true,
         lowercase: true,
+        validate: {
+            validator: function (v) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(v);
+            },
+            message: 'Please enter a valid email address'
+        }
     },
-    // ownerPassword: {
-    //     type: String,
-    //     required: true,
-    //     trim: true,
-    // },
+    companyPassword: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: [8, 'Password must be at least 8 characters'],
+        select: false,
+        trim: true,
+    },
+    salt: {
+        type: String,
+        select: false,
+    },
     contactPhone: {
         type: String,
         trim: true,
@@ -112,8 +103,14 @@ const companySchema = new mongoose.Schema({
             validator: function (v) {
                 if (!v) return true;
                 try {
+                    const countryMap = {
+                        'India': 'IN',
+                        'United States': 'US',
+                        'Canada': 'CA',
+                        'United Kingdom': 'GB'
+                    };
                     const country = this.address?.country || 'India';
-                    const countryCode = country === 'India' ? 'IN' : 'IN';
+                    const countryCode = countryMap[country] || 'IN';
                     return isValidPhoneNumber(v, countryCode);
                 } catch (error) {
                     return false;
@@ -121,7 +118,7 @@ const companySchema = new mongoose.Schema({
             },
             message: 'Invalid phone number format for this country'
         },
-        required: true,
+        required: [true, 'Contact phone is required'],
     },
 
     contactPerson: {
@@ -138,7 +135,6 @@ const companySchema = new mongoose.Schema({
     billingEmail: {
         type: String,
         required: true,
-        // unique: true,
         trim: true,
         lowercase: true,
     },
@@ -161,8 +157,19 @@ const companySchema = new mongoose.Schema({
         enum: ['Active', 'Suspended', 'Inactive', 'Terminated'],
         default: 'Active'
     },
-    subscriptionStartDate: Date,
-    subscriptionEndDate: Date,
+    subscriptionStartDate: {
+        type: Date,
+        default: Date.now
+    },
+    subscriptionEndDate: {
+        type: Date,
+        validate: {
+            validator: function (v) {
+                return !v || v > this.subscriptionStartDate;
+            },
+            message: 'Subscription end date must be after start date'
+        }
+    },
     paymentStatus: {
         type: String,
         enum: ['Paid', 'Pending', 'Overdue', 'Failed'],
@@ -172,7 +179,7 @@ const companySchema = new mongoose.Schema({
     // Business Details
     timeZone: {
         type: String,
-        enum: ['IST', 'MST', 'GMT', 'CST'],
+        enum: ['IST', 'EST', 'CST', 'MST', 'PST', 'GMT'],
         default: 'IST'
     },
     // businessHours: {
@@ -197,7 +204,12 @@ const companySchema = new mongoose.Schema({
             type: String,
             enum: ['End to End', 'Transactional', 'FTE', 'Hybrid', 'Consulting'],
             required: true,
-            default: 'Select Contract Type'
+            validate: {
+                validator: function (v) {
+                    return v !== 'Select Contract Type';
+                },
+                message: 'Please select a valid contract type'
+            }
         },
         scopeFormatID: {
             type: String,
@@ -224,7 +236,8 @@ const companySchema = new mongoose.Schema({
     apiKey: {
         type: String,
         immutable: true,    // Api key cannot be changed
-        select: false
+        select: false,
+        sparse: true,
     },
     apiKeyCreatedAt: {
         type: Date,
@@ -234,7 +247,6 @@ const companySchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     }
-
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -243,7 +255,9 @@ const companySchema = new mongoose.Schema({
 
 // Indexes
 companySchema.index({ companyId: 1 }, { unique: true });
-companySchema.index({ contactEmail: 1 });
+companySchema.index({ contactEmail: 1 }, { unique: true });
+companySchema.index({ apiKey: 1 }, { unique: true, sparse: true });
+companySchema.index({ subscriptionStatus: 1, isActive: 1 });
 
 // Virtuals
 companySchema.virtual('subscriptionDaysRemaining').get(function () {
@@ -255,7 +269,7 @@ companySchema.virtual('subscriptionDaysRemaining').get(function () {
 
 companySchema.virtual('isSubscriptionExpired').get(function () {
     if (!this.subscriptionEndDate) return false;
-    return this.subscriptionEndDate > new Date();
+    return this.subscriptionEndDate < new Date();
 });
 
 // Instance Methods
@@ -269,7 +283,7 @@ companySchema.methods.generateApiKey = async function () {
         const key = crypto.randomBytes(24).toString('hex');
         newKey = `${prefix}${key}`;
 
-        const existing = await mongoose.models.companies.findOne({ apiKey: newKey });
+        const existing = await this.constructor.findOne({ apiKey: newKey });
         if (!existing) unique = true;
     }
 
@@ -301,18 +315,59 @@ companySchema.statics.findByApiKey = function (apiKey) {
         apiKey,
         apiEnabled: true,
         isActive: true,
-        subscriptionStatus: { $in: ['Active', 'Trial'] }
+        subscriptionStatus: { $in: ['Active'] }
     }).select('+apiKey');
 };
 
+companySchema.statics.matchPasswordAndGenerateToken = async function (companyEmail, companyPassword) {
+    const company = await this.findOne({ contactEmail: companyEmail });
+
+    if (!company) return 0;
+
+    const salt = company.salt;
+    const hashedPassword = company.companyPassword;
+
+    const userProvidedHash = crypto.createHmac('sha512', salt)
+        .update(companyPassword)
+        .digest("hex");
+
+    if (hashedPassword !== userProvidedHash) {
+        return -1;
+    }
+
+    const token = createToken(company);
+
+    return token;
+}
+
+// Pre-save middleware
 companySchema.pre('save', async function (next) {
+    // Auto-populate billing email if not provided
     if (!this.billingEmail && this.contactEmail) {
         this.billingEmail = this.contactEmail;
     }
 
+    // Auto-populate billing contact if not provided
+    if (!this.billingContactName && this.contactPerson) {
+        this.billingContactName = this.contactPerson;
+    }
+
+    // Generate API key if enabled but not present
     if (this.apiEnabled && !this.apiKey) {
         await this.generateApiKey();
     }
+
+    const user = this;
+    if (!user.isModified("companyPassword")) return;
+
+    const salt = crypto.randomBytes(16).toString("hex");
+
+    const hashedPassword = crypto.createHmac('sha512', salt)
+        .update(user.companyPassword)
+        .digest("hex");
+
+    this.salt = salt;
+    this.companyPassword = hashedPassword;
 
     next();
 });
@@ -320,12 +375,16 @@ companySchema.pre('save', async function (next) {
 // Error handling for duplicates
 companySchema.post('save', function (error, doc, next) {
     if (error.name === 'MongoServerError' && error.code === 11000) {
-        next(new Error('Company with this email exists'));
+        if (error.keyPattern.contactEmail) {
+            next(new Error('Company with this email already exists'));
+        } else if (error.keyPattern.companyId) {
+            next(new Error('Company ID already exists'));
+        } else {
+            next(new Error('Duplicate entry found'));
+        }
     } else {
         next(error);
     }
 });
 
-const Company = mongoose.model("companies", companySchema);
-
-export default Company;
+export const Company = mongoose.model("Company", companySchema, "companies");
