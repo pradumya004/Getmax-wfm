@@ -3,6 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 
+// rank - 4 diff (rank 1 guardian(5,4,3,2,1), rank 2 elite, rank 3 pro, rank 4 master) {affecting ranks}
+// level - 
+// exp
+// coins
+
 const employeeSchema = new mongoose.Schema({
     employeeId: {
         type: String,
@@ -235,7 +240,7 @@ const employeeSchema = new mongoose.Schema({
         currency: {
             type: String,
             default: "INR",
-            enum: ["USD", "INR", "EUR", "GBP", "CAD"]
+            enum: ["USD", "INR", "EUR", "GBP", "CAD", "AED"]
         },
         payFrequency: {
             type: String,
@@ -290,6 +295,8 @@ const employeeSchema = new mongoose.Schema({
         }
     },
 
+
+
     // WFM Specific Performance Targets
     performanceTargets: {
         dailyClaimTarget: {
@@ -312,7 +319,7 @@ const employeeSchema = new mongoose.Schema({
         performanceRating: {
             type: String,
             enum: {
-                values: ["Outstanding", "Exceeds Expectations", "Meets Expectations", "Below Expectations", "Unsatisfactory"],
+                values: ["Outstanding", "Exceeds Expectations", "Meets Expectations", "Could be better", "Need to Improve"],
                 message: 'Performance rating must be a valid rating'
             },
             default: null
@@ -334,27 +341,33 @@ const employeeSchema = new mongoose.Schema({
             type: Boolean,
             default: true
         },
-        rampPercentage: {
-            type: Number,
-            min: [0, 'Ramp percentage cannot be negative'],
-            max: [100, 'Ramp percentage cannot exceed 100%'],
-            default: 100
-        }
     }],
-
+    // rampPercentage shifted from sow to employee...
+    rampPercentage: {
+        type: Number,
+        min: [0, 'Ramp percentage cannot be negative'],
+        max: [100, 'Ramp percentage cannot exceed 100%'],
+        default: 100
+    },
     // Skills and Qualifications
     skillsAndQualifications: {
-        primarySkills: [{
-            skill: String,
+        technicalSkills: [{   // changed
+            skill: {
+                type: String,
+                enum : ["Java", "JavaScript", "Python", "C#", "C++", "Ruby", "PHP", "Swift", "Kotlin", "Go", "Rust", "TypeScript", "SQL", "NoSQL", "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Express.js", "GraphQL", "RESTful APIs", "Microservices", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud Platform", "Machine Learning", "Data Science", "Big Data", "DevOps", "Agile Methodologies", "Scrum", "Kanban", "Project Management", "UI/UX Design", "Cybersecurity", "Blockchain", "Internet of Things (IoT)", "AR/VR Development", "Game Development", "Mobile App Development", "Web Development", "Software Testing", "Quality Assurance", "Technical Writing"],
+            },
             level: {
                 type: String,
                 enum: ["Beginner", "Intermediate", "Advanced", "Expert"]
             },
             certifiedDate: Date,
-            expiryDate: Date
+            expiryDate: Date,
         }],
-        secondarySkills: [{
-            skill: String,
+        softSkills: [{       // changed
+            skill: {
+                type: String,
+                enum : ["Communication", "Teamwork", "Problem Solving", "Time Management", "Adaptability", "Leadership", "Critical Thinking", "Creativity", "Emotional Intelligence", "Conflict Resolution", "Negotiation", "Decision Making", "Collaboration", "Interpersonal Skills", "Active Listening", "Public Speaking", "Presentation Skills", "Customer Service", "Networking", "Cultural Awareness", "Stress Management", "Work Ethic", "Attention to Detail", "Analytical Thinking", "Organizational Skills", "Project Management", "Change Management", "Mentoring", "Coaching", "Influencing", "Persuasion", "Sales Skills", "Marketing Skills", "Business Acumen", "Financial Acumen", "Strategic Thinking", "Innovation", "Agility", "Resilience", "Self-Motivation", "Goal Setting", "Visionary Thinking"],
+            },
             level: {
                 type: String,
                 enum: ["Beginner", "Intermediate", "Advanced", "Expert"]
@@ -375,7 +388,10 @@ const employeeSchema = new mongoose.Schema({
             gpa: Number
         }],
         languages: [{
-            language: String,
+            languages : {
+                type:String,
+                enum: ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Korean", "Russian", "Italian", "Portuguese", "Hindi", "Arabic", "Bengali", "Urdu", "Turkish", "Vietnamese", "Polish", "Dutch", "Swedish", "Norwegian", "Danish", "Finnish", "Greek", "Czech", "Hungarian", "Thai", "Indonesian", "Filipino", "Malay", "Romanian", "Ukrainian", "Hebrew", "Persian", "Swahili", "Zulu", "Xhosa", "Tamil", "Telugu", "Kannada", "Gujarati", "Marathi", "Punjabi", "Malayalam", "Burmese", "Khmer", "Lao", "Serbian", "Croatian", "Bulgarian", "Slovak", "Slovenian", "Lithuanian", "Latvian", "Estonian", "Tulu", "Assamese", "Odia", "Maithili", "Sanskrit", "Nepali", "Sinhala", "Bhojpuri", "Konkani", "Manipuri", "Dogri", "Santali", "Sindhi", "Kashmiri"],
+            }, 
             proficiency: {
                 type: String,
                 enum: ["Basic", "Conversational", "Fluent", "Native"]
@@ -468,7 +484,7 @@ const employeeSchema = new mongoose.Schema({
             default: 0,
             min: 0,
             max: 100
-        }
+        } 
     },
 
     // Audit Trail
@@ -570,22 +586,23 @@ employeeSchema.methods.updateProfileCompletion = function () {
     this.systemInfo.profileCompletionPercentage = Math.round((completedFields / totalFields) * 100);
 };
 
-employeeSchema.methods.assignToSOW = function (sowRef, rampPercentage = 100) {
-    const existingAssignment = this.sowAssignments.find(
-        assignment => assignment.sowRef.equals(sowRef) && assignment.isActive
-    );
+// change rampPercentage
+// employeeSchema.methods.assignToSOW = function (sowRef, rampPercentage = 100) {
+//     const existingAssignment = this.sowAssignments.find(
+//         assignment => assignment.sowRef.equals(sowRef) && assignment.isActive
+//     );
 
-    if (existingAssignment) {
-        existingAssignment.rampPercentage = rampPercentage;
-    } else {
-        this.sowAssignments.push({
-            sowRef,
-            rampPercentage,
-            isActive: true,
-            assignedDate: new Date();
-        });
-    }
-};
+//     if (existingAssignment) {
+//         existingAssignment.rampPercentage = rampPercentage;
+//     } else {
+//         this.sowAssignments.push({
+//             sowRef,
+//             rampPercentage,
+//             isActive: true,
+//             assignedDate: new Date()
+//         });
+//     }
+// };
 
 employeeSchema.methods.removeFromSOW = function (sowRef) {
     const assignment = this.sowAssignments.find(

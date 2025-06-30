@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { validate as validatePostalCode } from 'postal-codes-js';
 import { createToken } from '../utils/jwthelper.js';
+import bcrypt from 'bcryptjs';
 
 // Address Schema
 const addressSchema = new mongoose.Schema({
@@ -91,10 +92,6 @@ const companySchema = new mongoose.Schema({
         minlength: [8, 'Password must be at least 8 characters'],
         select: false,
         trim: true,
-    },
-    salt: {
-        type: String,
-        select: false,
     },
     contactPhone: {
         type: String,
@@ -319,26 +316,15 @@ companySchema.statics.findByApiKey = function (apiKey) {
     }).select('+apiKey');
 };
 
-companySchema.statics.matchPasswordAndGenerateToken = async function (companyEmail, companyPassword) {
-    const company = await this.findOne({ contactEmail: companyEmail });
 
-    if (!company) return 0;
+companySchema.methods.comparePassword = async function (candidatePassword) {
+    if (!this.companyPassword) return false;
+    return await bcrypt.compare(candidatePassword, this.companyPassword);
+};
 
-    const salt = company.salt;
-    const hashedPassword = company.companyPassword;
-
-    const userProvidedHash = crypto.createHmac('sha512', salt)
-        .update(companyPassword)
-        .digest("hex");
-
-    if (hashedPassword !== userProvidedHash) {
-        return -1;
-    }
-
-    const token = createToken(company);
-
-    return token;
-}
+companySchema.methods.hashPassword = async function (password) {
+    
+};
 
 // Pre-save middleware
 companySchema.pre('save', async function (next) {
@@ -357,20 +343,15 @@ companySchema.pre('save', async function (next) {
         await this.generateApiKey();
     }
 
-    const user = this;
-    if (!user.isModified("companyPassword")) return;
+    if (this.isModified("companyPassword")) {
+        const salt = await bcrypt.genSalt(12);
+        this.companyPassword = await bcrypt.hash(this.companyPassword, salt);
+    }
 
-    const salt = crypto.randomBytes(16).toString("hex");
-
-    const hashedPassword = crypto.createHmac('sha512', salt)
-        .update(user.companyPassword)
-        .digest("hex");
-
-    this.salt = salt;
-    this.companyPassword = hashedPassword;
 
     next();
 });
+
 
 // Error handling for duplicates
 companySchema.post('save', function (error, doc, next) {
@@ -387,4 +368,8 @@ companySchema.post('save', function (error, doc, next) {
     }
 });
 
+
+
 export const Company = mongoose.model("Company", companySchema, "companies");
+
+// export default Company;

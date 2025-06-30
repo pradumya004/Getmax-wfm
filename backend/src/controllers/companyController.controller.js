@@ -2,9 +2,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-import { generateCompanyToken } from "../utils/jwtHelper.js";
+import { generateCompanyToken } from "../utils/jwthelper.js";
 
-import Company from "../models/company.model.js";
+import { Company } from "../models/company.model.js";
 
 const registerCompany = asyncHandler(async (req, res) => {
     const {
@@ -109,21 +109,17 @@ const loginCompany = asyncHandler(async (req, res) => {
         if (!companyEmail || !companyPassword) {
             return res.status(400).json({ message: "Email and password are required" });
         }
+        
+        const company = await Company.findOne({ contactEmail: companyEmail }).select('+companyPassword');
+        const validatePassword = await company.comparePassword(companyPassword);
 
-        const token = await Company.matchPasswordAndGenerateToken(companyEmail, companyPassword);
-
-        if (token === 0) {
-            return res.status(400).json({ message: "Company not found" });
-        }
-
-        if (token === -1) {
-            return res.status(401).json({ message: "Invalid password" });
+        if (!validatePassword) {
+            throw new ApiError(401, "Invalid User Credentials!");
         }
 
         // SuccessAdd commentMore actions
         res.status(200).json({
             message: "Login successful",
-            token,
             companyEmail: companyEmail,
         });
     } catch (err) {
