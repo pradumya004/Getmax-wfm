@@ -1,314 +1,184 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Building2,
-  Users,
-  Calendar,
-  Clock,
-  Plus,
-  Bell,
-  Settings,
-  BarChart3,
-  UserCheck,
-  UserX,
-} from "lucide-react";
+import React from 'react';
+import { Helmet } from 'react-helmet';
+import { motion } from 'framer-motion';
+import { Download } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { Button } from '../../components/ui/button'; 
 
-export default function CompanyDashboard() {
-  const navigate = useNavigate();
-  const [currentTime, setCurrentTime] = useState(new Date());
+import StatCard from '../../components/dashboard/StatCard';
+import ClaimSlaChart from '../../components/dashboard/ClaimSlaChart';
+import EmployeeProductivityChart from '../../components/dashboard/EmployeeProductivityChart';
+import SystemAlertsTile from '../../components/dashboard/SystemAlertsTile';
+import PendingTasksTile from '../../components/dashboard/PendingTasksTile';
+import ModuleHealthTile from '../../components/dashboard/ModuleHealthTile';
+import GamificationFeedTile from '../../components/dashboard/GamificationFeedTile';
 
-  // Mock data - replace with actual API calls
-  const companyInfo = {
-    name: "TechCorp Solutions",
-    plan: "Enterprise",
-    totalEmployees: 245,
-    activeEmployees: 189,
-    pendingTasks: 23,
+import { Users, FileText, ShieldCheck, BarChart, IndianRupee } from 'lucide-react';
+
+const Dashboard = () => {
+  const title = "Super Admin Dashboard";
+
+  const handleExport = () => {
+    toast.error("🚧 Feature Not Implemented: Exporting dashboard snapshots is not yet available.");
   };
 
-  const stats = [
-    { title: "Total Employees", value: "245", icon: Users, color: "blue" },
-    { title: "Present Today", value: "189", icon: UserCheck, color: "green" },
-    { title: "On Leave", value: "12", icon: UserX, color: "orange" },
-    { title: "Pending Tasks", value: "23", icon: Clock, color: "purple" },
+  const topCardsData = [
+    { title: 'Active Clients', value: 74, weeklyTrend: '+5 this week', icon: Users },
+    { title: 'Total Claims Received', value: 1245, weeklyTrend: '+150 this week', icon: FileText },
+    { title: 'Avg SLA Compliance', value: 96.2, weeklyTrend: '', icon: ShieldCheck, isPercentage: true },
+    { title: 'QA Audit Score', value: 98.5, weeklyTrend: '', icon: BarChart, isPercentage: true },
+    { title: 'Revenue Generated', value: 450000, weeklyTrend: 'this month', icon: IndianRupee, isCurrency: true },
   ];
-
-  const recentActivities = [
-    { type: "checkin", user: "John Doe", time: "09:15 AM", status: "success" },
-    {
-      type: "leave",
-      user: "Sarah Wilson",
-      time: "08:45 AM",
-      status: "pending",
-    },
-    {
-      type: "task",
-      user: "Mike Johnson",
-      time: "08:30 AM",
-      status: "completed",
-    },
-    {
-      type: "checkout",
-      user: "Emma Davis",
-      time: "06:00 PM",
-      status: "success",
-    },
-    {
-      type: "overtime",
-      user: "Alex Brown",
-      time: "07:30 PM",
-      status: "pending",
-    },
-  ];
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case "checkin":
-        return <UserCheck className="w-4 h-4" />;
-      case "checkout":
-        return <UserX className="w-4 h-4" />;
-      case "leave":
-        return <Calendar className="w-4 h-4" />;
-      case "task":
-        return <Clock className="w-4 h-4" />;
-      case "overtime":
-        return <BarChart3 className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getActivityColor = (status) => {
-    switch (status) {
-      case "success":
-        return "text-green-400 bg-green-500/20";
-      case "pending":
-        return "text-yellow-400 bg-yellow-500/20";
-      case "completed":
-        return "text-blue-400 bg-blue-500/20";
-      default:
-        return "text-gray-400 bg-gray-500/20";
-    }
-  };
-
-  React.useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-      {/* Header */}
-      <div className="bg-white/10 backdrop-blur-xl border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">
-                  {companyInfo.name}
-                </h1>
-                <p className="text-white/70">
-                  {companyInfo.plan} Plan • {companyInfo.totalEmployees}{" "}
-                  Employees
-                </p>
-              </div>
+    <>
+      <Helmet>
+        <title>{title} - GetMax</title>
+        <meta name="description" content="Centralized snapshot for top-level decision-making." />
+      </Helmet>
+      
+      <div className="min-h-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          {/* Header Section */}
+          <motion.div 
+            className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{title}</h1>
+              <p className="text-gray-300 text-lg">Centralized snapshot for top-level decision-making.</p>
             </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-white font-medium">
-                  {currentTime.toLocaleTimeString()}
-                </p>
-                <p className="text-white/70 text-sm">
-                  {currentTime.toLocaleDateString()}
-                </p>
-              </div>
-
-              <button className="relative p-2 bg-white/10 rounded-lg text-white/70 hover:text-white hover:bg-white/20 transition-all duration-300">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
-
-              <button className="p-2 bg-white/10 rounded-lg text-white/70 hover:text-white hover:bg-white/20 transition-all duration-300">
-                <Settings className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6"
+            <Button 
+              variant="outline" 
+              className="border-[#39ff14]/30 text-white hover:bg-[#39ff14]/10 hover:border-[#39ff14]/50 transition-all duration-200" 
+              onClick={handleExport}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/70 text-sm">{stat.title}</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {stat.value}
-                  </p>
-                </div>
-                <div
-                  className={`w-12 h-12 bg-${stat.color}-500/20 rounded-lg flex items-center justify-center`}
+              <Download className="h-4 w-4 mr-2" />
+              Export Snapshot
+            </Button>
+          </motion.div>
+
+          {/* KPI Cards Section */}
+          <motion.div 
+            className="mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <h2 className="text-xl font-semibold text-white mb-4">Key Performance Indicators</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-6">
+              {topCardsData.map((card, index) => (
+                <motion.div
+                  key={card.title}
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: 0.3 + (index * 0.1),
+                    type: "spring",
+                    stiffness: 100
+                  }}
                 >
-                  <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
-            <div className="space-y-4">
-              <button
-                onClick={() => navigate("/company/employees/add")}
-                className="w-full p-4 bg-blue-600/80 hover:bg-blue-600 rounded-lg text-white font-medium transition-all duration-300 flex items-center space-x-3"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Add New Employee</span>
-              </button>
-              <button
-                onClick={() => navigate("/company/meetings/schedule")}
-                className="w-full p-4 bg-green-600/80 hover:bg-green-600 rounded-lg text-white font-medium transition-all duration-300 flex items-center space-x-3"
-              >
-                <Calendar className="w-5 h-5" />
-                <span>Schedule Meeting</span>
-              </button>
-              <button
-                onClick={() => navigate("/company/reports")}
-                className="w-full p-4 bg-purple-600/80 hover:bg-purple-600 rounded-lg text-white font-medium transition-all duration-300 flex items-center space-x-3"
-              >
-                <BarChart3 className="w-5 h-5" />
-                <span>View Reports</span>
-              </button>
-              <button
-                onClick={() => navigate("/company/shifts")}
-                className="w-full p-4 bg-orange-600/80 hover:bg-orange-600 rounded-lg text-white font-medium transition-all duration-300 flex items-center space-x-3"
-              >
-                <Clock className="w-5 h-5" />
-                <span>Manage Shifts</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Activities */}
-          <div className="lg:col-span-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">
-                Recent Activities
-              </h2>
-              <button className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
-                View All
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-300"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${getActivityColor(
-                      activity.status
-                    )}`}
-                  >
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{activity.user}</p>
-                    <p className="text-white/60 text-sm capitalize">
-                      {activity.type.replace(/([A-Z])/g, " $1")}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/70 text-sm">{activity.time}</p>
-                    <p
-                      className={`text-xs font-medium capitalize ${
-                        activity.status === "success"
-                          ? "text-green-400"
-                          : activity.status === "pending"
-                          ? "text-yellow-400"
-                          : "text-blue-400"
-                      }`}
-                    >
-                      {activity.status}
-                    </p>
-                  </div>
-                </div>
+                  <StatCard {...card} />
+                </motion.div>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
 
-        {/* Additional Info Section */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Today's Summary */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">
-              Today's Summary
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-white/70">Check-ins</span>
-                <span className="text-white font-medium">189/245</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-white/70">On Break</span>
-                <span className="text-white font-medium">23</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-white/70">Overtime</span>
-                <span className="text-white font-medium">12</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-white/70">Late Arrivals</span>
-                <span className="text-white font-medium">5</span>
-              </div>
+          {/* Analytics Section */}
+          <motion.div 
+            className="mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+          >
+            <h2 className="text-xl font-semibold text-white mb-4">Analytics Overview</h2>
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+              <motion.div
+                className="xl:col-span-3"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.9 }}
+              >
+                <ClaimSlaChart />
+              </motion.div>
+              <motion.div
+                className="xl:col-span-2"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 1.0 }}
+              >
+                <EmployeeProductivityChart />
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Upcoming Events */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">
-              Upcoming Events
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
-                <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                <div>
-                  <p className="text-white font-medium">Team Meeting</p>
-                  <p className="text-white/60 text-sm">Tomorrow, 10:00 AM</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <div>
-                  <p className="text-white font-medium">Monthly Review</p>
-                  <p className="text-white/60 text-sm">Friday, 2:00 PM</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
-                <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
-                <div>
-                  <p className="text-white font-medium">Training Session</p>
-                  <p className="text-white/60 text-sm">Next Monday, 9:00 AM</p>
-                </div>
-              </div>
+          {/* Management Tiles Section */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 1.1 }}
+          >
+            <h2 className="text-xl font-semibold text-white mb-4">System Management</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 30, rotateX: -15 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: 1.2,
+                  type: "spring",
+                  stiffness: 100
+                }}
+              >
+                <SystemAlertsTile />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 30, rotateX: -15 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: 1.3,
+                  type: "spring",
+                  stiffness: 100
+                }}
+              >
+                <PendingTasksTile />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 30, rotateX: -15 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: 1.4,
+                  type: "spring",
+                  stiffness: 100
+                }}
+              >
+                <ModuleHealthTile />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 30, rotateX: -15 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ 
+                  duration: 0.6, 
+                  delay: 1.5,
+                  type: "spring",
+                  stiffness: 100
+                }}
+              >
+                <GamificationFeedTile />
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
+
         </div>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default Dashboard;

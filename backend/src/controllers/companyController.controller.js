@@ -1,9 +1,9 @@
+// backend/src/controllers/companyController.controller.js
+
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-
 import { generateCompanyToken } from "../utils/jwthelper.js";
-
 import { Company } from "../models/company.model.js";
 
 const registerCompany = asyncHandler(async (req, res) => {
@@ -14,7 +14,6 @@ const registerCompany = asyncHandler(async (req, res) => {
         website,
         contactEmail,
         companyPassword,
-        companyCountry,
         contactPhone,
         contactPerson,
         billingContactName,
@@ -34,12 +33,17 @@ const registerCompany = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Required validationsAdd commentMore actions
-    if (!companyName || !contactEmail || !companyPassword || !contactPhone || !billingContactName) {
+    if (!companyName || !contactEmail || !companyPassword || !contactPhone) {
         throw new ApiError(400, "Missing required fields");
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactEmail)) {
+        throw new ApiError(400, "Invalid email format");
+    }
+
     // Duplicate check
-    const existingCompany = await Company.findOne({ contactEmail, isActive: true });
+    const existingCompany = await Company.findOne({ contactEmail: contactEmail.toLowercase().trim(), isActive: true });
     if (existingCompany) {
         return res.status(400).json({ message: "Company already exists" });
     }
@@ -50,7 +54,7 @@ const registerCompany = asyncHandler(async (req, res) => {
         taxID,
         website,
         contactEmail,
-        companyPassword, // will be hashed in pre('save')
+        companyPassword,
         contactPhone,
         contactPerson,
         billingContactName,
@@ -109,7 +113,7 @@ const loginCompany = asyncHandler(async (req, res) => {
         if (!companyEmail || !companyPassword) {
             return res.status(400).json({ message: "Email and password are required" });
         }
-        
+
         const company = await Company.findOne({ contactEmail: companyEmail }).select('+companyPassword');
         const validatePassword = await company.comparePassword(companyPassword);
 

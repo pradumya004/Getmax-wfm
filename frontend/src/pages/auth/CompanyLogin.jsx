@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, Mail, Lock, ArrowRight, Shield } from "lucide-react";
+import { toast } from "react-hot-toast";
 
-export default function CompanyLogin() {
+export default function CompanyLogin({isModal = false}) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    companyEmail: "",
+    companyPassword: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -19,21 +20,42 @@ export default function CompanyLogin() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Handle login success/failure here
-      console.log("Login attempt:", formData);
+    try {
+      const res = await fetch("http://localhost:8000/api/companies/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // if you're using cookies
+        body: JSON.stringify(formData),
+      });
 
-      // Navigate to company dashboard on successful login
-      navigate("/company/dashboard");
-    }, 2000);
+      if (res.ok) {
+        const result = await res.json();
+        console.log("Login success:", result);
+
+        // Optionally save token/localStorage if returned
+        // localStorage.setItem("token", result.token);
+
+        navigate("/company/dashboard");
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || "Invalid login credentials");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Server error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const isFormValid = formData.email && formData.password;
+
+  const isFormValid = formData.companyEmail && formData.companyPassword;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div className={`${isModal ? '' : 'min-h-screen p-6 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900'} flex items-center justify-center`}>
+
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
@@ -66,8 +88,8 @@ export default function CompanyLogin() {
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
                 <input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  value={formData.companyEmail}
+                  onChange={(e) => handleInputChange("companyEmail", e.target.value)}
                   className="w-full px-4 py-4 pl-12 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300"
                   placeholder="Company Email"
                   required
@@ -79,9 +101,9 @@ export default function CompanyLogin() {
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
                 <input
                   type="password"
-                  value={formData.password}
+                  value={formData.companyPassword}
                   onChange={(e) =>
-                    handleInputChange("password", e.target.value)
+                    handleInputChange("companyPassword", e.target.value)
                   }
                   className="w-full px-4 py-4 pl-12 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300"
                   placeholder="Password"
