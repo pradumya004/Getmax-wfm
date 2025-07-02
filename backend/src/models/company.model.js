@@ -5,7 +5,6 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { validate as validatePostalCode } from 'postal-codes-js';
-import { createToken } from '../utils/jwthelper.js';
 import bcrypt from 'bcryptjs';
 
 // Address Schema
@@ -45,6 +44,130 @@ const addressSchema = new mongoose.Schema({
     },
 }, { _id: false });
 
+// Revenue Tracking Schema
+const revenueSchema = new mongoose.Schema({
+    // Monthly Revenue Data
+    monthlyRevenue: [{
+        month: {
+            type: String,
+            // required: true // Format: "2024-01"
+        },
+        totalRevenue: {
+            type: Number,
+            default: 0,
+            min: [0, 'Revenue cannot be negative']
+        },
+        recurringRevenue: {
+            type: Number,
+            default: 0,
+            min: [0, 'Recurring revenue cannot be negative']
+        },
+        oneTimeRevenue: {
+            type: Number,
+            default: 0,
+            min: [0, 'One-time revenue cannot be negative']
+        },
+        clientBreakdown: [{
+            clientId: String,
+            clientName: String,
+            amount: Number,
+            percentage: Number
+        }],
+        serviceBreakdown: [{
+            serviceType: {
+                type: String,
+                enum: ['AR Calling', 'Coding', 'Prior Authorization', 'Denial Management', 'Patient Registration', 'Insurance Verification']
+            },
+            amount: Number,
+            percentage: Number
+        }]
+    }],
+
+    // Annual Metrics
+    currentYear: {
+        year: Number,
+        targetRevenue: {
+            type: Number,
+            default: 0,
+            min: [0, 'Target revenue cannot be negative']
+        },
+        achievedRevenue: {
+            type: Number,
+            default: 0,
+            min: [0, 'Achieved revenue cannot be negative']
+        },
+        growthRate: {
+            type: Number,
+            default: 0 // Percentage growth from previous year
+        }
+    },
+
+    // Client Metrics
+    clientMetrics: {
+        totalActiveClients: {
+            type: Number,
+            default: 0,
+            min: [0, 'Client count cannot be negative']
+        },
+        newClientsThisMonth: {
+            type: Number,
+            default: 0,
+            min: [0, 'New client count cannot be negative']
+        },
+        churnedClientsThisMonth: {
+            type: Number,
+            default: 0,
+            min: [0, 'Churned client count cannot be negative']
+        },
+        averageRevenuePerClient: {
+            type: Number,
+            default: 0,
+            min: [0, 'Average revenue cannot be negative']
+        },
+        clientRetentionRate: {
+            type: Number,
+            default: 0,
+            min: [0, 'Retention rate cannot be negative'],
+            max: [100, 'Retention rate cannot exceed 100%']
+        }
+    },
+
+    // Performance Metrics
+    performanceMetrics: {
+        profitMargin: {
+            type: Number,
+            default: 0 // Percentage
+        },
+        costPerEmployee: {
+            type: Number,
+            default: 0,
+            min: [0, 'Cost cannot be negative']
+        },
+        revenuePerEmployee: {
+            type: Number,
+            default: 0,
+            min: [0, 'Revenue cannot be negative']
+        },
+        operationalEfficiency: {
+            type: Number,
+            default: 0 // Percentage
+        }
+    },
+
+    // Currency
+    currency: {
+        type: String,
+        default: 'INR',
+        enum: ['USD', 'INR', 'EUR', 'GBP', 'CAD']
+    },
+
+    // Last Updated
+    lastUpdated: {
+        type: Date,
+        default: Date.now
+    }
+}, { _id: false });
+
 // Company Schema
 const companySchema = new mongoose.Schema({
     // Company Info
@@ -77,7 +200,7 @@ const companySchema = new mongoose.Schema({
     // Contact Info - Company Contact, Not Owner
     contactEmail: {
         type: String,
-        required: [true, 'Contact email is required'],
+        required: [true, 'Contact email is required for sending company login credentials'],
         trim: true,
         lowercase: true,
         validate: {
@@ -181,26 +304,22 @@ const companySchema = new mongoose.Schema({
         enum: ['IST', 'EST', 'CST', 'MST', 'PST', 'GMT'],
         default: 'IST'
     },
-    // businessHours: {
-    //     type: businessSchema,
-    //     default: () => ({})
-    // },
 
     // Contract Details
-    contractSettings: {
+    contractSettings: [{
         specialtyType: {
             type: [String],
             enum: ["Primary Care", "Specialty Care", "Dental", "Vision", "Mental Health", "Surgery Centers", "Hospitals", "Labs", "Multi Specialty", "DME"],
             default: ["Primary Care"]
         },
         clientType: {
-            type: String,
+            type: [String],
             enum: ['Billing Company', 'Provider', 'Others'],
             required: true,
             default: 'Provider'
         },
         contractType: {
-            type: String,
+            type: [String],
             enum: ['End to End', 'Transactional', 'FTE', 'Hybrid', 'Consulting'],
             required: true,
             validate: {
@@ -211,11 +330,11 @@ const companySchema = new mongoose.Schema({
             }
         },
         scopeFormatID: {
-            type: String,
+            type: [String],
             enum: ['ClaimMD', 'Medisoft', 'Custom'],
             default: 'ClaimMD'
         },
-    },
+    }],
 
     companySize: {
         type: String,
@@ -223,14 +342,39 @@ const companySchema = new mongoose.Schema({
         default: '1-10'
     },
 
+    // Revenue Tracking
+    revenueTracking: {
+        type: revenueSchema,
+        default: () => ({})
+    },
+
+    // Security Settings
+    securitySettings: {
+        workingIPs: [{ ip: String, label: String }],
+        remoteWorkEnabled: { type: Boolean, default: true },
+        maxLoginAttempts: { type: Number, default: 5 },
+        sessionTimeout: { type: Number, default: 480 }, // minutes
+        twoFactorEnabled: { type: Boolean, default: false }
+    },
+
+    // Integration Settings
+    integrationSettings: {
+        sftpEnabled: { type: Boolean, default: false },
+        sftpCredentials: {
+            host: String,
+            username: String,
+            port: { type: Number, default: 22 },
+            keyPath: String
+        },
+        webhookUrl: String,
+        apiRateLimit: { type: Number, default: 1000 }, // requests per hour
+        allowedOrigins: [String]
+    },
+
     // Api Info
     isActive: {
         type: Boolean,
         default: true,
-    },
-    sftpEnabled: {
-        type: Boolean,
-        default: false
     },
     apiKey: {
         type: String,
@@ -271,6 +415,24 @@ companySchema.virtual('isSubscriptionExpired').get(function () {
     return this.subscriptionEndDate < new Date();
 });
 
+companySchema.virtual('currentMonthRevenue').get(function () {
+    const currentMonth = new Date().toISOString().substring(0, 7); // "2024-01"
+    const monthData = this.revenueInfo.monthlyRevenue.find(m => m.month === currentMonth);
+    return monthData ? monthData.totalRevenue : 0;
+});
+
+companySchema.virtual('revenueGrowthThisMonth').get(function () {
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
+
+    const currentData = this.revenueInfo.monthlyRevenue.find(m => m.month === currentMonth);
+    const lastData = this.revenueInfo.monthlyRevenue.find(m => m.month === lastMonth);
+
+    if (!currentData || !lastData || lastData.totalRevenue === 0) return 0;
+
+    return ((currentData.totalRevenue - lastData.totalRevenue) / lastData.totalRevenue) * 100;
+});
+
 // Instance Methods
 companySchema.methods.generateApiKey = async function () {
     const prefix = this.subscriptionPlan === 'Trial' ? 'gms_trial_' : 'gms_live_';
@@ -304,6 +466,36 @@ companySchema.methods.revokeApiKey = function () {
     this.apiKeyCreatedAt = null;
 };
 
+companySchema.methods.updateMonthlyRevenue = function (month, revenueData) {
+    const existingMonth = this.revenueInfo.monthlyRevenue.find(m => m.month === month);
+
+    if (existingMonth) {
+        Object.assign(existingMonth, revenueData);
+    } else {
+        this.revenueInfo.monthlyRevenue.push({
+            month,
+            ...revenueData
+        });
+    }
+
+    this.revenueInfo.lastUpdated = new Date();
+};
+
+companySchema.methods.calculateMetrics = function () {
+    const totalEmployees = this.employeeCount || 0;
+    const currentRevenue = this.currentMonthRevenue;
+
+    if (totalEmployees > 0) {
+        this.revenueInfo.performanceMetrics.revenuePerEmployee = currentRevenue / totalEmployees;
+    }
+
+    // Update client metrics
+    this.revenueInfo.clientMetrics.averageRevenuePerClient =
+        this.revenueInfo.clientMetrics.totalActiveClients > 0
+            ? currentRevenue / this.revenueInfo.clientMetrics.totalActiveClients
+            : 0;
+};
+
 // Static Methods
 companySchema.statics.findByCompanyId = function (companyId) {
     return this.findOne({ companyId, isActive: true });
@@ -318,14 +510,22 @@ companySchema.statics.findByApiKey = function (apiKey) {
     }).select('+apiKey');
 };
 
+companySchema.statics.getRevenueReport = function (companyId, startMonth, endMonth) {
+    return this.findOne({ companyId })
+        .select('revenueInfo.monthlyRevenue')
+        .then(company => {
+            if (!company) return null;
 
+            return company.revenueInfo.monthlyRevenue.filter(m =>
+                m.month >= startMonth && m.month <= endMonth
+            );
+        });
+};
+
+// Methods
 companySchema.methods.comparePassword = async function (candidatePassword) {
     if (!this.companyPassword) return false;
     return await bcrypt.compare(candidatePassword, this.companyPassword);
-};
-
-companySchema.methods.hashPassword = async function (password) {
-    
 };
 
 // Pre-save middleware
@@ -350,10 +550,18 @@ companySchema.pre('save', async function (next) {
         this.companyPassword = await bcrypt.hash(this.companyPassword, salt);
     }
 
+    // Initialize current year revenue tracking
+    if (this.isNew || !this.revenueInfo.currentYear.year) {
+        this.revenueInfo.currentYear.year = new Date().getFullYear();
+    }
+
+    // Calculate metrics if revenue data exists
+    if (this.isModified('revenueInfo.monthlyRevenue')) {
+        this.calculateMetrics();
+    }
 
     next();
 });
-
 
 // Error handling for duplicates
 companySchema.post('save', function (error, doc, next) {
@@ -370,8 +578,4 @@ companySchema.post('save', function (error, doc, next) {
     }
 });
 
-
-
 export const Company = mongoose.model("Company", companySchema, "companies");
-
-// export default Company;

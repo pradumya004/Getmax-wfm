@@ -1,21 +1,58 @@
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-dotenv.config();
+// backend/src/utils/jwtHelper.js
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Generate Company Token
 export const generateCompanyToken = (companyId) => {
     return jwt.sign(
-        { id: companyId },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
+        {
+            id: companyId,
+            type: 'company'
+        },
+        JWT_SECRET,
+        { expiresIn: process.env.COMPANY_TOKEN_EXPIRY || '7d' }
     );
 };
 
-export const createToken = (company) => {
+// Generate Employee Token with role and company info
+export const generateEmployeeToken = (payload) => {
     return jwt.sign(
-        { id: company._id, email: company.contactEmail, Name: company.companyName },
-        process.env.JWT_SECRET || 'GetMax_4893_Heatlcare_839_solutions_4338',
-        { expiresIn: "7d" }
+        {
+            employeeId: payload.employeeId,
+            companyId: payload.companyId,
+            role: payload.role,
+            email: payload.email,
+            type: 'employee'
+        },
+        JWT_SECRET,
+        { expiresIn: process.env.EMPLOYEE_TOKEN_EXPIRY || '8h' }
     );
 };
 
-// add time .....
+// Verify Company Token
+export const verifyCompanyToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.type !== 'company') {
+            throw new Error('Invalid token type');
+        }
+        return decoded;
+    } catch (error) {
+        throw new Error('Invalid or expired token');
+    }
+};
+
+// Verify Employee Token
+export const verifyEmployeeToken = (token) => {
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.type !== 'employee') {
+            throw new Error('Invalid token type');
+        }
+        return decoded;
+    } catch (error) {
+        throw new Error('Invalid or expired token');
+    }
+};

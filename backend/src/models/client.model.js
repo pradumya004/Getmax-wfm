@@ -1,3 +1,5 @@
+// backend/src/models/client.model.js
+
 const mongoose = require("mongoose");
 
 const ServiceSchema = new mongoose.Schema({

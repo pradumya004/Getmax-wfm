@@ -1,7 +1,11 @@
+// backend/src/models/employee.model.js
+
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
+import performanceMetricsSchema from "./performance.model.js";
+import gamificationSchema from "./gamification.model.js";
 
 // rank - 4 diff (rank 1 guardian(5,4,3,2,1), rank 2 elite, rank 3 pro, rank 4 master) {affecting ranks}
 // level - 
@@ -20,7 +24,7 @@ const employeeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company', // Fixed: Use model name
         required: [true, 'Company reference is required'],
-        index: true
+        index: true,
     },
 
     // Organizational Assignment
@@ -28,13 +32,13 @@ const employeeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Role',
         required: [true, 'Role is required'],
-        index: true
+        index: true,
     },
     departmentRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department',
         required: [true, 'Department is required'],
-        index: true
+        index: true,
     },
     subdepartmentRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -71,6 +75,10 @@ const employeeSchema = new mongoose.Schema({
             type: String,
             trim: true,
             maxlength: [100, 'Display name cannot exceed 100 characters']
+        },
+        profilePicture: {
+            type: String, // URL/path to avatar image
+            default: null
         },
         dateOfBirth: {
             type: Date,
@@ -130,7 +138,7 @@ const employeeSchema = new mongoose.Schema({
                 validator: function (v) {
                     if (!v) return false;
                     try {
-                        return isValidPhoneNumber(v, 'INR');
+                        return isValidPhoneNumber(v, 'IN');
                     } catch (error) {
                         return false;
                     }
@@ -145,7 +153,7 @@ const employeeSchema = new mongoose.Schema({
                 validator: function (v) {
                     if (!v) return true;
                     try {
-                        return isValidPhoneNumber(v, 'US');
+                        return isValidPhoneNumber(v, 'IN');
                     } catch (error) {
                         return false;
                     }
@@ -171,7 +179,7 @@ const employeeSchema = new mongoose.Schema({
                     validator: function (v) {
                         if (!v) return true;
                         try {
-                            return isValidPhoneNumber(v, 'US');
+                            return isValidPhoneNumber(v, 'IN');
                         } catch (error) {
                             return false;
                         }
@@ -230,8 +238,8 @@ const employeeSchema = new mongoose.Schema({
     compensation: {
         baseSalary: {
             type: Number,
-            required: [true, 'Base salary is required'],
-            min: [0, 'Salary cannot be negative']
+            min: [0, 'Salary cannot be negative'],
+            default: 0
         },
         hourlyRate: {
             type: Number,
@@ -295,7 +303,17 @@ const employeeSchema = new mongoose.Schema({
         }
     },
 
+    // WFM Performance Tracking
+    performanceMetrics: {
+        type: performanceMetricsSchema,
+        default: () => ({})
+    },
 
+    // WFM Gamification System
+    gamification: {
+        type: gamificationSchema,
+        default: () => ({})
+    },
 
     // WFM Specific Performance Targets
     performanceTargets: {
@@ -316,7 +334,7 @@ const employeeSchema = new mongoose.Schema({
             max: [100, 'SLA target cannot exceed 100%'],
             default: 95
         },
-        performanceRating: {
+        currentPerformanceRating: {
             type: String,
             enum: {
                 values: ["Outstanding", "Exceeds Expectations", "Meets Expectations", "Could be better", "Need to Improve"],
@@ -331,7 +349,6 @@ const employeeSchema = new mongoose.Schema({
         sowRef: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "SOW",
-            required: true
         },
         assignedDate: {
             type: Date,
@@ -354,7 +371,7 @@ const employeeSchema = new mongoose.Schema({
         technicalSkills: [{   // changed
             skill: {
                 type: String,
-                enum : ["Java", "JavaScript", "Python", "C#", "C++", "Ruby", "PHP", "Swift", "Kotlin", "Go", "Rust", "TypeScript", "SQL", "NoSQL", "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Express.js", "GraphQL", "RESTful APIs", "Microservices", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud Platform", "Machine Learning", "Data Science", "Big Data", "DevOps", "Agile Methodologies", "Scrum", "Kanban", "Project Management", "UI/UX Design", "Cybersecurity", "Blockchain", "Internet of Things (IoT)", "AR/VR Development", "Game Development", "Mobile App Development", "Web Development", "Software Testing", "Quality Assurance", "Technical Writing"],
+                enum: ["Java", "JavaScript", "Python", "C#", "C++", "Ruby", "PHP", "Swift", "Kotlin", "Go", "Rust", "TypeScript", "SQL", "NoSQL", "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Express.js", "GraphQL", "RESTful APIs", "Microservices", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud Platform", "Machine Learning", "Data Science", "Big Data", "DevOps", "Agile Methodologies", "Scrum", "Kanban", "Project Management", "UI/UX Design", "Cybersecurity", "Blockchain", "Internet of Things (IoT)", "AR/VR Development", "Game Development", "Mobile App Development", "Web Development", "Software Testing", "Quality Assurance", "Technical Writing"],
             },
             level: {
                 type: String,
@@ -366,7 +383,7 @@ const employeeSchema = new mongoose.Schema({
         softSkills: [{       // changed
             skill: {
                 type: String,
-                enum : ["Communication", "Teamwork", "Problem Solving", "Time Management", "Adaptability", "Leadership", "Critical Thinking", "Creativity", "Emotional Intelligence", "Conflict Resolution", "Negotiation", "Decision Making", "Collaboration", "Interpersonal Skills", "Active Listening", "Public Speaking", "Presentation Skills", "Customer Service", "Networking", "Cultural Awareness", "Stress Management", "Work Ethic", "Attention to Detail", "Analytical Thinking", "Organizational Skills", "Project Management", "Change Management", "Mentoring", "Coaching", "Influencing", "Persuasion", "Sales Skills", "Marketing Skills", "Business Acumen", "Financial Acumen", "Strategic Thinking", "Innovation", "Agility", "Resilience", "Self-Motivation", "Goal Setting", "Visionary Thinking"],
+                enum: ["Communication", "Teamwork", "Problem Solving", "Time Management", "Adaptability", "Leadership", "Critical Thinking", "Creativity", "Emotional Intelligence", "Conflict Resolution", "Negotiation", "Decision Making", "Collaboration", "Interpersonal Skills", "Active Listening", "Public Speaking", "Presentation Skills", "Customer Service", "Networking", "Cultural Awareness", "Stress Management", "Work Ethic", "Attention to Detail", "Analytical Thinking", "Organizational Skills", "Project Management", "Change Management", "Mentoring", "Coaching", "Influencing", "Persuasion", "Sales Skills", "Marketing Skills", "Business Acumen", "Financial Acumen", "Strategic Thinking", "Innovation", "Agility", "Resilience", "Self-Motivation", "Goal Setting", "Visionary Thinking"],
             },
             level: {
                 type: String,
@@ -388,10 +405,10 @@ const employeeSchema = new mongoose.Schema({
             gpa: Number
         }],
         languages: [{
-            languages : {
-                type:String,
+            languages: {
+                type: String,
                 enum: ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Korean", "Russian", "Italian", "Portuguese", "Hindi", "Arabic", "Bengali", "Urdu", "Turkish", "Vietnamese", "Polish", "Dutch", "Swedish", "Norwegian", "Danish", "Finnish", "Greek", "Czech", "Hungarian", "Thai", "Indonesian", "Filipino", "Malay", "Romanian", "Ukrainian", "Hebrew", "Persian", "Swahili", "Zulu", "Xhosa", "Tamil", "Telugu", "Kannada", "Gujarati", "Marathi", "Punjabi", "Malayalam", "Burmese", "Khmer", "Lao", "Serbian", "Croatian", "Bulgarian", "Slovak", "Slovenian", "Lithuanian", "Latvian", "Estonian", "Tulu", "Assamese", "Odia", "Maithili", "Sanskrit", "Nepali", "Sinhala", "Bhojpuri", "Konkani", "Manipuri", "Dogri", "Santali", "Sindhi", "Kashmiri"],
-            }, 
+            },
             proficiency: {
                 type: String,
                 enum: ["Basic", "Conversational", "Fluent", "Native"]
@@ -484,7 +501,7 @@ const employeeSchema = new mongoose.Schema({
             default: 0,
             min: 0,
             max: 100
-        } 
+        }
     },
 
     // Audit Trail
@@ -517,7 +534,7 @@ employeeSchema.index({ companyRef: 1, "status.employeeStatus": 1 });
 employeeSchema.index({ departmentRef: 1, subdepartmentRef: 1 });
 employeeSchema.index({ roleRef: 1, designationRef: 1 });
 employeeSchema.index({ "reportingStructure.directManager": 1 });
-employeeSchema.index({ "sowAssignments.sowRef": 1 });
+// employeeSchema.index({ "sowAssignments.sowRef": 1 });
 
 // Virtuals
 employeeSchema.virtual('fullName').get(function () {
@@ -526,6 +543,16 @@ employeeSchema.virtual('fullName').get(function () {
         `${firstName} ${middleName} ${lastName}` :
         `${firstName} ${lastName}`;
 });
+
+employeeSchema.virtual('avatarUrl').get(function () {
+    if (this.personalInfo.profilePicture) {
+        return this.personalInfo.profilePicture.startsWith('http') ? this.personalInfo.profilePicture : `${process.env.BASE_URL || 'http://localhost:3000'}${this.personalInfo.profilePicture}`
+    }
+
+    // Return default avatar based on name initials
+    const initials = `${this.personalInfo.firstName[0]}${this.personalInfo.lastName[0]}`;
+    return `https://ui-avatars.com/api/?name=${initials}&size=128&background=2563eb&color=fff`;
+})
 
 employeeSchema.virtual('age').get(function () {
     if (!this.personalInfo.dateOfBirth) return null;
@@ -542,6 +569,18 @@ employeeSchema.virtual('age').get(function () {
 employeeSchema.virtual('activeSowAssignments').get(function () {
     return this.sowAssignments.filter(assignment => assignment.isActive);
 });
+
+employeeSchema.virtual('currentPerformanceLevel').get(function () {
+    return this.gamification.experience.currentLevel;
+});
+
+employeeSchema.virtual('todaysMetrics').get(function () {
+    const today = new Date().toDateString();
+    return this.performanceMetrics.dailyMetrics.find(metric =>
+        new Date(metric.date).toDateString() === today
+    );
+});
+
 
 // Instance Methods
 employeeSchema.methods.comparePassword = async function (candidatePassword) {
@@ -573,17 +612,45 @@ employeeSchema.methods.updateProfileCompletion = function () {
     if (this.employmentInfo.dateOfJoining) completedFields++;
     if (this.employmentInfo.employmentType) completedFields++;
 
-    // Check other sections...
+    // Check organizational assignments
     if (this.roleRef) completedFields++;
     if (this.departmentRef) completedFields++;
     if (this.designationRef) completedFields++;
     if (this.compensation.baseSalary) completedFields++;
 
-    if (this.skills.length > 0) completedFields++;
+    // Check skills and qualifications
+    if (this.skillsAndQualifications.technicalSkills.length > 0) completedFields++;
+    if (this.skillsAndQualifications.softSkills.length > 0) completedFields++;
+    if (this.skillsAndQualifications.languages.length > 0) completedFields++;
+
+    // Check SOW assignments
     if (this.sowAssignments.length > 0) completedFields++;
     if (this.reportingStructure.directManager) completedFields++;
 
+    // Check performance targets
+    if (this.performanceTargets.dailyClaimTarget) completedFields++;
+    if (this.performanceTargets.qualityTarget) completedFields++;
+    if (this.performanceTargets.slaTarget) completedFields++;
+
     this.systemInfo.profileCompletionPercentage = Math.round((completedFields / totalFields) * 100);
+};
+
+employeeSchema.methods.awardExperience = function (points, reason) {
+    this.gamification.experience.totalXP += points;
+
+    // Calculate level progression
+    const newLevel = Math.floor(this.gamification.experience.totalXP / 100) + 1;
+    if (newLevel > this.gamification.experience.currentLevel) {
+        this.gamification.experience.levelUpHistory.push({
+            level: newLevel,
+            achievedDate: new Date(),
+            xpRequired: newLevel * 100
+        });
+        this.gamification.experience.currentLevel = newLevel;
+    }
+
+    this.gamification.experience.xpToNextLevel =
+        (this.gamification.experience.currentLevel * 100) - this.gamification.experience.totalXP;
 };
 
 // change rampPercentage
@@ -659,9 +726,48 @@ employeeSchema.statics.findByRole = function (roleRef, companyRef) {
     }).sort({ 'personalInfo.firstName': 1 });
 };
 
+employeeSchema.statics.getPerformanceLeaderboard = function (companyRef, period = 'weekly') {
+    const matchStage = {
+        companyRef: new mongoose.Types.ObjectId(companyRef),
+        'status.employeeStatus': 'Active'
+    };
+
+    return this.aggregate([
+        { $match: matchStage },
+        {
+            $addFields: {
+                currentPeriodScore: period === 'weekly'
+                    ? '$performanceMetrics.weeklyMetrics.averageQualityScore'
+                    : '$performanceMetrics.monthlyMetrics.averageQualityScore'
+            }
+        },
+        { $sort: { currentPeriodScore: -1 } },
+        { $limit: 10 },
+        {
+            $project: {
+                employeeId: 1,
+                fullName: { $concat: ['$personalInfo.firstName', ' ', '$personalInfo.lastName'] },
+                currentPeriodScore: 1,
+                gamificationLevel: '$gamification.experience.currentLevel',
+                totalXP: '$gamification.experience.totalXP'
+            }
+        }
+    ]);
+};
+
 // Pre-save middleware
 employeeSchema.pre('save', async function (next) {
     try {
+        // Auto-generate employee ID using company name and random string
+        if (!this.employeeId) {
+            const company = await mongoose.model('Company').findById(this.companyRef);
+
+            if (company) {
+                const randomString = uuidv4().substring(0, 6).toUpperCase();
+                this.employeeId = `EMP-${company.companyName.substring(0, 3).toUpperCase()}-${randomString}`;
+            }
+        }
+
         // Auto-generate display name
         if (!this.personalInfo.displayName) {
             this.personalInfo.displayName = this.fullName;
