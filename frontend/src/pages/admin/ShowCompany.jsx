@@ -1,3 +1,5 @@
+// frontend/src/pages/admin/ShowCompany.jsx
+
 import React from "react";
 import {
   Building2, Users, Calendar, DollarSign, Eye, Edit, Trash2, MoreVertical

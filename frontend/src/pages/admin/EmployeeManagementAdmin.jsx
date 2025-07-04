@@ -1,3 +1,5 @@
+// frontend/src/pages/admin/EmployeeManagementAdmin.jsx
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Users, ShieldCheck, Activity, Mail, Eye, Edit3, MapPin, Calendar, Star, TrendingUp, Loader2 } from "lucide-react";
 import EmployeeFilter from "./EmployeeFilterAdmin.jsx";

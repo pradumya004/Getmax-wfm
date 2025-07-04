@@ -1,4 +1,4 @@
-// frontend/src/components/employee/LeaderBoardCard.jsx
+// frontend/src/components/employee/LeaderboardCard.jsx
 
 import React from "react";
 import { Trophy, TrendingUp, Users } from "lucide-react";

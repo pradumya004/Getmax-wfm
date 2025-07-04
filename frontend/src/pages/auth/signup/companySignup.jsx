@@ -1,4 +1,5 @@
 // frontend/src/pages/auth/signup/CompanySignup.jsx
+
 // UPDATED - Enhanced multi-step signup with new API structure
 
 import React, { useState } from "react";

@@ -1,4 +1,5 @@
-// // ViewCompanyDetail.jsx
+// frontend/src/pages/admin/DetailedCompany.jsx
+
 // import React from "react";
 // import { Building2, Mail, Phone, MapPin, User, Calendar, Globe, Briefcase, FileText, LayoutDashboard } from "lucide-react";
 

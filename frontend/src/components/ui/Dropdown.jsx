@@ -1,4 +1,4 @@
-// frontend/src/components/ui/dropdown.jsx
+// frontend/src/components/ui/Dropdown.jsx
 
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";

@@ -1,4 +1,4 @@
-// frontend/src/components/ui/pagination.jsx
+// frontend/src/components/ui/Pagination.jsx
 
 import React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";

@@ -1,4 +1,5 @@
-// frontend/src/lib/validation.js  
+// frontend/src/lib/validation.js
+
 import { isValidEmail } from './utils';
 
 export const validateRequired = (value, fieldName) => {

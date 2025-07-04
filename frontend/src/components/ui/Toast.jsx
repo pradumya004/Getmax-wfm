@@ -1,4 +1,4 @@
-// frontend/src/components/ui/toast.jsx
+// frontend/src/components/ui/Toast.jsx
 
 // This is optional since we're using react-hot-toast, but here's a custom implementation
 import React, { useState, useEffect } from "react";

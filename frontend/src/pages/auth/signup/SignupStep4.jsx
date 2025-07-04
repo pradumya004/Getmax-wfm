@@ -1,4 +1,5 @@
 // frontend/src/pages/auth/signup/SignupStep4.jsx
+
 // FIXED - Correct data mapping for backend API
 
 import React, { useState } from "react";

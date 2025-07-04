@@ -1,4 +1,5 @@
-// frontend/src/pages/auth/signup/SignupStep1.jsx
+// frontend/src/pages/auth/signup/signupStep1.jsx
+
 // UPDATED - Basic Company Information with enhanced validation
 
 import React, { useState } from "react";

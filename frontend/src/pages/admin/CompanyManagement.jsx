@@ -1,3 +1,5 @@
+// frontend/src/pages/admin/CompanyManagement.jsx
+
 import React, { useState, useEffect } from "react";
 import {
   Shield,

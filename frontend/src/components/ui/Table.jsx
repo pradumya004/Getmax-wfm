@@ -1,4 +1,4 @@
-// frontend/src/components/ui/table.jsx
+// frontend/src/components/ui/Table.jsx
 
 import React from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
