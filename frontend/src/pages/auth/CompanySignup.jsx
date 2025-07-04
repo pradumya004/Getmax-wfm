@@ -1,3 +1,5 @@
+// frontend/src/pages/auth/CompanySignup.jsx
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

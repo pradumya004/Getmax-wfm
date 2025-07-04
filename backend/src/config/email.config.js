@@ -1,6 +1,8 @@
 // backend/src/config/email.config.js
 
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Email transporter configuration
 const createEmailTransporter = () => {

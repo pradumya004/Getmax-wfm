@@ -1,6 +1,7 @@
-// components/SignupModal.jsx
+// frontend/src/pages/auth/SignupModal.jsx
+
 import React from 'react';
-import CompanySignup from './signup/companySignup.jsx';
+import CompanySignup from './signup/CompanySignup.jsx';
 
 export default function SignupModal({ isOpen, onClose }) {
   if (!isOpen) return null;

@@ -48,11 +48,6 @@ const designationSchema = new mongoose.Schema({
         enum: ["C-Level", "VP", "Director", "Manager", "Team Lead", "Senior", "Mid Level", "Junior", "Entry Level", "Intern", "Contractor", "Consultant"],
         required: [true, 'Category is required']
     },
-    seniorityOrder: {
-        type: Number,
-        required: true,
-        min: 1
-    },
 
     // Department Association
     applicableDepartments: [{
@@ -126,7 +121,7 @@ const designationSchema = new mongoose.Schema({
             skill: {
                 type: String,
                 trim: true,
-                required: true
+                // required: true
             },
             level: {
                 type: String,
@@ -195,7 +190,7 @@ const designationSchema = new mongoose.Schema({
 });
 
 // Indexes
-designationSchema.index({ designationId: 1 }, { unique: true });
+// designationSchema.index({ designationId: 1 }, { unique: true });
 designationSchema.index({ companyRef: 1, designationCode: 1 }, { unique: true });
 designationSchema.index({ companyRef: 1, level: 1, category: 1 });
 designationSchema.index({ companyRef: 1, isActive: 1 });

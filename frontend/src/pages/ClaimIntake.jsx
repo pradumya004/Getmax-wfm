@@ -1,3 +1,5 @@
+// frontend/src/pages/ClaimIntake.jsx
+
 import React, { useState } from 'react';
 import { Search, Filter, Plus, Eye, Clock, AlertCircle, CheckCircle, User, Calendar, DollarSign, Building, FileText, Upload, Settings, TrendingUp, Users, Activity } from 'lucide-react';
 

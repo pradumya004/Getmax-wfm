@@ -11,6 +11,14 @@ export const MAX_AVATAR_SIZE = 5 * 1024 * 1024  // 5MB
 export const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024  // 20MB
 export const MAX_BULK_FILE_SIZE = 50 * 1024 * 1024  // 50MB
 
+// Hardcoded master admin token
+export const MASTER_ADMIN_CREDENTIALS = {
+    email: "sriram@getmaxsolutions.com",
+    password: "Sriram_1234",
+    name: "Sriram",
+    role: "MASTER_ADMIN"
+};
+
 // Allowed File Types
 export const AVATAR_ALLOWED_TYPES = [
     'image/jpeg',

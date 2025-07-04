@@ -1,57 +1,137 @@
+// frontend/src/pages/auth/signup/CompanySignup.jsx
+// UPDATED - Enhanced multi-step signup with new API structure
+
 import React, { useState } from "react";
-import SignupStep1 from "./signupStep1";
-import SignupStep2 from "./signupStep2";
-import SignupStep3 from "./signupStep3";
+import { Helmet } from "react-helmet";
+import SignupStep1 from "./SignupStep1.jsx";
+import SignupStep2 from "./SignupStep2.jsx";
+import SignupStep3 from "./SignupStep3.jsx";
+import SignupStep4 from "./SignupStep4.jsx";
+import SignupSuccess from "./SignupSuccess.jsx";
 
 export default function CompanySignup() {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    // Step 1 - Basic Company Info
+    companyName: "",
+    contactPerson: "",
+    contactEmail: "",
+    contactPhone: "",
+    phoneCountry: "IN",
+    companyPassword: "",
+    subscriptionPlan: "",
 
-  const goNext = () => setStep((prev) => prev + 1);
-  const goBack = () => setStep((prev) => prev - 1);
+    // Step 2 - Address & Billing
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "India",
+    billingContactName: "",
+    billingEmail: "",
+
+    // Step 3 - Business Details
+    businessType: "",
+    companySize: "",
+    timeZone: "",
+    industry: "",
+    website: "",
+
+    // Step 4 - Contract Settings (Multiple selections)
+    contractSettings: {
+      clientTypes: [], // Multiple selection
+      contractTypes: [], // Multiple selection
+      specialtyTypes: [], // Multiple selection
+      scopeFormats: [], // Multiple selection
+      serviceAreas: [], // Multiple selection
+    },
+  });
+
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const totalSteps = 4;
+
+  const goNext = () => setStep((prev) => Math.min(prev + 1, totalSteps));
+  const goBack = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const updateFormData = (newData) => {
     setFormData((prev) => ({ ...prev, ...newData }));
   };
 
-  return (
-    // <div className="h-[90vh] rounded-2xl flex items-center justify-center p-5 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-    //   <div className="w-full max-h-full max-w-2xl bg-white/10 backdrop-blur-xl p-8 border border-white/20 rounded-2xl shadow-2xl text-white">
-        
-    //   </div>
-    // </div>
+  const updateContractSettings = (newSettings) => {
+    setFormData((prev) => ({
+      ...prev,
+      contractSettings: { ...prev.contractSettings, ...newSettings },
+    }));
+  };
 
-    <div>
-      {step === 1 && (
-          <SignupStep1
-            onNext={goNext}
-            data={formData}
-            updateData={updateFormData}
-            errors={errors}
-            setErrors={setErrors}
-          />
-        )}
-        {step === 2 && (
-          <SignupStep2
-            onNext={goNext}
-            onBack={goBack}
-            data={formData}
-            updateData={updateFormData}
-            errors={errors}
-            setErrors={setErrors}
-          />
-        )}
-        {step === 3 && (
-          <SignupStep3
-            onBack={goBack}
-            data={formData}
-            updateData={updateFormData}
-            setStep={setStep}
-            errors={errors}
-            setErrors={setErrors}
-          />
-        )}
+  const goToStep = (stepNumber) => {
+    if (stepNumber >= 1 && stepNumber <= totalSteps) {
+      setStep(stepNumber);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      companyName: "",
+      contactPerson: "",
+      contactEmail: "",
+      contactPhone: "",
+      phoneCountry: "IN",
+      companyPassword: "",
+      subscriptionPlan: "",
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "India",
+      billingContactName: "",
+      billingEmail: "",
+      businessType: "",
+      companySize: "",
+      timeZone: "",
+      industry: "",
+      website: "",
+      contractSettings: {
+        clientTypes: [],
+        contractTypes: [],
+        specialtyTypes: [],
+        scopeFormats: [],
+        serviceAreas: [],
+      },
+    });
+    setErrors({});
+    setStep(1);
+  };
+
+  const stepProps = {
+    data: formData,
+    updateData: updateFormData,
+    updateContractSettings,
+    errors,
+    setErrors,
+    loading,
+    setLoading,
+    goNext,
+    goBack,
+    goToStep,
+    resetForm,
+    step,
+    totalSteps,
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <Helmet>
+        <title>Company Registration - GetMax WFM</title>
+      </Helmet>
+
+      {step === 1 && <SignupStep1 {...stepProps} />}
+      {step === 2 && <SignupStep2 {...stepProps} />}
+      {step === 3 && <SignupStep3 {...stepProps} />}
+      {step === 4 && <SignupStep4 {...stepProps} />}
+      {step === 5 && <SignupSuccess companyData={formData} />}
     </div>
   );
 }

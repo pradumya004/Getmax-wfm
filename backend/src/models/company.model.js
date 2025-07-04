@@ -306,35 +306,35 @@ const companySchema = new mongoose.Schema({
     },
 
     // Contract Details
-    contractSettings: [{
+    contractSettings: {
         specialtyType: {
             type: [String],
-            enum: ["Primary Care", "Specialty Care", "Dental", "Vision", "Mental Health", "Surgery Centers", "Hospitals", "Labs", "Multi Specialty", "DME"],
-            default: ["Primary Care"]
+            // enum: ["Primary Care", "Specialty Care", "Dental", "Vision", "Mental Health", "Surgery Centers", "Hospitals", "Labs", "Multi Specialty", "DME"],
+            // default: ["Primary Care"]
         },
         clientType: {
             type: [String],
-            enum: ['Billing Company', 'Provider', 'Others'],
+            // enum: ['Billing Company', 'Provider', 'Others'],
             required: true,
-            default: 'Provider'
+            // default: 'Provider'
         },
         contractType: {
             type: [String],
-            enum: ['End to End', 'Transactional', 'FTE', 'Hybrid', 'Consulting'],
+            // enum: ['End to End', 'Transactional', 'FTE', 'Hybrid', 'Consulting'],
             required: true,
-            validate: {
-                validator: function (v) {
-                    return v !== 'Select Contract Type';
-                },
-                message: 'Please select a valid contract type'
-            }
+            // validate: {
+            //     validator: function (v) {
+            //         return v !== 'Select Contract Type';
+            //     },
+            //     message: 'Please select a valid contract type'
+            // }
         },
         scopeFormatID: {
             type: [String],
-            enum: ['ClaimMD', 'Medisoft', 'Custom'],
+            // enum: ['ClaimMD', 'Medisoft', 'Custom'],
             default: 'ClaimMD'
         },
-    }],
+    },
 
     companySize: {
         type: String,
@@ -397,9 +397,9 @@ const companySchema = new mongoose.Schema({
 });
 
 // Indexes
-companySchema.index({ companyId: 1 }, { unique: true });
+// companySchema.index({ companyId: 1 }, { unique: true });
 companySchema.index({ contactEmail: 1 }, { unique: true });
-companySchema.index({ apiKey: 1 }, { unique: true, sparse: true });
+// companySchema.index({ apiKey: 1 }, { unique: true });
 companySchema.index({ subscriptionStatus: 1, isActive: 1 });
 
 // Virtuals
@@ -417,7 +417,7 @@ companySchema.virtual('isSubscriptionExpired').get(function () {
 
 companySchema.virtual('currentMonthRevenue').get(function () {
     const currentMonth = new Date().toISOString().substring(0, 7); // "2024-01"
-    const monthData = this.revenueInfo.monthlyRevenue.find(m => m.month === currentMonth);
+    const monthData = this.revenueTracking?.monthlyRevenue?.find(m => m.month === currentMonth);
     return monthData ? monthData.totalRevenue : 0;
 });
 
@@ -425,13 +425,14 @@ companySchema.virtual('revenueGrowthThisMonth').get(function () {
     const currentMonth = new Date().toISOString().substring(0, 7);
     const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().substring(0, 7);
 
-    const currentData = this.revenueInfo.monthlyRevenue.find(m => m.month === currentMonth);
-    const lastData = this.revenueInfo.monthlyRevenue.find(m => m.month === lastMonth);
+    const currentData = this.revenueTracking?.monthlyRevenue?.find(m => m.month === currentMonth);
+    const lastData = this.revenueTracking?.monthlyRevenue?.find(m => m.month === lastMonth);
 
     if (!currentData || !lastData || lastData.totalRevenue === 0) return 0;
 
     return ((currentData.totalRevenue - lastData.totalRevenue) / lastData.totalRevenue) * 100;
 });
+
 
 // Instance Methods
 companySchema.methods.generateApiKey = async function () {
@@ -551,8 +552,11 @@ companySchema.pre('save', async function (next) {
     }
 
     // Initialize current year revenue tracking
-    if (this.isNew || !this.revenueInfo.currentYear.year) {
-        this.revenueInfo.currentYear.year = new Date().getFullYear();
+    if (this.isNew || !this.revenueTracking.currentYear?.year) {
+        this.revenueTracking.currentYear = {
+            ...this.revenueTracking.currentYear,
+            year: new Date().getFullYear()
+        };
     }
 
     // Calculate metrics if revenue data exists

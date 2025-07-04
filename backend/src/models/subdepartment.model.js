@@ -219,7 +219,7 @@ const subdepartmentSchema = new mongoose.Schema({
 });
 
 // Indexes
-subdepartmentSchema.index({ subdepartmentId: 1 }, { unique: true });
+// subdepartmentSchema.index({ subdepartmentId: 1 }, { unique: true });
 subdepartmentSchema.index({ companyRef: 1, departmentRef: 1, subdepartmentCode: 1 }, { unique: true });
 subdepartmentSchema.index({ companyRef: 1, isActive: 1 });
 subdepartmentSchema.index({ departmentRef: 1, isActive: 1 });

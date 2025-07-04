@@ -1,3 +1,5 @@
+// backend/src/models/role.model.js
+
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -132,7 +134,7 @@ const roleSchema = new mongoose.Schema({
 });
 
 // Indexes
-roleSchema.index({ roleId: 1 }, { unique: true });
+// roleSchema.index({ roleId: 1 }, { unique: true });
 roleSchema.index({ companyRef: 1, roleName: 1 }, { unique: true });
 roleSchema.index({ companyRef: 1, roleLevel: 1 });
 roleSchema.index({ companyRef: 1, isActive: 1 });

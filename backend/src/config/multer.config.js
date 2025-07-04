@@ -16,7 +16,6 @@ import {
     DOCUMENT_ALLOWED_TYPES,
     BULK_FILE_ALLOWED_TYPES
 } from '../constants.js'
-import { ApiError } from "../utils/ApiError.js";
 
 // Ensure upload directories exist
 const ensureDirectoryExists = (dirPath) => {

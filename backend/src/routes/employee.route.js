@@ -17,7 +17,7 @@ import {
     resetEmployeePassword,
     deleteEmployee,
     getPerformanceLeaderboard
-} from '../controllers/employee/employeeController.controller.js';
+} from "../controllers/employee/empolyeeController.controller.js";
 import {
     verifyEmployeeToken,
     verifyCompanyToken,

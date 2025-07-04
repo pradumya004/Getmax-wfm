@@ -1,4 +1,4 @@
-// PATCHED companyController.controller.js
+// backend/src/controllers/company/companyController.controller.js
 
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -19,141 +19,267 @@ const generateEmployeePassword = (firstName) => {
 };
 
 const registerCompany = asyncHandler(async (req, res) => {
+    console.log("Registration request body:", JSON.stringify(req.body, null, 2));
     const {
-        companyName, legalName, taxID, website,
-        contactEmail, companyPassword, contactPhone,
-        contactPerson, billingContactName, billingEmail,
-        street, city, state, zipCode, country,
-        subscriptionPlan, companySize, timeZone,
-        contractSettings = [],
-        adminFirstName, adminLastName, adminPhone
-    } = req.body;
-
-    const {
-        clientType = ['Provider'],
-        contractType = ['End to End'],
-        specialtyType = ['Primary Care'],
-        scopeFormatID = ['ClaimMD']
-    } = contractSettings[0] || {};
-
-    if (!companyName || !contactEmail || !companyPassword || !contactPhone) {
-        throw new ApiError(400, "Missing required fields: companyName, contactEmail, companyPassword, contactPhone");
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(contactEmail)) {
-        throw new ApiError(400, "Invalid email format");
-    }
-
-    const existingCompany = await Company.findOne({ contactEmail: contactEmail.toLowerCase().trim(), isActive: true });
-    if (existingCompany) {
-        throw new ApiError(400, "Company already exists");
-    }
-
-    const newCompany = new Company({
+        // Basic company info
         companyName,
         legalName,
         taxID,
         website,
-        contactEmail,
+        companyEmail,  // FIXED: Use companyEmail from frontend
         companyPassword,
         contactPhone,
         contactPerson,
+
+        // Billing info
         billingContactName,
-        billingEmail: billingEmail || contactEmail,
-        subscriptionPlan: subscriptionPlan || 'Trial',
-        subscriptionStatus: 'Active',
-        paymentStatus: 'Pending',
-        timeZone: timeZone || 'IST',
-        address: { street, city, state, zipCode, country: country || 'India' },
-        contractSettings: [{ clientType, contractType, specialtyType, scopeFormatID }],
-        companySize: companySize || '1-10',
-        apiEnabled: true,
+        billingEmail,
+
+        // Address (flattened from frontend)
+        street,
+        city,
+        state,
+        zipCode,
+        country,
+
+        // Business info
+        subscriptionPlan,
+        companySize,
+        timeZone,
+        businessType,
+        industry,
+        businessDescription,
+
+        // Contract settings
+        contractSettings = [],
+
+        // Admin user info
+        adminFirstName,
+        adminLastName,
+        adminPhone
+    } = req.body;
+
+    // FIXED: Better validation with specific error messages
+    const missingFields = [];
+    if (!companyName?.trim()) missingFields.push('companyName');
+    if (!companyEmail?.trim()) missingFields.push('companyEmail');
+    if (!companyPassword?.trim()) missingFields.push('companyPassword');
+    if (!contactPhone?.trim()) missingFields.push('contactPhone');
+
+    if (missingFields.length > 0) {
+        throw new ApiError(400, `Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // FIXED: Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(companyEmail)) {
+        throw new ApiError(400, "Invalid email format for company email");
+    }
+
+    // FIXED: Validate password strength
+    if (companyPassword.length < 8) {
+        throw new ApiError(400, "Password must be at least 8 characters long");
+    }
+
+    // FIXED: Check for existing company with better error message
+    const existingCompany = await Company.findOne({
+        contactEmail: companyEmail.toLowerCase().trim(),
         isActive: true
     });
 
-    await newCompany.save();
-
-    // Create default Role, Department, Designation if needed
-    const [role, department, designation] = await Promise.all([
-        Role.create({
-            companyRef: newCompany._id,
-            roleName: 'Super Admin',
-            roleLevel: 10,
-            permissions: ['*']
-        }),
-        Department.create({
-            companyRef: newCompany._id,
-            departmentName: 'Admin Department',
-            departmentCode: 'ADM'
-        }),
-        Designation.create({
-            companyRef: newCompany._id,
-            designationName: 'Administrator'
-        })
-    ]);
-
-    const firstEmployeePassword = generateEmployeePassword(adminFirstName);
-
-    const firstEmployee = new Employee({
-        companyRef: newCompany._id,
-        roleRef: role._id,
-        departmentRef: department._id,
-        designationRef: designation._id,
-        personalInfo: {
-            firstName: adminFirstName || contactPerson?.split(' ')[0] || 'Admin',
-            lastName: adminLastName || contactPerson?.split(' ')[1] || 'User'
-        },
-        contactInfo: {
-            primaryEmail: contactEmail.toLowerCase().trim(),
-            personalPhone: adminPhone || contactPhone
-        },
-        employmentInfo: {
-            dateOfJoining: new Date(),
-            employmentType: "Full Time"
-        },
-        compensation: {
-            baseSalary: 0
-        }
-    });
-
-    await firstEmployee.hashPassword(firstEmployeePassword);
-    await firstEmployee.save();
-
-    const token = generateCompanyToken(newCompany._id);
-
-    res.cookie("companyToken", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    try {
-        await sendEmail({
-            to: contactEmail,
-            currentTemplate: EMAIL_TEMPLATES.COMPANY_WELCOME,
-            data: {
-                companyName: newCompany.companyName,
-                companyEmail: contactEmail,
-                firstEmployeeId: firstEmployee.employeeId,
-                firstEmployeePassword,
-                adminName: `${firstEmployee.personalInfo.firstName} ${firstEmployee.personalInfo.lastName}`,
-                companyLoginUrl: `${process.env.FRONTEND_URL}/company/login`,
-                employeeLoginUrl: `${process.env.FRONTEND_URL}/employee/login`
-            }
-        });
-    } catch (e) {
-        console.warn("Email send failed: ", e.message);
+    if (existingCompany) {
+        throw new ApiError(409, "A company with this email already exists. Please use a different email or try logging in.");
     }
 
-    return res.status(201).json(
-        new ApiResponse(201, {
-            companyId: newCompany.companyId,
-            companyName: newCompany.companyName,
-            apiKey: newCompany.apiKey
-        }, "Company registered successfully")
-    );
+    // FIXED: Process contract settings with validation
+    let processedContractSettings = [];
+    if (contractSettings && contractSettings.length > 0) {
+        const settings = contractSettings[0];
+        processedContractSettings = [{
+            clientType: Array.isArray(settings.clientType) ? settings.clientType : ['Provider'],
+            contractType: Array.isArray(settings.contractType) ? settings.contractType : ['End to End'],
+            specialtyType: Array.isArray(settings.specialtyType) ? settings.specialtyType : ['Primary Care'],
+            scopeFormatID: Array.isArray(settings.scopeFormatID) ? settings.scopeFormatID : ['ClaimMD']
+        }];
+    } else {
+        // Default values if not provided
+        processedContractSettings = [{
+            clientType: ['Provider'],
+            contractType: ['End to End'],
+            specialtyType: ['Primary Care'],
+            scopeFormatID: ['ClaimMD']
+        }];
+    }
+
+    console.log("Processed contract settings:", processedContractSettings);
+
+    try {
+        // FIXED: Create company with proper error handling
+        const newCompany = new Company({
+            companyName: companyName.trim(),
+            legalName: legalName?.trim(),
+            taxID: taxID?.trim(),
+            website: website?.trim(),
+            contactEmail: companyEmail.toLowerCase().trim(),
+            companyPassword: companyPassword.trim(),
+            contactPhone: contactPhone.trim(),
+            contactPerson: contactPerson?.trim(),
+
+            // Billing info
+            billingContactName: billingContactName?.trim() || contactPerson?.trim(),
+            billingEmail: billingEmail?.toLowerCase().trim() || companyEmail.toLowerCase().trim(),
+
+            // Subscription details
+            subscriptionPlan: subscriptionPlan || 'Trial',
+            subscriptionStatus: 'Active',
+            paymentStatus: 'Pending',
+
+            // Business details
+            timeZone: timeZone || 'IST',
+            companySize: companySize || '1-10',
+
+            // Address - FIXED: Create proper address object
+            address: {
+                street: street?.trim(),
+                city: city?.trim(),
+                state: state?.trim(),
+                zipCode: zipCode?.trim(),
+                country: country?.trim() || 'India'
+            },
+
+            // Contract settings - FIXED: Use processed settings
+            contractSettings: processedContractSettings[0],
+
+            // API settings
+            apiEnabled: true,
+            isActive: true
+        });
+
+        console.log("About to save company:", newCompany.toObject());
+
+        // Save the company
+        await newCompany.save();
+        console.log("Company saved successfully");
+
+        // Create default organizational structure
+        const [role, department, designation] = await Promise.all([
+            Role.create({
+                companyRef: newCompany._id,
+                roleName: 'Super Admin',
+                roleLevel: 10,
+                permissions: {
+                    employeePermissions: "Full",
+                    clientPermissions: "Full",
+                    sowPermissions: "Full",
+                    claimPermissions: "Full",
+                    reportPermissions: "Full"
+                },
+                dataAccess: {
+                    clientRestriction: "All",
+                    sowRestriction: "All",
+                    claimRestriction: "All",
+                    reportScope: "Company",
+                    financialDataAccess: true
+                },
+                isActive: true
+            }),
+            Department.create({
+                companyRef: newCompany._id,
+                departmentName: 'Administration',
+                departmentCode: 'ADM',
+                departmentLevel: 10,
+                isActive: true
+            }),
+            Designation.create({
+                companyRef: newCompany._id,
+                designationName: 'Administrator',
+                designationCode: 'ADMIN',
+                level: 15,
+                category: "C-Level",
+                isActive: true
+            })
+        ]);
+
+        console.log("Organizational structure created");
+
+        // Create first employee (admin user)
+        const firstEmployeePassword = generateEmployeePassword(
+            adminFirstName || contactPerson?.split(' ')[0] || 'Admin'
+        );
+
+        const firstEmployee = new Employee({
+            companyRef: newCompany._id,
+            roleRef: role._id,
+            departmentRef: department._id,
+            designationRef: designation._id,
+            personalInfo: {
+                firstName: adminFirstName || contactPerson?.split(' ')[0] || 'Admin',
+                lastName: adminLastName || contactPerson?.split(' ').slice(1).join(' ') || 'User'
+            },
+            contactInfo: {
+                primaryEmail: companyEmail.toLowerCase().trim(),
+                primaryPhone: adminPhone || contactPhone
+            },
+            employmentInfo: {
+                dateOfJoining: new Date(),
+                employmentType: "Full Time",
+                workLocation: "Office"
+            },
+            compensation: {
+                baseSalary: 0
+            },
+            isActive: true
+        });
+
+        // Hash password and save employee
+        await firstEmployee.hashPassword(firstEmployeePassword);
+        await firstEmployee.save();
+
+        console.log("First employee created");
+
+        // Generate company token
+        const token = generateCompanyToken(newCompany._id);
+
+        // Set secure cookie
+        res.cookie("companyToken", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        try {
+            await sendEmail({
+                to: companyEmail,
+                currentTemplate: EMAIL_TEMPLATES.COMPANY_WELCOME,
+                data: {
+                    companyName: newCompany.companyName,
+                    companyEmail: companyEmail,
+                    firstEmployeeId: firstEmployee.employeeId,
+                    firstEmployeePassword,
+                    adminName: `${firstEmployee.personalInfo.firstName} ${firstEmployee.personalInfo.lastName}`,
+                    companyLoginUrl: `${process.env.FRONTEND_URL}/company/login`,
+                    employeeLoginUrl: `${process.env.FRONTEND_URL}/employee/login`
+                }
+            });
+        } catch (e) {
+            console.warn("Email send failed: ", e.message);
+        }
+
+        return res.status(201).json(
+            new ApiResponse(201, {
+                companyId: newCompany.companyId,
+                companyName: newCompany.companyName,
+                apiKey: newCompany.apiKey
+            }, "Company registered successfully")
+        );
+    } catch (error) {
+        console.error("Error during company registration:", error);
+        if (error.code === 11000) {
+            throw new ApiError(409, "A company with this email already exists. Please use a different email or try logging in.");
+        }
+        throw new ApiError(500, "Internal Server Error during company registration");
+    }
 });
 
 const loginCompany = asyncHandler(async (req, res) => {
@@ -178,10 +304,16 @@ const loginCompany = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(200, {
-            companyId: company.companyId,
-            companyName: company.companyName,
-            subscriptionPlan: company.subscriptionPlan,
-            apiKey: company.apiKey
+            company: {
+                companyId: company.companyId,
+                companyName: company.companyName,
+                companyEmail: company.contactEmail,
+                subscriptionStatus: company.subscriptionStatus,
+                companyAdmin: company.billingContactName,
+                subscriptionPlan: company.subscriptionPlan,
+                apiKey: company.apiKey
+            },
+            token
         }, "Company Login Successful")
     );
 });

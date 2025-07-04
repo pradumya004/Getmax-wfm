@@ -4,6 +4,7 @@ import express from 'express';
 import companyRoutes from './company.route.js';
 import employeeRoutes from './employee.route.js';
 import adminRoutes from './admin.route.js';
+import masterAdminRoutes from './masterAdmin.route.js';
 
 const router = express.Router();
 
@@ -24,5 +25,6 @@ router.get('/', (req, res) => {
 router.use('/companies', companyRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/admin', adminRoutes);
+router.use('/master-admin', masterAdminRoutes);
 
 export default router;

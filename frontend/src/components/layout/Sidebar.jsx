@@ -1,96 +1,414 @@
-import React from 'react';
-import { LayoutDashboard, Users, FileText, Users2, FileInput, Clock, ShieldCheck, Gamepad2, BarChart2, FileBox, Settings, PlugZap, Home, Waves, BookText, FileScan } from 'lucide-react';
+// frontend/src/components/layout/Sidebar.jsx
 
-const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/clients', icon: Users, label: 'Clients' },
-  { href: '/sow', icon: FileText, label: 'SOWs' },
-  { href: '/sop-management', icon: BookText, label: 'SOPs' },
-  { href: '/employees', icon: Users2, label: 'Employees' },
-  { href: '/claims', icon: FileInput, label: 'Claim Intake' },
-  { href: '/charge-entry', icon: FileScan, label: 'Charge Entry' },
-  { href: '/floating-pool', icon: Waves, label: 'Floating Pool' },
-  { href: '/sla', icon: Clock, label: 'SLA Timer' },
-  { href: '/qa', icon: ShieldCheck, label: 'QA Audit' },
-  { href: '/gamification', icon: Gamepad2, label: 'Gamification' },
-  { href: '/productivity', icon: BarChart2, label: 'Productivity' },
-  { href: '/reports', icon: FileBox, label: 'Reports' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
-  { href: '/integrations', icon: PlugZap, label: 'Integrations' },
-];
+import React, { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  Building,
+  UserCog,
+  Settings,
+  Shield,
+  Briefcase,
+  Layers,
+  TrendingUp,
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Home,
+  Monitor,
+  Activity,
+  LogOut,
+  User,
+  Mail,
+  BadgeCheck,
+  ChevronUp,
+} from "lucide-react";
+import { useAuth } from "../../hooks/useAuth.jsx";
+import { getTheme } from "../../lib/theme.js";
 
 const Sidebar = () => {
-  const [activeItem, setActiveItem] = React.useState('/dashboard');
+  const { userType, user } = useAuth();
+  console.log("userType:", userType);
+  console.log("user:", user);
 
-  const handleItemClick = (href) => {
-    setActiveItem(href);
+  const location = useLocation();
+  const theme = getTheme(userType);
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const toggleSubMenu = (path) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [path]: !prev[path],
+    }));
   };
 
+  const handleLogout = () => {
+    console.log("Logging out...");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    console.log(`Token: ${localStorage.getItem("token")}`);
+    console.log(`User: ${localStorage.getItem("user")}`);
+    window.location.href = "/";
+  };
+
+  const getNavigationItems = () => {
+    switch (userType) {
+      case "master_admin":
+        return [
+          {
+            icon: LayoutDashboard,
+            label: "Dashboard",
+            path: "/master-admin/dashboard",
+          },
+          {
+            icon: Building,
+            label: "Companies",
+            path: "/master-admin/companies",
+          },
+          {
+            icon: Users,
+            label: "Platform Users",
+            path: "/master-admin/employees",
+          },
+          {
+            icon: BarChart3,
+            label: "Platform Stats",
+            path: "/master-admin/stats",
+          },
+          {
+            icon: Settings,
+            label: "System Config",
+            path: "/master-admin/settings",
+          },
+        ];
+
+      case "company":
+        return [
+          {
+            icon: LayoutDashboard,
+            label: "Dashboard",
+            path: "/company/dashboard",
+          },
+          {
+            icon: Users,
+            label: "Employees",
+            path: "/company/employees",
+            submenu: [
+              {
+                icon: Users,
+                label: "All Employees",
+                path: "/company/employees",
+              },
+              {
+                icon: UserCog,
+                label: "Add Employee",
+                path: "/company/employees/add",
+              },
+              {
+                icon: TrendingUp,
+                label: "Performance",
+                path: "/company/employees/performance",
+              },
+            ],
+          },
+          {
+            icon: Building,
+            label: "Organization",
+            path: "/company/organization",
+            submenu: [
+              {
+                icon: Layers,
+                label: "Overview",
+                path: "/company/organization",
+              },
+              {
+                icon: Shield,
+                label: "Roles",
+                path: "/company/organization/roles",
+              },
+              {
+                icon: Building,
+                label: "Departments",
+                path: "/company/organization/departments",
+              },
+              {
+                icon: Briefcase,
+                label: "Designations",
+                path: "/company/organization/designations",
+              },
+              {
+                icon: Users,
+                label: "Sub-Departments",
+                path: "/company/organization/subdepartments",
+              },
+            ],
+          },
+          {
+            icon: UserCog,
+            label: "Company Profile",
+            path: "/company/profile",
+          },
+          {
+            icon: Settings,
+            label: "Settings",
+            path: "/company/settings",
+          },
+        ];
+
+      case "employee":
+        return [
+          {
+            icon: LayoutDashboard,
+            label: "Dashboard",
+            path: "/employee/dashboard",
+          },
+          {
+            icon: UserCog,
+            label: "My Profile",
+            path: "/employee/profile",
+          },
+          {
+            icon: TrendingUp,
+            label: "Performance",
+            path: "/employee/performance",
+          },
+          {
+            icon: Activity,
+            label: "My Tasks",
+            path: "/employee/tasks",
+          },
+          {
+            icon: Settings,
+            label: "Settings",
+            path: "/employee/settings",
+          },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const isActiveRoute = (path, submenu = null) => {
+    if (submenu) {
+      return submenu.some((item) => location.pathname.startsWith(item.path));
+    }
+
+    return (
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+    );
+  };
+
+  const navigationItems = getNavigationItems();
+
   return (
-    <aside className="w-64 h-screen bg-gradient-to-b from-blue-950/95 via-purple-950/95 to-indigo-950/95 backdrop-blur-lg border-r border-white/10 flex-shrink-0 p-4 flex flex-col relative overflow-hidden shadow-2xl">
-      <div className="absolute inset-0 bg-black/30"></div>
-      
-      {/* Subtle animated gradient accent */}
-      <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-blue-400/50 via-purple-400/50 to-indigo-400/50"></div>
-      
-      <div className="relative z-10">
-        {/* Logo Section */}
-        <div className="text-2xl font-bold mb-10 flex items-center gap-3 px-2 group">
-         <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-200">
-  <span className="text-white font-bold text-lg">G</span>
-</div>
-<span className="bg-gradient-to-r from-blue-300 to-purple-400 bg-clip-text text-transparent">
-  GetMax
-</span>
-        </div>
-        
-        {/* Navigation */}
-        <nav className="flex flex-col space-y-1.5 flex-grow">
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => handleItemClick(item.href)}
-              className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 group relative overflow-hidden ${
-                activeItem === item.href
-                  ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-400/30 shadow-lg shadow-purple-500/10'
-                  : 'text-purple-200/80 hover:bg-white/10 hover:text-white hover:border-white/20 border border-transparent'
-              }`}
+    <div
+      className={`w-64 ${theme.glass} border-r border-white/10 h-full relative overflow-visible`}
+    >
+      {/* Background Elements */}
+      <div
+        className={`absolute top-0 left-0 w-32 h-32 bg-${theme.accent}/10 rounded-full blur-2xl`}
+      ></div>
+      <div
+        className={`absolute bottom-0 right-0 w-24 h-24 bg-${theme.accent}/10 rounded-full blur-xl`}
+      ></div>
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Logo/Header */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center space-x-3">
+            <div
+              className={`w-10 h-10 bg-gradient-to-br ${theme.secondary} rounded-lg flex items-center justify-center`}
             >
-              {/* Active item glow effect */}
-              {activeItem === item.href && (
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl"></div>
+              <Monitor className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-white font-bold text-lg">GetMax</h2>
+              <p
+                className={`text-${theme.textSecondary} text-xs uppercase tracking-wide`}
+              >
+                {userType} Portal
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {navigationItems.map((item) => (
+            <div key={item.path}>
+              {item.submenu ? (
+                <div className="space-y-1">
+                  {/* Parent Menu Item */}
+                  <button
+                    onClick={() => toggleSubMenu(item.path)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                      isActiveRoute(item.path, item.submenu)
+                        ? `bg-${theme.accent}/20 text-${theme.text} border border-${theme.accent}/30`
+                        : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white`
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </div>
+                    {expandedMenus[item.path] ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {/* Submenu */}
+                  {expandedMenus[item.path] && (
+                    <div className="ml-6 space-y-1 pl-4 border-l border-white/10">
+                      {item.submenu.map((subItem) => (
+                        <NavLink
+                          key={subItem.path}
+                          to={subItem.path}
+                          className={({ isActive }) =>
+                            `flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${
+                              isActive
+                                ? `bg-${theme.accent}/10 text-${theme.accent} border-l-2 border-${theme.accent}`
+                                : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:translate-x-1`
+                            }`
+                          }
+                        >
+                          <subItem.icon className="w-4 h-4" />
+                          <span>{subItem.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Single Menu Item */
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                      isActive
+                        ? `bg-${theme.accent}/20 text-${theme.text} border border-${theme.accent}/30 shadow-lg`
+                        : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:scale-105`
+                    }`
+                  }
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="font-medium">{item.label}</span>
+                </NavLink>
               )}
-              
-              <item.icon className={`w-5 h-5 mr-3 transition-all duration-300 relative z-10 ${
-                activeItem === item.href 
-                  ? 'text-purple-400 group-hover:text-white' 
-                  : 'text-purple-300/70 group-hover:text-white'
-              }`} />
-              <span className="relative z-10">{item.label}</span>
-              
-              {/* Hover effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </button>
+            </div>
           ))}
         </nav>
-        
-        {/* Bottom Section */}
-        <div className="mt-auto pt-4 border-t border-white/10">
-          <button
-            onClick={() => handleItemClick('/')}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 text-purple-200/80 hover:bg-white/10 hover:text-white group relative overflow-hidden border border-transparent hover:border-white/20"
-          >
-            <Home className="w-5 h-5 mr-3 text-purple-300/70 group-hover:text-white transition-colors duration-300" />
-            <span>Back to Homepage</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
+
+        {/* User Info */}
+        <div className="p-4 border-t border-white/10 relative overflow-visible z-20">
+          <div className="flex items-center space-x-3 cursor-pointer relative z-10">
+            {/* User Initial */}
+            <div
+              className={`w-8 h-8 bg-gradient-to-br ${theme.secondary} rounded-lg flex items-center justify-center text-sm font-bold text-white`}
+              onClick={() => setShowUserMenu(!showUserMenu)}
+            >
+              {user?.companyName?.charAt(0) ||
+                user?.firstName?.charAt(0) ||
+                "U"}
+            </div>
+
+            {/* Name */}
+            <div
+              className="flex-1 min-w-0"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+            >
+              <p className="text-white text-sm font-medium truncate">
+                {user?.companyName ||
+                  `${user?.firstName} ${user?.lastName}` ||
+                  "User"}
+              </p>
+            </div>
+
+            {/* Icons with separate groups */}
+            <div className="flex items-center space-x-2">
+              {/* Logout */}
+              <div className="relative group z-30">
+                <LogOut
+                  className="w-5 h-5 text-red-500"
+                  onClick={handleLogout}
+                />
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-sm bg-black text-white rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 shadow-md after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-black">
+                  Logout
+                </span>
+              </div>
+
+              {/* Toggle Chevron */}
+              <div className="relative group z-30">
+                <ChevronUp
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={`w-5 h-5 ${
+                    theme.buttonOutline
+                  } text-white rounded-lg transition-transform duration-300 ${
+                    showUserMenu ? "rotate-180" : ""
+                  }`}
+                />
+                <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-sm bg-black text-white rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 shadow-md after:content-[''] after:absolute after:top-full after:right-2 after:border-4 after:border-transparent after:border-t-black">
+                  Toggle Menu
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle Menu Dropdown */}
+          {showUserMenu && (
+            <div
+              className={`absolute bottom-16 left-4 right-4 z-40 rounded-xl ${theme.card} p-4 shadow-xl border border-${theme.accent}/30 backdrop-blur-md`}
+            >
+              <div className="mb-3 space-y-3 break-words">
+                {/* Email */}
+                <div className="flex items-start gap-2">
+                  <Mail
+                    className={`w-4 h-4 mt-[2px] text-${theme.accent} flex-shrink-0`}
+                  />
+                  <div className="text-sm text-white break-words overflow-hidden">
+                    {user.companyEmail}
+                  </div>
+                </div>
+
+                {/* Plan */}
+                <div className="flex items-start gap-2">
+                  <BadgeCheck
+                    className={`w-4 h-4 text-${theme.accent} flex-shrink-0`}
+                  />
+                  <span className="text-sm text-white leading-snug">
+                    Plan:{" "}
+                    <span className="text-blue-300">
+                      {user.subscriptionPlan}
+                    </span>
+                  </span>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-start gap-2">
+                  <User
+                    className={`w-4 h-4 text-${theme.accent} flex-shrink-0`}
+                  />
+                  <span className="text-sm text-white leading-snug">
+                    Status:{" "}
+                    <span
+                      className={
+                        user.subscriptionStatus === "Active"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }
+                    >
+                      {user.subscriptionStatus}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      
-      {/* Subtle light effects */}
-      <div className="absolute top-20 left-4 w-16 h-16 bg-blue-400/10 rounded-full blur-xl"></div>
-      <div className="absolute bottom-32 right-4 w-12 h-12 bg-purple-400/10 rounded-full blur-lg"></div>
-    </aside>
+    </div>
   );
 };
 

@@ -1,7 +1,7 @@
 // backend/src/services/emailService.service.js
 
 import { emailTransporter } from '../config/email.config.js';
-import { ApiError } from '../utils/ApiError';
+import { ApiError } from '../utils/ApiError.js';
 
 // Email templates
 const templates = {

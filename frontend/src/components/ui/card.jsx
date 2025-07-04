@@ -1,60 +1,56 @@
-import { cn } from '../../lib/utils'; // Adjust the import path as necessary
-import React from 'react';
+// frontend/src/components/ui/Card.jsx
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      'rounded-lg border bg-card text-card-foreground shadow-sm',
-      className
-    )}
-    {...props}
-  />
-));
-Card.displayName = 'Card';
+import React from "react";
+import { getTheme } from "../../lib/theme.js";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('flex flex-col space-y-1.5 p-6', className)}
-    {...props}
-  />
-));
-CardHeader.displayName = 'CardHeader';
+export const Card = ({
+  children,
+  className = "",
+  variant = "default",
+  theme: customTheme,
+  hover = true,
+  onClick,
+  ...props
+}) => {
+  const { userType } = useAuth();
+  const theme = getTheme(customTheme || userType);
 
-const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h3
-    ref={ref}
-    className={cn(
-      'text-2xl font-semibold leading-none tracking-tight',
-      className
-    )}
-    {...props}
-  />
-));
-CardTitle.displayName = 'CardTitle';
+  const baseClasses = "rounded-xl border transition-all duration-200";
 
-const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
-    {...props}
-  />
-));
-CardDescription.displayName = 'CardDescription';
+  const variants = {
+    default: `${theme.glass} backdrop-blur-xl border-${theme.accent}/20 shadow-md`,
+    elevated: `${theme.glass} shadow-lg`,
+    outlined: `bg-transparent border-2 border-${theme.accent}/30`,
+    solid: `bg-gradient-to-br ${theme.secondary} border-${theme.accent}/20`,
+  };
 
-const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
-));
-CardContent.displayName = 'CardContent';
+  const hoverClasses = hover ? "hover:scale-[1.02] hover:shadow-xl" : "";
+  const clickable = onClick ? "cursor-pointer" : "";
 
-const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
-    {...props}
-  />
-));
-CardFooter.displayName = 'CardFooter';
+  const variantClass = variants[variant] || variants.default;
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+  return (
+    <div
+      className={`${baseClasses} ${variantClass} ${hoverClasses} ${clickable} ${className}`}
+      onClick={onClick}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Card sub-components
+Card.Header = ({ children, className = "" }) => (
+  <div className={`p-6 pb-0 ${className}`}>{children}</div>
+);
+
+Card.Body = ({ children, className = "" }) => (
+  <div className={`p-6 ${className}`}>{children}</div>
+);
+
+Card.Footer = ({ children, className = "" }) => (
+  <div className={`p-6 pt-0 ${className}`}>{children}</div>
+);
+

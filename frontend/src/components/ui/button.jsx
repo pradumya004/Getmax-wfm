@@ -1,51 +1,62 @@
-import { cn } from '../../lib/utils';
-import { Slot } from '@radix-ui/react-slot';
-import { cva } from 'class-variance-authority';
-import React from 'react';
+// frontend/src/components/ui/Button.jsx
 
-const buttonVariants = cva(
-	'inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95',
-	{
-		variants: {
-			variant: {
-				default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-				destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-				outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-				secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-				ghost: 'hover:bg-accent hover:text-accent-foreground',
-				link: 'text-primary underline-offset-4 hover:underline',
-				gradient: 'bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white hover:from-blue-800 hover:via-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5',
-				'gradient-outline': 'relative bg-transparent text-transparent bg-clip-text bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 border-2 border-transparent hover:border-blue-500/50 before:absolute before:inset-0 before:rounded-md before:p-[2px] before:bg-gradient-to-br before:from-blue-900 before:via-purple-900 before:to-indigo-900 before:-z-10 before:opacity-20 hover:before:opacity-40 before:transition-opacity',
-				'gradient-soft': 'bg-gradient-to-br from-blue-100 via-purple-50 to-indigo-100 text-blue-900 hover:from-blue-200 hover:via-purple-100 hover:to-indigo-200 border border-blue-200/50 shadow-sm hover:shadow-md',
-			},
-			size: {
-				default: 'h-10 px-4 py-2',
-				sm: 'h-9 rounded-md px-3 text-xs',
-				lg: 'h-11 rounded-md px-8 text-base',
-				xl: 'h-12 rounded-lg px-10 text-lg',
-				icon: 'h-10 w-10',
-				'icon-sm': 'h-8 w-8',
-				'icon-lg': 'h-12 w-12',
-			},
-		},
-		defaultVariants: {
-			variant: 'default',
-			size: 'default',
-		},
-	},
-);
+import React from "react";
+import { Loader2 } from "lucide-react";
+import { getTheme } from "../../lib/theme.js";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
-const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
-	const Comp = asChild ? Slot : 'button';
-	return (
-		<Comp
-			className={cn(buttonVariants({ variant, size, className }))}
-			ref={ref}
-			{...props}
-		/>
-	);
-});
+export const Button = ({
+  children,
+  variant = "primary",
+  size = "md",
+  theme: customTheme,
+  loading = false,
+  disabled = false,
+  className = "",
+  type = "button",
+  onClick,
+  ...props
+}) => {
+  const { userType } = useAuth();
+  const theme = getTheme(customTheme || userType);
 
-Button.displayName = 'Button';
+  const baseClasses =
+    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
-export { Button, buttonVariants };
+  const variants = {
+    primary: `bg-gradient-to-r ${theme.secondary} text-white border border-${theme.accent} hover:scale-105 focus:ring-${theme.accent}/50`,
+    outline: `${theme.buttonOutline} bg-transparent hover:scale-105 border border-${theme.accent} focus:ring-${theme.accent}/80`,
+    ghost: `text-${theme.text} hover:${theme.glass} hover:scale-105 border border-${theme.accent} focus:ring-${theme.accent}/50`,
+    danger:
+      "bg-red-600 hover:bg-red-700 text-white border border-red-500 hover:scale-105 focus:ring-red-500/50",
+  };
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm rounded-md",
+    md: "px-4 py-2 text-sm rounded-lg",
+    lg: "px-6 py-3 text-base rounded-lg",
+    xl: "px-8 py-4 text-lg rounded-xl",
+  };
+
+  const variantClass = variants[variant] || variants.primary;
+  const sizeClass = sizes[size] || sizes.md;
+
+  return (
+    <button
+      type={type}
+      disabled={disabled || loading}
+      onClick={onClick}
+      className={`${baseClasses} ${variantClass} ${sizeClass} ${className}`}
+      {...props}
+    >
+      {loading && (
+        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 inline" />
+        // <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+        //   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        //   <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        // </svg>
+      )}
+      {children}
+    </button>
+  );
+};

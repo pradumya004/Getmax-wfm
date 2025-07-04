@@ -359,6 +359,7 @@ const employeeSchema = new mongoose.Schema({
             default: true
         },
     }],
+    
     // rampPercentage shifted from sow to employee...
     rampPercentage: {
         type: Number,
@@ -528,12 +529,12 @@ const employeeSchema = new mongoose.Schema({
 });
 
 // Indexes
-employeeSchema.index({ employeeId: 1 }, { unique: true });
+// employeeSchema.index({ employeeId: 1 }, { unique: true });
 employeeSchema.index({ companyRef: 1, "contactInfo.primaryEmail": 1 }, { unique: true });
 employeeSchema.index({ companyRef: 1, "status.employeeStatus": 1 });
 employeeSchema.index({ departmentRef: 1, subdepartmentRef: 1 });
 employeeSchema.index({ roleRef: 1, designationRef: 1 });
-employeeSchema.index({ "reportingStructure.directManager": 1 });
+// employeeSchema.index({ "reportingStructure.directManager": 1 });
 // employeeSchema.index({ "sowAssignments.sowRef": 1 });
 
 // Virtuals

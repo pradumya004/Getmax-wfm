@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Shield,
   Building2,
@@ -12,81 +12,132 @@ import {
   Users,
   Calendar,
   DollarSign,
+  AlertCircle,
+  X,
+  Mail,
+  Phone,
+  MapPin,
+  User,
 } from "lucide-react";
 
-export default function CompanyManagement() {
+import ShowCompany from "./ShowCompany";
+import DetailedCompany from './DetailedCompany';
+
+export default function CompanyManagement(){
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock companies data
-  const companies = [
-    {
-      id: "C001",
-      name: "TechCorp Solutions",
-      contactPerson: "John Smith",
-      email: "admin@techcorp.com",
-      phone: "+1-555-0123",
-      employees: 245,
-      plan: "Enterprise",
-      status: "Active",
-      revenue: "$2,400",
-      joinDate: "2024-01-15",
-      address: "123 Tech Street, San Francisco, CA",
-    },
-    {
-      id: "C002",
-      name: "HealthPlus Medical",
-      contactPerson: "Dr. Sarah Wilson",
-      email: "contact@healthplus.com",
-      phone: "+1-555-0456",
-      employees: 89,
-      plan: "Professional",
-      status: "Active",
-      revenue: "$1,200",
-      joinDate: "2024-02-20",
-      address: "456 Medical Ave, New York, NY",
-    },
-    {
-      id: "C003",
-      name: "StartUp Hub",
-      contactPerson: "Mike Johnson",
-      email: "hello@startuphub.com",
-      phone: "+1-555-0789",
-      employees: 23,
-      plan: "Basic",
-      status: "Trial",
-      revenue: "$400",
-      joinDate: "2024-03-10",
-      address: "789 Innovation Blvd, Austin, TX",
-    },
-  ];
+  // Fetch companies data from API
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:8000/api/companies/all");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setCompanies(data?.companies || []);
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching companies:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
+    fetchCompanies();
+  }, []);
+
+  const filteredCompanies = companies.filter((company) => {
+    const matchesSearch = company.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         company.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         company.contactEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = selectedFilter === "all" || 
+                         company.subscriptionStatus?.toLowerCase() === selectedFilter.toLowerCase();
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  const getStatusColor = (subscriptionStatus) => {
+    switch (subscriptionStatus?.toLowerCase()) {
+      case "active":
         return "bg-green-500/20 text-green-400 border-green-500/30";
-      case "Trial":
+      case "trial":
         return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-      case "Suspended":
+      case "suspended":
         return "bg-red-500/20 text-red-400 border-red-500/30";
       default:
         return "bg-gray-500/20 text-gray-400 border-gray-500/30";
     }
   };
 
-  const getPlanColor = (plan) => {
-    switch (plan) {
-      case "Enterprise":
+  const getPlanColor = (subscriptionPlan) => {
+    switch (subscriptionPlan?.toLowerCase()) {
+      case "enterprise":
         return "bg-purple-500/20 text-purple-400";
-      case "Professional":
+      case "professional":
         return "bg-blue-500/20 text-blue-400";
-      case "Basic":
+      case "basic":
         return "bg-green-500/20 text-green-400";
       default:
         return "bg-gray-500/20 text-gray-400";
     }
   };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
+    }
+  };
+
+  const handleViewCompany = (company) => {
+    setSelectedCompany(company);
+    setShowViewModal(true);
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-white text-center">Loading companies...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-8 max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white text-center mb-2">Error Loading Companies</h2>
+          <p className="text-white/70 text-center mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full p-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 rounded-lg text-white font-medium transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
@@ -123,7 +174,7 @@ export default function CompanyManagement() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <h2 className="text-xl font-bold text-white">
-              Companies ({companies.length})
+              Companies ({filteredCompanies.length})
             </h2>
 
             <div className="flex space-x-4">
@@ -166,174 +217,35 @@ export default function CompanyManagement() {
         </div>
 
         {/* Companies Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {companies.map((company) => (
-            <div
-              key={company.id}
-              className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
-            >
-              {/* Company Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold">{company.name}</h3>
-                    <p className="text-white/60 text-sm">{company.id}</p>
-                  </div>
-                </div>
-                <div className="relative">
-                  <button className="text-white/60 hover:text-white transition-colors">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Company Details */}
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-white/60" />
-                  <span className="text-white/80 text-sm">
-                    {company.employees} employees
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-white/60" />
-                  <span className="text-white/80 text-sm">
-                    Joined {company.joinDate}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-white/60" />
-                  <span className="text-white/80 text-sm">
-                    {company.revenue}/month
-                  </span>
-                </div>
-              </div>
-
-              {/* Status and Plan */}
-              <div className="flex items-center justify-between mb-4">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${getPlanColor(
-                    company.plan
-                  )}`}
-                >
-                  {company.plan}
-                </span>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                    company.status
-                  )}`}
-                >
-                  {company.status}
-                </span>
-              </div>
-
-              {/* Contact Info */}
-              <div className="border-t border-white/10 pt-4 mb-4">
-                <p className="text-white font-medium text-sm">
-                  {company.contactPerson}
-                </p>
-                <p className="text-white/60 text-sm">{company.email}</p>
-                <p className="text-white/60 text-sm">{company.phone}</p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600/80 hover:bg-blue-600 rounded-lg text-white text-sm font-medium transition-all duration-300 flex items-center justify-center space-x-2">
-                  <Eye className="w-4 h-4" />
-                  <span>View</span>
-                </button>
-                <button className="flex-1 px-3 py-2 bg-green-600/80 hover:bg-green-600 rounded-lg text-white text-sm font-medium transition-all duration-300 flex items-center justify-center space-x-2">
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
-                </button>
-                <button className="px-3 py-2 bg-red-600/80 hover:bg-red-600 rounded-lg text-white text-sm font-medium transition-all duration-300 flex items-center justify-center">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {filteredCompanies.length === 0 ? (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-12 text-center">
+            <Building2 className="w-16 h-16 text-white/30 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">No Companies Found</h3>
+            <p className="text-white/60">
+              {companies.length === 0 ? "No companies registered yet." : "No companies match your search criteria."}
+            </p>
+          </div>
+        ) : (
+          <ShowCompany
+            filteredCompanies={filteredCompanies}
+            handleViewCompany={handleViewCompany}
+            formatDate={formatDate}
+            getPlanColor={getPlanColor}
+            getStatusColor={getStatusColor} 
+          />
+        )}
       </div>
 
-      {/* Add Company Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 max-w-md w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Add New Company</h2>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-white/60 hover:text-white transition-colors"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <form className="space-y-4">
-              <input
-                type="text"
-                placeholder="Company Name"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300"
-              />
-              <input
-                type="email"
-                placeholder="Contact Email"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300"
-              />
-              <input
-                type="text"
-                placeholder="Contact Person"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300"
-              />
-              <select className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all duration-300">
-                <option value="" className="bg-slate-800">
-                  Select Plan
-                </option>
-                <option value="basic" className="bg-slate-800">
-                  Basic
-                </option>
-                <option value="professional" className="bg-slate-800">
-                  Professional
-                </option>
-                <option value="enterprise" className="bg-slate-800">
-                  Enterprise
-                </option>
-              </select>
-
-              <div className="flex space-x-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white hover:bg-white/20 transition-all duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl text-white hover:from-red-700 hover:to-orange-700 transition-all duration-300"
-                >
-                  Add Company
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* View Company Details Modal */}
+      {showViewModal && selectedCompany && (
+        <DetailedCompany
+          selectedCompany={selectedCompany}
+          onClose={() => setShowViewModal(false)}
+          formatDate={formatDate}
+          getPlanColor={getPlanColor}
+          getStatusColor={getStatusColor}
+        />
       )}
     </div>
   );
-}
+};

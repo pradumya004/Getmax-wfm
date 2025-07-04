@@ -1,3 +1,5 @@
+// backend/src/models/department.model.js
+
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -165,7 +167,7 @@ const departmentSchema = new mongoose.Schema({
 });
 
 // Index
-departmentSchema.index({ departmentId: 1 }, { unique: true });
+// departmentSchema.index({ departmentId: 1 }, { unique: true });
 departmentSchema.index({ companyRef: 1, departmentCode: 1 }, { unique: true });
 departmentSchema.index({ companyRef: 1, isActive: 1 });
 departmentSchema.index({ parentDepartment: 1 });

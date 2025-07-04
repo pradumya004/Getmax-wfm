@@ -9,12 +9,12 @@ import { Role } from "../../models/role.model.js";
 import { Department } from "../../models/department.model.js";
 import { Designation } from "../../models/designation.model.js";
 import { SubDepartment } from "../../models/subdepartment.model.js";
-import { sendEmail } from "../services/emailService.js";
 import { EMAIL_TEMPLATES } from "../../constants.js";
 import { generateEmployeeToken } from "../../utils/jwtHelper.js";
 import { getClientIP } from "../../utils/helpers.js";
 import crypto from 'crypto';
 import xlsx from 'xlsx';
+import { sendEmail } from './../../services/emailService.service.js';
 
 const generateEmployeePassword = (firstName) => {
     const randomString = crypto.randomBytes(6).toString('hex');
@@ -192,7 +192,7 @@ const loginEmployee = asyncHandler(async (req, res) => {
     const employee = await Employee.findOne({ employeeId: employeeId.toUpperCase().trim() })
         .select('+authentication.passwordHash +authentication.failedLoginAttempts +authentication.accountLockedUntil')
         .populate('companyRef', 'companyName apiKey securitySettings')
-        .populate('roleRef', 'roleName roleLevel permissions')
+        .populate('roleRef', 'roleName roleLevel permissions dataAccess')
         .populate('departmentRef', 'departmentName')
         .populate('designationRef', 'designationName');
 
@@ -260,8 +260,8 @@ const loginEmployee = asyncHandler(async (req, res) => {
     res.cookie("employeeToken", token, cookieOptions);
 
     return res.status(200).json(
-        new ApiResponse(
-            {
+        new ApiResponse(200, {
+            employee: {
                 employeeId: employee.employeeId,
                 name: employee.fullName,
                 email: employee.contactInfo.primaryEmail,
@@ -272,11 +272,14 @@ const loginEmployee = asyncHandler(async (req, res) => {
                 isFromOffice,
                 avatar: employee.avatarUrl,
                 permissions: employee.roleRef.permissions,
+                dataAccess: employee.roleRef.dataAccess,
                 loginTime: new Date(),
                 currentLevel: employee.gamification.experience.currentLevel,
                 totalXP: employee.gamification.experience.totalXP,
-                profileCompletion: employee.systemInfo.profileCompletionPercentage
+                profileCompletion: employee.systemInfo.profileCompletionPercentage,
             },
+            token
+        },
             "Login successful"
         )
     );
