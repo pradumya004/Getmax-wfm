@@ -202,7 +202,7 @@ const registerCompany = asyncHandler(async (req, res) => {
 
         console.log("Organizational structure created");
 
-        // Create first employee (admin user)
+        // Create first employee (company admin user)
         const firstEmployeePassword = generateEmployeePassword(
             adminFirstName || contactPerson?.split(' ')[0] || 'Admin'
         );

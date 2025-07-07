@@ -3,6 +3,8 @@
 export const getStoredUser = () => {
     try {
         const user = localStorage.getItem('user');
+        console.log("Stored User:", user);
+
         return user ? JSON.parse(user) : null;
     } catch {
         return null;
@@ -27,6 +29,8 @@ export const clearAuthData = () => {
 
 // Improved user type detection based on backend response structure
 const determineUserType = (user) => {
+    console.log("Checking User:", user);
+
     if (!user) return null;
 
     // ✅ If backend provides userType directly, use it
@@ -38,9 +42,9 @@ const determineUserType = (user) => {
     }
 
     // Check for company-level admin/super admin (existing system)
-    if (user.isAdmin || user.role === 'admin' || user.roleLevel >= 8) {
-        return 'admin';
-    }
+    // if (user.isAdmin || user.role === 'admin' || user.roleLevel >= 8) {
+    //     return 'admin';
+    // }
 
     // Check for employee - has employeeId and companyRef
     if (user.employeeId && user.companyRef) {
@@ -67,6 +71,8 @@ export const getUserType = () => {
 
     // Otherwise determine from user object
     const user = getStoredUser();
+    console.log("Retrieving User Type:", user);
+
     return determineUserType(user);
 };
 

@@ -4,9 +4,9 @@ import { apiCall } from './apiClient.js';
 
 export const authAPI = {
     // ============= COMPANY AUTHENTICATION =============
-    companyLogin: (credentials) => apiCall('post', '/companies/login', credentials),
-    companyRegister: (data) => apiCall('post', '/companies/register', data),
-    companyLogout: () => apiCall('post', '/companies/logout'),
+    companyLogin: (credentials) => apiCall('post', '/company/login', credentials),
+    companyRegister: (data) => apiCall('post', '/company/register', data),
+    companyLogout: () => apiCall('post', '/company/logout'),
 
     // ============= EMPLOYEE AUTHENTICATION =============
     employeeLogin: (credentials) => apiCall('post', '/employees/login', credentials),
@@ -27,7 +27,7 @@ export const authAPI = {
                     logout: authAPI.masterAdminLogout
                 };
             case 'company':
-            case 'admin': // Company-level admin
+            // case 'admin': // Company-level admin
                 return {
                     login: authAPI.companyLogin,
                     logout: authAPI.companyLogout

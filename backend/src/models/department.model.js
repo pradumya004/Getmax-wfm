@@ -91,35 +91,11 @@ const departmentSchema = new mongoose.Schema({
             enum: ["USD", "INR", "EUR", "GBP", "CAD"]
         }
     },
-    location: {
-        type: String,
-        trim: true,
-        maxlength: [100, 'Location cannot exceed 100 characters']
-    },
 
     // Capacity and Metrics
-    employeeCapacity: {
-        current: {
-            type: Number,
-            default: 0,
-            min: [0, 'Current employee count cannot be negative']
-        },
-        maximum: {
-            type: Number,
-            default: null,
-            min: [0, 'Maximum capacity cannot be negative'],
-            validate: {
-                validator: function (v) {
-                    return v === null || v >= this.employeeCapacity.minimum;
-                },
-                message: 'Maximum capacity must be greater than or equal to minimum capacity'
-            }
-        },
-        minimum: {
-            type: Number,
-            default: 0,
-            min: [0, 'Minimum capacity cannot be negative']
-        }
+    currentEmployeeCount: {
+        type: Number,
+        default: 0
     },
 
     // Business Rules
@@ -199,7 +175,7 @@ departmentSchema.methods.updateEmployeeCount = async function () {
         const count = await Employee.countDocuments({
             departmentRef: this._id,
         });
-        this.employeeCapacity.current = count;
+        this.currentEmployeeCount = count;
         return this.save();
     } catch (error) {
         console.error(`Error updating employee count: ${error}`);
@@ -302,12 +278,6 @@ departmentSchema.pre('save', async function (next) {
             } else {
                 return next(new Error('Parent department not found'));
             }
-        }
-
-        // Validate capacity constraints
-        if (this.employeeCapacity.maximum !== null &&
-            this.employeeCapacity.current > this.employeeCapacity.maximum) {
-            return next(new Error('Current employee count exceeds maximum capacity'));
         }
 
         next();

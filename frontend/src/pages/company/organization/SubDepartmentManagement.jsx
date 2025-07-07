@@ -7,7 +7,7 @@ import { Card } from "../../../components/ui/Card.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import StatCard from "../../../components/common/StatCard.jsx";
 import { OrgDataTable } from "../../../components/organization/OrgDataTable.jsx";
-import { AddSubDepartmentModal } from "../../../components/organization/AddSubDepartmentModal.jsx";
+import { AddSubDepartmentModal } from "../../../components/organization/subdepartments/AddSubDepartmentModal.jsx";
 import { organizationAPI } from "../../../api/organization.api.js";
 import { useApi } from "../../../hooks/useApi.jsx";
 import { toast } from "react-hot-toast";

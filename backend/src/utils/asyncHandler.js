@@ -1,4 +1,4 @@
-// backend-wfm/src/utils/asyncHandler.js
+// backend/src/utils/asyncHandler.js
 
 const asyncHandler = (requestHandler) => {
     return (req, res, next) => {

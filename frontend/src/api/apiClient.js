@@ -36,10 +36,8 @@ apiClient.interceptors.response.use(
 
         // Handle specific status codes
         if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-            return;
+            toast.error('Session expired or unauthorized. Please refresh the page.');
+            return Promise.reject({ ...error, unauthorized: true });
         }
 
         toast.error(message);

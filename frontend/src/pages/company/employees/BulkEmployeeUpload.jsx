@@ -15,19 +15,73 @@ import { Card } from "../../../components/ui/Card.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { FileUpload } from "../../../components/forms/FileUpload.jsx";
 import { companyAPI } from "../../../api/company.api.js";
-import { employeeAPI } from "../../../api/employee.api.js";
+// import { employeeAPI } from "../../../api/employee.api.js";
 import { toast } from "react-hot-toast";
+import * as XLSX from "xlsx";
+import axios from "axios";
+
+const systemFields = [
+  { label: "First Name *", key: "personalInfo.firstName" },
+  { label: "Middle Name", key: "personalInfo.middleName" },
+  { label: "Last Name *", key: "personalInfo.lastName" },
+  { label: "Display Name", key: "personalInfo.displayName" },
+  { label: "Date of Birth (YYYY-MM-DD)", key: "personalInfo.dateOfBirth" },
+  { label: "Gender", key: "personalInfo.gender" },
+  { label: "Blood Group", key: "personalInfo.bloodGroup" },
+  { label: "* Primary Email *", key: "contactInfo.primaryEmail" },
+  { label: "Personal Email", key: "contactInfo.personalEmail" },
+  { label: "Primary Phone Number *", key: "contactInfo.primaryPhone" },
+  { label: "Alternate Phone Number", key: "contactInfo.alternatePhone" },
+  { label: "Emergency Contact Name", key: "contactInfo.emergencyContact.name" },
+  {
+    label: "Emergency Contact Relationship",
+    key: "contactInfo.emergencyContact.relationship",
+  },
+  {
+    label: "Emergency Contact Phone",
+    key: "contactInfo.emergencyContact.phone",
+  },
+  { label: "Employee Code", key: "employmentInfo.employeeCode" },
+  { label: "Date of Joining *", key: "employmentInfo.dateOfJoining" },
+  { label: "Employment Type *", key: "employmentInfo.employmentType" },
+  { label: "Work Location", key: "employmentInfo.workLocation" },
+  { label: "Shift Type", key: "employmentInfo.shiftType" },
+  { label: "Role ID *", key: "roleRef" },
+  { label: "Department ID *", key: "departmentRef" },
+  { label: "Sub-Department ID", key: "subdepartmentRef" },
+  { label: "Designation ID *", key: "designationRef" },
+  {
+    label: "Direct Manager (Employee ID)",
+    key: "reportingStructure.directManager",
+  },
+  { label: "Team Lead (Employee ID)", key: "reportingStructure.teamLead" },
+  { label: "Base Salary", key: "compensation.baseSalary" },
+  { label: "Hourly Rate", key: "compensation.hourlyRate" },
+  { label: "Salary Currency", key: "compensation.currency" },
+  { label: "Pay Frequency", key: "compensation.payFrequency" },
+  { label: "Work Start Time", key: "workSchedule.standardHours.startTime" },
+  { label: "Work End Time", key: "workSchedule.standardHours.endTime" },
+  { label: "Working Days", key: "workSchedule.standardHours.workingDays" },
+  { label: "Work Time Zone", key: "workSchedule.timeZone" },
+  { label: "Flexible Hours", key: "workSchedule.flexibleHours" },
+  { label: "Daily Claim Target", key: "performanceTargets.dailyClaimTarget" },
+  { label: "Quality Target (%)", key: "performanceTargets.qualityTarget" },
+  { label: "SLA Target (%)", key: "performanceTargets.slaTarget" },
+  { label: "Ramp Percentage (%)", key: "rampPercentage" },
+];
 
 const BulkEmployeeUpload = () => {
-  const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [excelHeaders, setExcelHeaders] = useState([]);
+  const [fieldMap, setFieldMap] = useState({});
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState(null);
+  const navigate = useNavigate();
 
   const handleDownloadTemplate = async () => {
     try {
       const response = await companyAPI.downloadEmployeeTemplate();
-      // Handle file download
       const blob = new Blob([response], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
@@ -45,33 +99,51 @@ const BulkEmployeeUpload = () => {
     }
   };
 
-  const handleFileSelect = (file) => {
-    setSelectedFile(file);
-    setResults(null);
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    setFileName(file.name);
+    setUploadedFile(file);
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
+    setExcelHeaders(headers);
+  };
+
+  const handleMappingChange = (sysKey, excelHeader) => {
+    setFieldMap((prev) => ({ ...prev, [sysKey]: excelHeader }));
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file to upload");
-      return;
-    }
-
+    if (!uploadedFile) return toast.error("Upload an Excel file first.");
     setUploading(true);
+
     try {
       const formData = new FormData();
-      formData.append("employeeFile", selectedFile);
+      formData.append("bulkFile", uploadedFile);
+      formData.append("mapping", JSON.stringify(fieldMap));
+      console.log("🧩 Mapping:", fieldMap);
 
-      const result = await employeeAPI.bulkUpload(formData);
-      setResults(result);
+      const token = localStorage.getItem("token");
+      console.log(token);
 
-      if (result.success) {
-        toast.success(`Successfully uploaded ${result.successCount} employees`);
-      } else {
-        toast.warning(`Upload completed with ${result.errorCount} errors`);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Failed to upload employees");
+      const response = await axios.post(
+        "http://localhost:8000/api/employees/bulk",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setResults(response.data.details);
+      toast.success("Upload completed.");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast.error("Upload failed.");
     } finally {
       setUploading(false);
     }
@@ -138,24 +210,63 @@ const BulkEmployeeUpload = () => {
               </h3>
 
               <FileUpload
-                accept=".xlsx,.xls,.csv"
+                accept=".xlsx,.xls"
                 maxSize={10 * 1024 * 1024}
-                onFileSelect={handleFileSelect}
+                onFileSelect={handleFileUpload}
+                onChange={(e) => handleFileUpload(e.target.files[0])}
                 theme="company"
               />
 
-              {selectedFile && (
-                <div className="mt-6">
-                  <Button
-                    theme="company"
-                    onClick={handleUpload}
-                    loading={uploading}
-                    className="inline-flex items-center space-x-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Employees</span>
-                  </Button>
-                </div>
+              {excelHeaders.length > 0 && (
+                <Card className="bg-white/10 border border-white/20 rounded-xl p-4 backdrop-blur-xl">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">
+                      🧩 Map Your Excel Columns
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {systemFields.map((field) => (
+                        <div key={field.key} className="flex flex-col">
+                          <label className="mb-1 font-medium text-white">
+                            {field.label}
+                          </label>
+                          <select
+                            className="bg-white/20 backdrop-blur-sm border border-white/30 text-white px-3 py-2 rounded-lg focus:outline-none"
+                            value={fieldMap[field.key] || ""}
+                            onChange={(e) =>
+                              handleMappingChange(field.key, e.target.value)
+                            }
+                          >
+                            <option
+                              className="bg-slate-800 text-white hover:bg-slate-700 rounded-md"
+                              value=""
+                            >
+                              -- Select Excel Column --
+                            </option>
+                            {excelHeaders.map((header, idx) => (
+                              <option
+                                key={idx}
+                                className="bg-slate-800 text-white hover:bg-slate-700 rounded-md"
+                                value={header}
+                              >
+                                {header}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 text-right">
+                      <Button
+                        onClick={handleUpload}
+                        disabled={uploading}
+                        className="bg-emerald-500 hover:bg-emerald-600"
+                      >
+                        {uploading ? "Uploading..." : "Upload Employees"}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
               )}
             </Card>
 
@@ -222,7 +333,6 @@ const BulkEmployeeUpload = () => {
                     variant="outline"
                     theme="company"
                     onClick={() => {
-                      setSelectedFile(null);
                       setResults(null);
                     }}
                   >

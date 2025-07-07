@@ -22,15 +22,23 @@ Getmax-wfm
 │     ├─ constants.js
 │     ├─ controllers
 │     │  ├─ admin
-│     │  │  └─ adminController.controller.js
+│     │  │  ├─ adminController.controller.js
+│     │  │  └─ masterAdminController.controller.js
 │     │  ├─ company
 │     │  │  ├─ companyController.controller.js
 │     │  │  └─ orgController.controller.js
-│     │  └─ employee
-│     │     └─ empolyeeController.controller.js
+│     │  ├─ employee
+│     │  │  └─ empolyeeController.controller.js
+│     │  └─ organization
+│     │     ├─ departmentContoller.controller.js
+│     │     ├─ designationController.controller.js
+│     │     ├─ organizationEnums.controller.js
+│     │     ├─ roleContoller.controller.js
+│     │     └─ subDepartmentController.controller.js
 │     ├─ middlewares
 │     │  ├─ auth.middleware.js
 │     │  ├─ error.middleware.js
+│     │  ├─ masterAdminAuth.middleware.js
 │     │  └─ upload.middleware.js
 │     ├─ models
 │     │  ├─ client.model.js
@@ -46,7 +54,9 @@ Getmax-wfm
 │     │  ├─ admin.route.js
 │     │  ├─ company.route.js
 │     │  ├─ employee.route.js
-│     │  └─ index.route.js
+│     │  ├─ index.route.js
+│     │  ├─ masterAdmin.route.js
+│     │  └─ organization.route.js
 │     ├─ services
 │     │  └─ emailService.service.js
 │     └─ utils
@@ -70,7 +80,7 @@ Getmax-wfm
 │  │  │  ├─ auth.api.js
 │  │  │  ├─ company.api.js
 │  │  │  ├─ employee.api.js
-│  │  │  ├─ index.js
+│  │  │  ├─ masterAdmin.api.js
 │  │  │  └─ organization.api.js
 │  │  ├─ App.jsx
 │  │  ├─ components
@@ -122,7 +132,6 @@ Getmax-wfm
 │  │  │  │  ├─ FileUpload.jsx
 │  │  │  │  ├─ FormValidation.jsx
 │  │  │  │  ├─ InputField.jsx
-│  │  │  │  ├─ MultiSelectField.jsx
 │  │  │  │  └─ SelectField.jsx
 │  │  │  ├─ layout
 │  │  │  │  ├─ BreadCrumb.jsx
@@ -132,22 +141,23 @@ Getmax-wfm
 │  │  │  │  ├─ Navbar.jsx
 │  │  │  │  └─ Sidebar.jsx
 │  │  │  ├─ organization
-│  │  │  │  ├─ AddDepartmentModal.jsx
-│  │  │  │  ├─ AddRoleModal.jsx
-│  │  │  │  ├─ AddSubDepartmentModal.jsx
 │  │  │  │  ├─ common
 │  │  │  │  │  ├─ OrgHierarchy.jsx
 │  │  │  │  │  └─ OrgStructureStats.jsx
 │  │  │  │  ├─ departments
+│  │  │  │  │  ├─ AddDepartmentModal.jsx
 │  │  │  │  │  ├─ DepartmentCard.jsx
 │  │  │  │  │  └─ DepartmentHierarchy.jsx
 │  │  │  │  ├─ designations
+│  │  │  │  │  ├─ AddDesignationModal.jsx
 │  │  │  │  │  └─ DesignationCard.jsx
 │  │  │  │  ├─ OrgDataTable.jsx
 │  │  │  │  ├─ roles
+│  │  │  │  │  ├─ AddRoleModal.jsx
 │  │  │  │  │  ├─ RoleCard.jsx
 │  │  │  │  │  └─ RolePermissions.jsx
 │  │  │  │  └─ subdepartments
+│  │  │  │     ├─ AddSubDepartmentModal.jsx
 │  │  │  │     └─ SubDepartmentCard.jsx
 │  │  │  ├─ testing
 │  │  │  │  └─ IntegrationTest.jsx
@@ -155,10 +165,13 @@ Getmax-wfm
 │  │  │     ├─ Badge.jsx
 │  │  │     ├─ Button.jsx
 │  │  │     ├─ Card.jsx
+│  │  │     ├─ Checkbox.jsx
+│  │  │     ├─ CreatableSelect.jsx
 │  │  │     ├─ Dropdown.jsx
 │  │  │     ├─ Input.jsx
 │  │  │     ├─ LoadingSpinner.jsx
 │  │  │     ├─ Modal.jsx
+│  │  │     ├─ MultiSelectField.jsx
 │  │  │     ├─ Pagination.jsx
 │  │  │     ├─ Select.jsx
 │  │  │     ├─ Table.jsx
@@ -170,6 +183,7 @@ Getmax-wfm
 │  │  ├─ hooks
 │  │  │  ├─ useApi.jsx
 │  │  │  ├─ useAuth.jsx
+│  │  │  ├─ useCompany.jsx
 │  │  │  ├─ useEmployee.jsx
 │  │  │  ├─ useLocalStorage.jsx
 │  │  │  ├─ useOrganization.jsx
@@ -187,19 +201,19 @@ Getmax-wfm
 │  │  ├─ main.jsx
 │  │  └─ pages
 │  │     ├─ admin
-│  │     │  ├─ AdminDashboard.jsx
 │  │     │  ├─ CompanyManagement.jsx
 │  │     │  ├─ DetailedCompany.jsx
 │  │     │  ├─ EmployeeFilterAdmin.jsx
 │  │     │  ├─ EmployeeManagementAdmin.jsx
+│  │     │  ├─ MasterAdminDashboard.jsx
 │  │     │  ├─ PlatformStats.jsx
 │  │     │  └─ ShowCompany.jsx
 │  │     ├─ auth
-│  │     │  ├─ AdminLogin.jsx
 │  │     │  ├─ CompanyLogin.jsx
 │  │     │  ├─ CompanySignup.jsx
 │  │     │  ├─ EmployeeLogin.jsx
 │  │     │  ├─ LoginModal.jsx
+│  │     │  ├─ MasterAdminLogin.jsx
 │  │     │  ├─ signup
 │  │     │  │  ├─ CompanySignup.jsx
 │  │     │  │  ├─ SignupStep1.jsx
@@ -214,6 +228,7 @@ Getmax-wfm
 │  │     │  ├─ CompanyDashboard.jsx
 │  │     │  ├─ CompanyProfile.jsx
 │  │     │  ├─ CompanySettings.jsx
+│  │     │  ├─ CompanyUpdateForm.jsx
 │  │     │  ├─ EmployeeDashboard.jsx
 │  │     │  ├─ employees
 │  │     │  │  ├─ AddEmployee.jsx
@@ -239,6 +254,8 @@ Getmax-wfm
 │  │     │  └─ UploadAvatar.jsx
 │  │     └─ HomePage.jsx
 │  └─ vite.config.js
+├─ package-lock.json
+├─ package.json
 └─ README.md
 
 ```

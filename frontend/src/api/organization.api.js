@@ -4,27 +4,30 @@
 import { apiCall } from './apiClient.js';
 
 export const organizationAPI = {
+    // Organization Enums
+    getOrganizationEnums: () => apiCall('get', '/org-data/enums'),
+
     // Roles Management  
-    getRoles: () => apiCall('get', '/roles'),
-    createRole: (data) => apiCall('post', '/roles', data),
-    updateRole: (roleId, data) => apiCall('put', `/roles/${roleId}`, data),
-    deleteRole: (roleId) => apiCall('delete', `/roles/${roleId}`),
+    getRoles: () => apiCall('get', '/org-data/roles'),
+    createRole: (data) => apiCall('post', '/org-data/roles', data),
+    updateRole: (roleId, data) => apiCall('put', `/org-data/roles/${roleId}`, data),
+    deleteRole: (roleId) => apiCall('delete', `/org-data/roles/${roleId}`),
 
     // Departments Management
-    getDepartments: () => apiCall('get', '/departments'),
-    createDepartment: (data) => apiCall('post', '/departments', data),
-    updateDepartment: (deptId, data) => apiCall('put', `/departments/${deptId}`, data),
-    deleteDepartment: (deptId) => apiCall('delete', `/departments/${deptId}`),
+    getDepartments: () => apiCall('get', '/org-data/departments'),
+    createDepartment: (data) => apiCall('post', '/org-data/departments', data),
+    updateDepartment: (deptId, data) => apiCall('put', `/org-data/departments/${deptId}`, data),
+    deleteDepartment: (deptId) => apiCall('delete', `/org-data/departments/${deptId}`),
 
     // Designations Management
-    getDesignations: () => apiCall('get', '/designations'),
-    createDesignation: (data) => apiCall('post', '/designations', data),
-    updateDesignation: (designationId, data) => apiCall('put', `/designations/${designationId}`, data),
-    deleteDesignation: (designationId) => apiCall('delete', `/designations/${designationId}`),
+    getDesignations: () => apiCall('get', '/org-data/designations'),
+    createDesignation: (data) => apiCall('post', '/org-data/designations', data),
+    updateDesignation: (designationId, data) => apiCall('put', `/org-data/designations/${designationId}`, data),
+    deleteDesignation: (designationId) => apiCall('delete', `/org-data/designations/${designationId}`),
 
     // SubDepartments Management
-    getSubDepartments: () => apiCall('get', '/subdepartments'),
-    createSubDepartment: (data) => apiCall('post', '/subdepartments', data),
-    updateSubDepartment: (subDeptId, data) => apiCall('put', `/subdepartments/${subDeptId}`, data),
-    deleteSubDepartment: (subDeptId) => apiCall('delete', `/subdepartments/${subDeptId}`)
+    getSubDepartments: () => apiCall('get', '/org-data/subdepartments'),
+    createSubDepartment: (data) => apiCall('post', '/org-data/subdepartments', data),
+    updateSubDepartment: (subDeptId, data) => apiCall('put', `/org-data/subdepartments/${subDeptId}`, data),
+    deleteSubDepartment: (subDeptId) => apiCall('delete', `/org-data/subdepartments/${subDeptId}`)
 };

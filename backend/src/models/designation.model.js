@@ -69,33 +69,6 @@ const designationSchema = new mongoose.Schema({
         ref: "Designation"
     }],
 
-    // Compensation Framework
-    compensationBand: {
-        minSalary: {
-            type: Number,
-            min: [0, 'Minimum salary cannot be negative'],
-            default: 0
-        },
-        maxSalary: {
-            type: Number,
-            min: [0, 'Maximum salary cannot be negative'],
-            validate: {
-                validator: function (v) {
-                    return !v || v >= this.compensationBand.minSalary;
-                },
-                message: 'Maximum salary must be greater than or equal to minimum salary'
-            }
-        },
-        currency: {
-            type: String,
-            default: "USD",
-            enum: {
-                values: ["USD", "INR", "EUR", "GBP", "CAD"],
-                message: 'Currency must be a valid currency code'
-            }
-        }
-    },
-
     // Requirements and Qualifications
     requirements: {
         minimumExperience: {
@@ -103,21 +76,10 @@ const designationSchema = new mongoose.Schema({
             default: 0,
             min: [0, 'Minimum experience cannot be negative']
         },
-        maximumExperience: {
-            type: Number,
-            default: null,
-            min: [0, 'Maximum experience cannot be negative'],
-            validate: {
-                validator: function(v) {
-                    return !v || v >= this.requirements.minimumExperience;
-                },
-                message: 'Maximum experience must be greater than or equal to minimum experience'
-            }
-        },
         requiredEducation: {
             type: String,
             enum: ["None", "High School", "Associates", "Bachelors", "Masters", "PhD", "Professional Certification"],
-            default: "High School"
+            default: "None"
         },
         requiredSkills: [{
             skill: {
@@ -142,10 +104,6 @@ const designationSchema = new mongoose.Schema({
         canApproveExpenses: {
             type: Boolean,
             default: false
-        },
-        maxApprovalLimit: {
-            type: Number,
-            default: 0
         },
         canAccessFinancials: {
             type: Boolean,
@@ -276,12 +234,6 @@ designationSchema.statics.findByDepartment = function (companyRef, departmentRef
 // Pre-save middleware
 designationSchema.pre('save', async function (next) {
     try {
-        // Validate salary range
-        if (this.compensationBand.maxSalary &&
-            this.compensationBand.minSalary > this.compensationBand.maxSalary) {
-            return next(new Error('Minimum salary cannot be greater than maximum salary'));
-        }
-
         // Validate experience range
         if (this.requirements.maximumExperience &&
             this.requirements.minimumExperience > this.requirements.maximumExperience) {

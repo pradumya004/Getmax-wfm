@@ -795,36 +795,53 @@ const deleteEmployee = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 // Bulk Upload Employees via Excel
 const bulkUploadEmployees = asyncHandler(async (req, res) => {
     const companyId = req.company?._id;
-    if (!companyId) {
-        throw new ApiError(401, "Company authentication required");
-    }
-
-    if (!req.tempFilePath) {
-        throw new ApiError(400, "Excel file is required");
-    }
+    if (!companyId) throw new ApiError(401, "Company authentication required");
+    if (!req.tempFilePath) throw new ApiError(400, "Excel file is required");
 
     const company = await Company.findById(companyId);
-    if (!company) {
-        throw new ApiError(404, "Company not found");
-    }
+    if (!company) throw new ApiError(404, "Company not found");
 
     try {
-        // Read Excel file
         const workbook = xlsx.readFile(req.tempFilePath);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
+
+        let mapping = req.body.mapping;
+        if (typeof mapping === 'string') {
+            try {
+                mapping = JSON.parse(mapping);
+            } catch (err) {
+                throw new ApiError(400, "Invalid JSON in field mapping");
+            }
+        }
+        if (!mapping || typeof mapping !== 'object') {
+            throw new ApiError(400, "Field mapping object is missing or invalid");
+        }
+
         const employees = xlsx.utils.sheet_to_json(worksheet);
+        const mappedEmployees = employees.map((row) => {
+            const mapped = {};
+            for (const [key, excelHeader] of Object.entries(mapping)) {
+                if (excelHeader && row[excelHeader] !== undefined) {
+                    const keys = key.split('.');
+                    let current = mapped;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current[keys[i]] = current[keys[i]] || {};
+                        current = current[keys[i]];
+                    }
+                    current[keys[keys.length - 1]] = row[excelHeader];
+                }
+            }
+            return mapped;
+        });
 
-        const results = {
-            successful: [],
-            failed: [],
-            duplicates: []
-        };
+        const results = { successful: [], failed: [], duplicates: [] };
 
-        // Get company's departments, roles, and designations for validation
         const [departments, roles, designations] = await Promise.all([
             Department.find({ companyRef: companyId }),
             Role.find({ companyRef: companyId, isActive: true }),
@@ -846,66 +863,108 @@ const bulkUploadEmployees = asyncHandler(async (req, res) => {
             return acc;
         }, {});
 
-        for (const empData of employees) {
+        for (const empData of mappedEmployees) {
             try {
-                // Validate required fields
-                if (!empData.firstName || !empData.lastName || !empData.email) {
-                    results.failed.push({
-                        data: empData,
-                        error: "Missing required fields (firstName, lastName, email)"
-                    });
+                const firstName = empData?.personalInfo?.firstName?.trim();
+                const lastName = empData?.personalInfo?.lastName?.trim();
+                const email = empData?.contactInfo?.primaryEmail?.toLowerCase().trim();
+                const phone = empData?.contactInfo?.primaryPhone;
+                const dateOfJoining = empData?.employmentInfo?.dateOfJoining;
+                const workLocation = empData?.employmentInfo?.workLocation || "Office";
+
+                if (!firstName || !lastName || !email) {
+                    results.failed.push({ data: empData, error: "Missing required fields (first name, last name, email)" });
                     continue;
                 }
 
-                // Check for duplicates
                 const existingEmployee = await Employee.findOne({
                     companyRef: companyId,
-                    "contactInfo.primaryEmail": empData.email.toLowerCase().trim(),
+                    "contactInfo.primaryEmail": email,
                     "systemInfo.isActive": true
                 });
-
                 if (existingEmployee) {
-                    results.duplicates.push({
-                        email: empData.email,
-                        existingEmployeeId: existingEmployee.employeeId
-                    });
+                    results.duplicates.push({ email, existingEmployeeId: existingEmployee.employeeId });
                     continue;
                 }
 
-                // Map department, role, designation
-                const departmentRef = departmentMap[empData.department?.toLowerCase()];
-                const roleRef = roleMap[empData.role?.toLowerCase()];
-                const designationRef = designationMap[empData.designation?.toLowerCase()];
+                const roleName = empData?.roleRef;
+                const departmentName = empData?.departmentRef;
+                const designationName = empData?.designationRef;
+
+                let departmentRef = departmentMap[departmentName?.toLowerCase()];
+                if (!departmentRef && departmentName) {
+                    const newDept = await Department.create({
+                        departmentName,
+                        departmentCode: departmentName.toUpperCase().replace(/\s+/g, '_'),
+                        companyRef: companyId
+                    });
+                    departmentRef = newDept._id;
+                    departmentMap[departmentName.toLowerCase()] = newDept._id;
+                }
+
+                let roleRef = roleMap[roleName?.toLowerCase()];
+                if (!roleRef && roleName) {
+                    const newRole = await Role.create({
+                        roleName,
+                        companyRef: companyId,
+                        roleLevel: 1,
+                        isActive: true,
+                        permissions: {
+                            employeePermissions: "None",
+                            clientPermissions: "None",
+                            sowPermissions: "None",
+                            claimPermissions: "ViewOwn",
+                            reportPermissions: "None"
+                        },
+                        dataAccess: {
+                            clientRestriction: "Assigned",
+                            claimRestriction: "Assigned",
+                            sowRestriction: "Assigned",
+                            reportScope: "Self",
+                            financialDataAccess: false
+                        }
+                    });
+                    roleRef = newRole._id;
+                    roleMap[roleName.toLowerCase()] = newRole._id;
+                }
+
+                let designationRef = designationMap[designationName?.toLowerCase()];
+                if (!designationRef && designationName) {
+                    const newDesig = await Designation.create({
+                        designationName,
+                        designationCode: designationName.toUpperCase().replace(/\s+/g, '_'),
+                        companyRef: companyId,
+                        level: 1,
+                        category: "Entry Level"
+                    });
+                    designationRef = newDesig._id;
+                    designationMap[designationName.toLowerCase()] = newDesig._id;
+                }
 
                 if (!departmentRef || !roleRef || !designationRef) {
-                    results.failed.push({
-                        data: empData,
-                        error: "Invalid department, role, or designation"
-                    });
+                    results.failed.push({ data: empData, error: "Invalid department, role, or designation" });
                     continue;
                 }
 
-                // Generate credentials
-                const permanentPassword = generateEmployeePassword(empData.firstName);
+                const permanentPassword = generateEmployeePassword(firstName);
 
-                // Create employee
                 const newEmployee = new Employee({
                     companyRef: companyId,
                     roleRef,
                     departmentRef,
                     designationRef,
                     personalInfo: {
-                        firstName: empData.firstName.trim(),
-                        middleName: empData.middleName?.trim(),
-                        lastName: empData.lastName.trim()
+                        firstName,
+                        middleName: empData.personalInfo?.middleName?.trim(),
+                        lastName
                     },
                     contactInfo: {
-                        primaryEmail: empData.email.toLowerCase().trim(),
-                        primaryPhone: empData.phone
+                        primaryEmail: email,
+                        primaryPhone: phone
                     },
                     employmentInfo: {
-                        dateOfJoining: empData.dateOfJoining ? new Date(empData.dateOfJoining) : new Date(),
-                        workLocation: empData.workLocation || "Office"
+                        dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : new Date(),
+                        workLocation
                     },
                     systemInfo: {
                         isActive: true,
@@ -919,74 +978,59 @@ const bulkUploadEmployees = asyncHandler(async (req, res) => {
                 await newEmployee.hashPassword(permanentPassword);
                 await newEmployee.save();
 
-                // Send welcome email
-                try {
-                    await sendEmail({
-                        to: empData.email,
-                        currentTemplate: EMAIL_TEMPLATES.EMPLOYEE_WELCOME,
-                        data: {
-                            name: `${empData.firstName} ${empData.lastName}`,
-                            employeeId: newEmployee.employeeId,
-                            email: empData.email,
-                            permanentPassword: permanentPassword,
-                            companyName: company.companyName,
-                            portalUrl: `${process.env.FRONTEND_URL}/employee/login`
-                        }
-                    });
-                } catch (emailError) {
-                    console.error(`Failed to send email to ${empData.email}:`, emailError);
-                }
+                await sendEmail({
+                    to: email,
+                    currentTemplate: EMAIL_TEMPLATES.EMPLOYEE_WELCOME,
+                    data: {
+                        name: `${firstName} ${lastName}`,
+                        employeeId: newEmployee.employeeId,
+                        email,
+                        permanentPassword,
+                        companyName: company.companyName,
+                        portalUrl: `${process.env.FRONTEND_URL} / employee / login`
+                    }
+                });
 
                 results.successful.push({
                     employeeId: newEmployee.employeeId,
-                    email: empData.email,
-                    name: `${empData.firstName} ${empData.lastName}`
+                    email,
+                    name: `${firstName} ${lastName}`
                 });
 
             } catch (error) {
-                results.failed.push({
-                    data: empData,
-                    error: error.message
-                });
+                results.failed.push({ data: empData, error: error.message });
             }
         }
 
-        // Send bulk upload results email to admin
-        try {
-            const adminEmail = req.company?.contactEmail;
-            if (adminEmail) {
-                await sendEmail({
-                    to: adminEmail,
-                    currentTemplate: EMAIL_TEMPLATES.BULK_UPLOAD_RESULTS,
-                    data: {
-                        successful: results.successful.length,
-                        failed: results.failed.length,
-                        duplicates: results.duplicates.length
-                    }
-                });
-            }
-        } catch (emailError) {
-            console.error("Failed to send bulk upload results email:", emailError);
+        const adminEmail = req.company?.contactEmail;
+        if (adminEmail) {
+            await sendEmail({
+                to: adminEmail,
+                currentTemplate: EMAIL_TEMPLATES.BULK_UPLOAD_RESULTS,
+                data: {
+                    successful: results.successful.length,
+                    failed: results.failed.length,
+                    duplicates: results.duplicates.length
+                }
+            });
         }
 
         return res.status(200).json(
-            new ApiResponse(
-                200,
-                {
-                    summary: {
-                        total: employees.length,
-                        successful: results.successful.length,
-                        failed: results.failed.length,
-                        duplicates: results.duplicates.length
-                    },
-                    details: results
+            new ApiResponse(200, {
+                summary: {
+                    total: employees.length,
+                    successful: results.successful.length,
+                    failed: results.failed.length,
+                    duplicates: results.duplicates.length
                 },
-                "Bulk upload completed"
-            )
+                successful: results.successful,
+                failed: results.failed,
+                duplicates: results.duplicates
+            }, "Bulk upload completed")
         );
 
     } catch (error) {
-        throw new ApiError(400, `Error processing Excel file: ${error.message}`);
+        throw new ApiError(400, `Error processing bulk upload: ${error.message}`);
     }
 });
 

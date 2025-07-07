@@ -18,7 +18,15 @@ export const Button = ({
   ...props
 }) => {
   const { userType } = useAuth();
-  const theme = getTheme(customTheme || userType);
+  const raw = customTheme || userType;
+  const theme = getTheme(raw);
+  // console.log("Theme:", theme);
+
+  if (!theme) {
+    throw new Error(
+      `Unknown theme key "${raw}". Please pass a valid theme or userType.`
+    );
+  }
 
   const baseClasses =
     "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";

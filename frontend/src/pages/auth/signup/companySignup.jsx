@@ -114,8 +114,8 @@ export default function CompanySignup() {
     setErrors,
     loading,
     setLoading,
-    goNext,
-    goBack,
+    onNext: goNext,
+    onPrev: goBack,
     goToStep,
     resetForm,
     step,
@@ -123,7 +123,7 @@ export default function CompanySignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div className="w-full max-w-7xl mx-auto px-4 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 rounded-xl">
       <Helmet>
         <title>Company Registration - GetMax WFM</title>
       </Helmet>

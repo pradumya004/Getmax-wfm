@@ -4,10 +4,10 @@ import { apiCall } from './apiClient.js';
 
 export const companyAPI = {
     // Profile Management
-    getProfile: () => apiCall('get', '/companies/profile'),
-    updateProfile: (data) => apiCall('put', '/companies/profile', data),
+    getProfile: () => apiCall('get', '/company/profile'),
+    updateProfile: (data) => apiCall('put', '/company/profile', data),
 
     // Organizational Data
-    getOrgData: () => apiCall('get', '/companies/org-data'),
-    downloadEmployeeTemplate: () => apiCall('get', '/companies/employee-template')
+    getOrgData: () => apiCall('get', '/company/org-data'),
+    downloadEmployeeTemplate: () => apiCall('get', '/company/employee-template')
 };

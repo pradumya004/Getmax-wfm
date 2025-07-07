@@ -1,15 +1,37 @@
 // frontend/src/pages/auth/EmployeeLogin.jsx
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, ArrowRight, Shield } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet";
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  ArrowRight,
+  Shield,
+  Trophy,
+  Target,
+  BarChart3,
+  Star,
+  Calendar,
+  Clock,
+  Award,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
-import { useAuth } from "../../hooks/useAuth.jsx";
 import { authAPI } from "../../api/auth.api.js";
+import { useAuth } from "../../hooks/useAuth.jsx";
+import { getTheme } from "../../lib/theme.js";
+import { Button } from "../../components/ui/Button.jsx";
+import { Card } from "../../components/ui/Card.jsx";
 
-export default function EmployeeLogin() {
+const EmployeeLogin = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, userType } = useAuth();
+  const theme = getTheme(userType);
+
   const [formData, setFormData] = useState({
     employeeId: "",
     password: "",
@@ -169,4 +191,6 @@ export default function EmployeeLogin() {
       </div>
     </div>
   );
-}
+};
+
+export default EmployeeLogin;

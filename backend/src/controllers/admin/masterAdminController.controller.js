@@ -5,7 +5,7 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { getMasterAdminInfo } from "../../utils/jwtHelper.js";
+import { getMasterAdminInfo, generateMasterAdminToken } from "../../utils/jwtHelper.js";
 import { Company } from "../../models/company.model.js";
 import { Employee } from "../../models/employee.model.js";
 
@@ -16,12 +16,21 @@ const loginMasterAdmin = asyncHandler(async (req, res) => {
     // The verifyMasterAdminLogin middleware already handles credential verification
     // If we reach here, credentials are valid and req.masterAdmin is set
 
+    const token = generateMasterAdminToken();
+    res.cookie("masterAdminToken", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    const adminInfo = getMasterAdminInfo();
     return res.status(200).json(
         new ApiResponse(
             200,
             {
-                user: req.masterAdmin,
-                message: "Master admin logged in successfully"
+                adminInfo,
+                token
             },
             "Login successful"
         )
@@ -30,11 +39,7 @@ const loginMasterAdmin = asyncHandler(async (req, res) => {
 
 // Master Admin Logout
 const logoutMasterAdmin = asyncHandler(async (req, res) => {
-    res.clearCookie("masterAdminToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax'
-    });
+    res.clearCookie("masterAdminToken");
 
     return res.status(200).json(
         new ApiResponse(200, {}, "Master admin logged out successfully")

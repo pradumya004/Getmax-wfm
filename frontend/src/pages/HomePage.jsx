@@ -33,7 +33,6 @@ import { FaTwitter, FaLinkedin, FaFacebook, FaYoutube } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import SignupModal from "./auth/SignupModal.jsx";
-import LoginModal from "./auth/LoginModal.jsx";
 
 const Button = ({ children, size, variant, className, onClick }) => {
   const baseClasses =
@@ -72,10 +71,11 @@ const Homepage = () => {
 
   const handleLogin = () => {
     console.log("login clicked");
+    navigate("/company/login");
   };
 
   const handleSignup = () => {
-    console.log("Signup clicked");
+    console.log("Signup Clicked");
   };
 
   const navItems = [
@@ -284,7 +284,6 @@ const Homepage = () => {
   return (
     <div>
       <SignupModal isOpen={showSignup} onClose={() => setShowSignup(false)} />
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
 
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 relative overflow-hidden">
         {/* Animated background elements */}
@@ -380,7 +379,7 @@ const Homepage = () => {
                   onClick={handleLogin}
                   className="text-gray-300 hover:text-cyan-400 transition-all duration-300 px-4 py-2 rounded-lg hover:bg-cyan-400/10 font-medium border border-transparent hover:border-cyan-400/30"
                 >
-                  <a onClick={() => setShowLogin(true)}>Login</a>
+                  Login
                 </button>
                 <button
                   onClick={handleSignup}

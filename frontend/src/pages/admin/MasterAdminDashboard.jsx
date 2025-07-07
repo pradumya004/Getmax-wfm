@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { Helmet } from "react-helmet";
 import {
   Building,
   Users,
@@ -25,7 +25,7 @@ import {
   Target,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { adminAPI } from "../../api/admin.api.js";
+import { masterAdminAPI } from "../../api/masterAdmin.api.js";
 import { getTheme } from "../../lib/theme.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { Button } from "../../components/ui/Button.jsx";
@@ -35,8 +35,9 @@ import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { userType } = useAuth();
-  console.log("AdminDashboard - userType:", userType);
+  // console.log("AdminDashboard - userType:", userType);
   const theme = getTheme(userType);
+  // console.log("AdminDashboard - theme:", theme);
 
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,23 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const [
+        companiesResponse,
+        systemHealthResponse,
+        financialStatsResponse,
+        dashboardDataResponse,
+      ] = await Promise.all([
+        masterAdminAPI.getAllCompanies().catch(() => null),
+        masterAdminAPI.getSystemHealth().catch(() => null),
+        masterAdminAPI.getFinancialStats().catch(() => null),
+        masterAdminAPI.getDashboardData().catch(() => null),
+      ]);
+
+      console.log("Companies Response:", companiesResponse);
+      console.log("System Health Response:", systemHealthResponse);
+      console.log("Financial Stats Response:", financialStatsResponse);
+      console.log("Dashboard Data Response:", dashboardDataResponse);
+      
       // Mock data for now - replace with actual API call
       const mockData = {
         stats: {

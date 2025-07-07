@@ -6,7 +6,7 @@ import { Building, Users, Calendar } from 'lucide-react';
 import { Card } from '../../../components/ui/Card.jsx';
 import StatCard from '../../../components/common/StatCard.jsx';
 import { OrgDataTable } from '../../../components/organization/OrgDataTable.jsx';
-import { AddDepartmentModal } from '../../../components/organization/AddDepartmentModal.jsx';
+import { AddDepartmentModal } from '../../../components/organization/departments/AddDepartmentModal.jsx';
 import { organizationAPI } from '../../../api/organization.api.js';
 import { useApi } from '../../../hooks/useApi.jsx';
 import { toast } from 'react-hot-toast';

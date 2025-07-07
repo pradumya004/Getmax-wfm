@@ -14,7 +14,15 @@ export const Card = ({
   ...props
 }) => {
   const { userType } = useAuth();
-  const theme = getTheme(customTheme || userType);
+  const raw = customTheme || userType;
+  const theme = getTheme(raw);
+  // console.log("Theme:", theme);
+  
+  if (!theme) {
+    throw new Error(
+      `Unknown theme key "${raw}". Please pass a valid theme or userType.`
+    );
+  }
 
   const baseClasses = "rounded-xl border transition-all duration-200";
 
@@ -53,4 +61,3 @@ Card.Body = ({ children, className = "" }) => (
 Card.Footer = ({ children, className = "" }) => (
   <div className={`p-6 pt-0 ${className}`}>{children}</div>
 );
-

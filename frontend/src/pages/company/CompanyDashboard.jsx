@@ -43,11 +43,10 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { Card } from "../../components/ui/Card.jsx";
-import StatCard from "../../components/common/StatCard.jsx";
-import { CompanyProfileCard } from "../../components/company/CompanyProfileCard.jsx";
-import { EmployeeStatsCard } from "../../components/company/EmployeeStatsCard.jsx";
+// import StatCard from "../../components/common/StatCard.jsx";
+// import { CompanyProfileCard } from "../../components/company/CompanyProfileCard.jsx";
+// import { EmployeeStatsCard } from "../../components/company/EmployeeStatsCard.jsx";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
-import { SubDepartment } from './../../../../backend/src/models/subdepartment.model';
 
 const CompanyDashboard = () => {
   const navigate = useNavigate();

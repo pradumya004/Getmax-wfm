@@ -120,22 +120,22 @@ function App() {
             />
 
             {/* ORG MGMT */}
-            <Route path="organization" element={<OrganizationOverview />} />
+            <Route path="org-data/overview" element={<OrganizationOverview />} />
             <Route
-              path="organization/hierarchy"
+              path="org-data/hierarchy"
               element={<OrgHierarchyView />}
             />
-            <Route path="organization/roles" element={<RoleManagement />} />
+            <Route path="org-data/roles" element={<RoleManagement />} />
             <Route
-              path="organization/departments"
+              path="org-data/departments"
               element={<DepartmentManagement />}
             />
             <Route
-              path="organization/designations"
+              path="org-data/designations"
               element={<DesignationManagement />}
             />
             <Route
-              path="organization/subdepartments"
+              path="org-data/subdepartments"
               element={<SubDepartmentManagement />}
             />
           </Route>

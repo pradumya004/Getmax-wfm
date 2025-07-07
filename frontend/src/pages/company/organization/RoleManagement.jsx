@@ -6,7 +6,7 @@ import { Users, Shield, Settings } from "lucide-react";
 import { Card } from "../../../components/ui/Card.jsx";
 import StatCard from "../../../components/common/StatCard.jsx";
 import { OrgDataTable } from "../../../components/organization/OrgDataTable.jsx";
-import { AddRoleModal } from "../../../components/organization/AddRoleModal.jsx";
+import { AddRoleModal } from "../../../components/organization/roles/AddRoleModal.jsx";
 import { organizationAPI } from "../../../api/organization.api.js";
 import { useApi } from "../../../hooks/useApi.jsx";
 import { toast } from "react-hot-toast";

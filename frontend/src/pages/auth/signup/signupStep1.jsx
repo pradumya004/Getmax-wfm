@@ -1,4 +1,4 @@
-// frontend/src/pages/auth/signup/signupStep1.jsx
+// frontend/src/pages/auth/signup/SignupStep1.jsx
 
 // UPDATED - Basic Company Information with enhanced validation
 
@@ -120,8 +120,8 @@ export default function SignupStep1({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen flex items-center justify-center p-4 rounded-2xl">
+      <div className="w-full">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-white/10 p-6 border-b border-white/20">
