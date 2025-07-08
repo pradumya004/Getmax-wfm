@@ -201,13 +201,21 @@ Getmax-wfm
 │  │  ├─ main.jsx
 │  │  └─ pages
 │  │     ├─ admin
-│  │     │  ├─ CompanyManagement.jsx
-│  │     │  ├─ DetailedCompany.jsx
+│  │     │  ├─ company
+│  │     │  │  ├─ CompanyManagement.jsx
+│  │     │  │  └─ DetailedCompany.jsx
+│  │     │  ├─ employee
+│  │     │  │  └─ EmployeeManagementAdmin.jsx
 │  │     │  ├─ EmployeeFilterAdmin.jsx
-│  │     │  ├─ EmployeeManagementAdmin.jsx
 │  │     │  ├─ MasterAdminDashboard.jsx
-│  │     │  ├─ PlatformStats.jsx
-│  │     │  └─ ShowCompany.jsx
+│  │     │  ├─ MasterAdminProfile.jsx
+│  │     │  ├─ NotificationCenter.jsx
+│  │     │  ├─ ShowCompany.jsx
+│  │     │  ├─ statistics
+│  │     │  │  └─ PlatformStats.jsx
+│  │     │  └─ system
+│  │     │     ├─ ApiMonitoring.jsx
+│  │     │     └─ SystemHealth.jsx
 │  │     ├─ auth
 │  │     │  ├─ CompanyLogin.jsx
 │  │     │  ├─ CompanySignup.jsx

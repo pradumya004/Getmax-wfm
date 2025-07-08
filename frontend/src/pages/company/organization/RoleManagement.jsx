@@ -58,7 +58,7 @@ const RoleManagement = () => {
   const activeRoles = roles.filter((role) => role.isActive !== false).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br p-6">
       <Helmet>
         <title>Role Management - GetMax</title>
       </Helmet>

@@ -37,10 +37,13 @@ import LeaderboardCard from "../../components/employee/LeaderboardCard.jsx";
 // API
 import { employeeAPI } from "../../api/employee.api.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import {getTheme} from "../../lib/theme.js";
 
 const EmployeeDashboard = () => {
   const navigate = useNavigate();
   const { user, userType } = useAuth();
+  const theme = getTheme(userType);
+
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     profile: null,

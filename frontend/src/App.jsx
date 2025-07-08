@@ -1,7 +1,12 @@
 // frontend/src/App.jsx
 
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 
@@ -16,6 +21,15 @@ import EmployeeLogin from "./pages/auth/EmployeeLogin.jsx";
 
 // Master Admin Pages
 import MasterAdminDashboard from "./pages/admin/MasterAdminDashboard.jsx";
+import MasterAdminProfile from "./pages/admin/MasterAdminProfile.jsx";
+import CompanyManagement from "./pages/admin/company/CompanyManagement.jsx";
+import DetailedCompany from "./pages/admin/company/DetailedCompany.jsx";
+import EmployeeManagementAdmin from "./pages/admin/employee/EmployeeManagementAdmin.jsx";
+import PlatformStats from "./pages/admin/statistics/PlatformStats.jsx";
+import FinancialDashboard from "./pages/admin/FinalcialDashboard.jsx";
+import SystemHealth from "./pages/admin/system/SystemHealth.jsx";
+import ApiMonitoring from "./pages/admin/system/APIMonitoring.jsx";
+import NotificationCenter from "./pages/admin/NotificationCenter.jsx";
 
 // Company Pages
 import CompanyDashboard from "./pages/company/CompanyDashboard.jsx";
@@ -83,12 +97,63 @@ function App() {
             path="/master-admin"
             element={
               <ProtectedRoute userType="master_admin">
-                <DashboardLayout />
+                <DashboardLayout userType="master_admin" />
               </ProtectedRoute>
             }
           >
-            <Route index element={<MasterAdminDashboard />} />
+            {/* Dashboard */}
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<MasterAdminDashboard />} />
+
+            {/* Company Management */}
+            <Route path="companies" element={<CompanyManagement />} />
+            <Route path="companies/:companyId" element={<DetailedCompany />} />
+            <Route
+              path="companies/:companyId/edit"
+              element={<DetailedCompany />}
+            />
+
+            {/* Employee Management */}
+            <Route path="employees" element={<EmployeeManagementAdmin />} />
+            <Route
+              path="employees/:employeeId"
+              element={<EmployeeManagementAdmin />}
+            />
+
+            {/* Analytics & Reports */}
+            <Route path="stats" element={<PlatformStats />} />
+            <Route path="analytics/growth" element={<PlatformStats />} />
+            <Route path="analytics/revenue" element={<FinancialDashboard />} />
+            <Route path="analytics/usage" element={<PlatformStats />} />
+            {/* <Route path="analytics/export" element={<DataExport />} /> */}
+
+            {/* System Management */}
+            <Route path="system/health" element={<SystemHealth />} />
+            {/* <Route path="system/database" element={<DatabaseMonitor />} /> */}
+            {/* <Route path="system/performance" element={<PerformanceMonitor />} /> */}
+            {/* <Route path="system/alerts" element={<NotificationCenter />} /> */}
+            <Route path="system/api" element={<ApiMonitoring />} />
+
+            {/* Security & Configuration */}
+            {/* <Route path="security/settings" element={<SecuritySettings />} /> */}
+            {/* <Route path="security/audit" element={<AuditLogs />} /> */}
+            {/* <Route path="settings/platform" element={<PlatformSettings />} /> */}
+            {/* <Route path="settings/features" element={<PlatformSettings />} /> */}
+
+            {/* Quick Actions */}
+            {/* <Route path="companies/add" element={<CompanyManagement />} /> */}
+            {/* <Route path="emergency" element={<SystemHealth />} /> */}
+            <Route path="notifications" element={<NotificationCenter />} />
+            {/* <Route path="backup" element={<BackupManagement />} /> */}
+
+            {/* Profile */}
+            <Route path="profile" element={<MasterAdminProfile />} />
+
+            {/* Catch-all for unknown master-admin routes */}
+            <Route
+              path="*"
+              element={<Navigate to="/master-admin/dashboard" replace />}
+            />
           </Route>
 
           {/* COMPANY ROUTES */}
@@ -120,11 +185,11 @@ function App() {
             />
 
             {/* ORG MGMT */}
-            <Route path="org-data/overview" element={<OrganizationOverview />} />
             <Route
-              path="org-data/hierarchy"
-              element={<OrgHierarchyView />}
+              path="org-data/overview"
+              element={<OrganizationOverview />}
             />
+            <Route path="org-data/hierarchy" element={<OrgHierarchyView />} />
             <Route path="org-data/roles" element={<RoleManagement />} />
             <Route
               path="org-data/departments"

@@ -1,4 +1,4 @@
-// frontend/src/components/layout/Sidebar.jsx - Enhanced for Master Admin
+// frontend/src/components/layout/Sidebar.jsx
 
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -47,6 +47,8 @@ import { getTheme } from "../../lib/theme.js";
 
 const Sidebar = () => {
   const { userType, user, logout } = useAuth();
+  console.log("userType:", userType);
+  console.log("user:", user);
   const location = useLocation();
   const theme = getTheme(userType);
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -60,6 +62,8 @@ const Sidebar = () => {
   };
 
   const handleLogout = async () => {
+    console.log("Logging out...");
+
     try {
       await logout();
     } catch (error) {
@@ -67,6 +71,22 @@ const Sidebar = () => {
       localStorage.clear();
       window.location.href = getLoginUrl();
     }
+    // localStorage.removeItem("token");
+    // localStorage.removeItem("user");
+
+    // console.log(`Token: ${localStorage.getItem("token")}`);
+    // console.log(`User: ${localStorage.getItem("user")}`);
+    // switch (userType) {
+    //   case "master_admin":
+    //     window.location.href = "/master-admin/login";
+    //     break;
+    //   case "company":
+    //     window.location.href = "/company/login";
+    //     break;
+    //   case "employee":
+    //     window.location.href = "/employee/login";
+    //     break;
+    // }
   };
 
   const getLoginUrl = () => {
@@ -291,7 +311,6 @@ const Sidebar = () => {
             ],
           },
         ];
-
       case "company":
         return [
           {
@@ -459,7 +478,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`w-64 ${theme.glass} border-r border-white/10 h-full relative overflow-visible`}
+      className={`w-64 ${theme.glass} border-r border-white/10 h-full relative`}
     >
       {/* Background Elements */}
       <div
@@ -468,7 +487,6 @@ const Sidebar = () => {
       <div
         className={`absolute bottom-0 right-0 w-24 h-24 bg-${theme.accent}/10 rounded-full blur-xl`}
       ></div>
-
       <div className="relative z-10 h-full flex flex-col">
         {/* Logo/Header */}
         <div className="p-6 border-b border-white/10">
