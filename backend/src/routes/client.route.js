@@ -16,13 +16,14 @@ import {
   getClientsByEHR,
   checkSOWReadiness,
   uploadAgreements,
-  updateSyncStatus
-} from '../controllers/client.controller.js';
+  updateSyncStatus,
+  bulkUploadClients
+} from '../controllers/client/clientController.controller.js';
 
 import {
   verifyEmployeeToken,
   requirePermission,
-  requireRoleLevel
+  requireRoleLevel,
 } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -35,9 +36,12 @@ router.use(verifyEmployeeToken);
 // ===================
 router.post(
   '/',
-  requirePermission('client', 'Create'),
+  requirePermission('client', 'Create'), verifyEmployeeToken,
   createClient
 );
+
+router.post('/bulk-upload', requirePermission('client', 'Create'), verifyEmployeeToken, bulkUploadClients);
+
 
 router.get(
   '/',
@@ -134,5 +138,7 @@ router.get(
   requirePermission('client', 'ManageCredentials'), // or use requireRoleLevel(9)
   getDecryptedCredentials
 );
+
+
 
 export default router;

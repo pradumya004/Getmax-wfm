@@ -110,6 +110,7 @@ export const verifyEmployeeToken = asyncHandler(async (req, res, next) => {
         }
 
         req.employee = employee;
+        req.company = employee.companyRef;
         next();
     } catch (error) {
         throw new ApiError(401, error || "Invalid access token");

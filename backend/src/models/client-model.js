@@ -60,22 +60,22 @@ const clientSchema = new mongoose.Schema({
         taxId: {
             type: String,
             trim: true,
-            validate: {
-                validator: function(v) {
-                    return !v || /^\d{2}-\d{7}$/.test(v); // Basic EIN format
-                },
-                message: 'Tax ID must be in XX-XXXXXXX format'
-            }
+            // validate: {
+            //     validator: function(v) {
+            //         return !v || /^\d{2}-\d{7}$/.test(v); // Basic EIN format
+            //     },
+            //     message: 'Tax ID must be in XX-XXXXXXX format'
+            // }
         },
         npiNumber: {
             type: String,
             trim: true,
-            validate: {
-                validator: function(v) {
-                    return !v || /^\d{10}$/.test(v); // NPI is 10 digits
-                },
-                message: 'NPI must be 10 digits'
-            }
+            // validate: {
+            //     validator: function(v) {
+            //         return !v || /^\d{10}$/.test(v); // NPI is 10 digits
+            //     },
+            //     message: 'NPI must be 10 digits'
+            // }
         }
     },
 
