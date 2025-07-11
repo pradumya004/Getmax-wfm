@@ -372,6 +372,25 @@ const ClientBulkUpload = () => {
 
         setExcelHeaders(headers);
         setExcelData(rows);
+
+        // Auto-generate mappings from headers to model keys
+        const autoMappings = {};
+        headers.forEach((header) => {
+          const normalizedHeader = header.trim().toLowerCase();
+
+          const matchKey = Object.entries(clientFieldMappings).find(
+            ([_, info]) =>
+              (info.label || "")
+                .replace(/\*/g, "") // remove asterisks
+                .trim()
+                .toLowerCase() === normalizedHeader
+          );
+
+          if (matchKey) {
+            autoMappings[matchKey[0]] = header;
+          }
+        });
+        setMappings(autoMappings);
         setCurrentStep(2);
 
         toast.success(
@@ -745,86 +764,80 @@ const ClientBulkUpload = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <FieldMapper
-                  sourceFields={excelHeaders}
-                  targetFields={clientFieldMappings}
-                  mappings={mappings}
-                  onMappingChange={handleMappingChange}
-                  requiredFields={requiredFields}
-                />
-              </div>
+            <div className="space-y-6">
+              <Card className={`${theme.card} p-6`}>
+                <h4 className="text-white font-medium mb-3">
+                  File Information
+                </h4>
+                <div className="space-y-2 text-sm grid grid-cols-3 gap-4">
+                  <div className="flex gap-1 col-span-1">
+                    <span className={`text-${theme.textSecondary}`}>File:</span>
+                    <span className="text-white">{uploadedFile?.name}</span>
+                  </div>
+                  <div className="flex gap-1 col-span-1">
+                    <span className={`text-${theme.textSecondary}`}>Rows:</span>
+                    <span className="text-white">{excelData.length}</span>
+                  </div>
+                  <div className="flex gap-1 col-span-1">
+                    <span className={`text-${theme.textSecondary}`}>
+                      Columns:
+                    </span>
+                    <span className="text-white">{excelHeaders.length}</span>
+                  </div>
+                </div>
+              </Card>
 
-              <div className="space-y-6">
-                <Card className={`${theme.card} p-6`}>
-                  <h4 className="text-white font-medium mb-3">
-                    File Information
+              {errors.length > 0 && (
+                <Card className={`${theme.card} p-6 border-red-500/30`}>
+                  <h4 className="text-red-400 font-medium mb-3 flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Errors ({errors.length})
                   </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className={`text-${theme.textSecondary}`}>
-                        File:
-                      </span>
-                      <span className="text-white">{uploadedFile?.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-${theme.textSecondary}`}>
-                        Rows:
-                      </span>
-                      <span className="text-white">{excelData.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className={`text-${theme.textSecondary}`}>
-                        Columns:
-                      </span>
-                      <span className="text-white">{excelHeaders.length}</span>
-                    </div>
+                  <div className="space-y-2">
+                    {errors.slice(0, 3).map((error, index) => (
+                      <div key={index} className="text-red-300 text-sm">
+                        {error.message}
+                      </div>
+                    ))}
+                    {errors.length > 3 && (
+                      <div className="text-red-400 text-sm">
+                        And {errors.length - 3} more errors...
+                      </div>
+                    )}
                   </div>
                 </Card>
+              )}
 
-                {errors.length > 0 && (
-                  <Card className={`${theme.card} p-6 border-red-500/30`}>
-                    <h4 className="text-red-400 font-medium mb-3 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-2" />
-                      Errors ({errors.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {errors.slice(0, 3).map((error, index) => (
-                        <div key={index} className="text-red-300 text-sm">
-                          {error.message}
-                        </div>
-                      ))}
-                      {errors.length > 3 && (
-                        <div className="text-red-400 text-sm">
-                          And {errors.length - 3} more errors...
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                )}
+              {warnings.length > 0 && (
+                <Card className={`${theme.card} p-6 border-yellow-500/30`}>
+                  <h4 className="text-yellow-400 font-medium mb-3 flex items-center">
+                    <Warning className="w-4 h-4 mr-2" />
+                    Warnings ({warnings.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {warnings.slice(0, 3).map((warning, index) => (
+                      <div key={index} className="text-yellow-300 text-sm">
+                        {warning.message}
+                      </div>
+                    ))}
+                    {warnings.length > 3 && (
+                      <div className="text-yellow-400 text-sm">
+                        And {warnings.length - 3} more warnings...
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+            </div>
 
-                {warnings.length > 0 && (
-                  <Card className={`${theme.card} p-6 border-yellow-500/30`}>
-                    <h4 className="text-yellow-400 font-medium mb-3 flex items-center">
-                      <Warning className="w-4 h-4 mr-2" />
-                      Warnings ({warnings.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {warnings.slice(0, 3).map((warning, index) => (
-                        <div key={index} className="text-yellow-300 text-sm">
-                          {warning.message}
-                        </div>
-                      ))}
-                      {warnings.length > 3 && (
-                        <div className="text-yellow-400 text-sm">
-                          And {warnings.length - 3} more warnings...
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                )}
-              </div>
+            <div className="lg:col-span-2">
+              <FieldMapper
+                sourceFields={excelHeaders}
+                targetFields={clientFieldMappings}
+                mappings={mappings}
+                onMappingChange={handleMappingChange}
+                requiredFields={requiredFields}
+              />
             </div>
           </div>
         );

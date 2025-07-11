@@ -141,6 +141,9 @@ const ClientDetails = () => {
     toast.success("Copied to clipboard");
   };
 
+  console.log("Client details:", client);
+  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

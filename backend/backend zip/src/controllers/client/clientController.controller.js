@@ -43,8 +43,7 @@ export const getAllClients = asyncHandler(async (req, res) => {
 
 // 3. Get Client by ID
 export const getClientById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const client = await Client.findOne({ clientId: id })
+  const client = await Client.findById(req.params.id)
     .populate('serviceAgreements.activeSOWs')
     .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName')
     .populate('auditInfo.lastModifiedBy', 'personalInfo.firstName personalInfo.lastName');
@@ -55,8 +54,7 @@ export const getClientById = asyncHandler(async (req, res) => {
 
 // 4. Update Client Info
 export const updateClient = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const client = await Client.findOne({ clientId: id });
+  const client = await Client.findById(req.params.id);
   if (!client) throw new ApiError(404, 'Client not found');
 
   Object.assign(client, req.body);
@@ -68,8 +66,7 @@ export const updateClient = asyncHandler(async (req, res) => {
 
 // 5. Deactivate Client (Soft Delete)
 export const deactivateClient = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const client = await Client.findOne({ clientId: id });
+  const client = await Client.findById(req.params.id);
   if (!client) throw new ApiError(404, 'Client not found');
 
   client.status.clientStatus = 'Terminated';

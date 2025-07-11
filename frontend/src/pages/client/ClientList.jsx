@@ -51,7 +51,7 @@ const ClientList = () => {
   // Local state
   const [viewMode, setViewMode] = useState("table");
   const [selectedClients, setSelectedClients] = useState([]);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  // const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [clientToDelete, setClientToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -262,14 +262,14 @@ const ClientList = () => {
       label: "Add Client",
       icon: Plus,
       variant: "primary",
-      onClick: () => navigate("/clients/add"),
+      onClick: () => navigate("/employee/clients/intake"),
       className: "bg-blue-600 hover:bg-blue-700",
     },
     {
       label: "Bulk Upload",
       icon: Upload,
       variant: "outline",
-      onClick: () => setShowBulkUpload(true),
+      onClick: () => navigate("/employee/clients/bulk-upload"),
     },
   ];
 
@@ -365,22 +365,22 @@ const ClientList = () => {
     toast.success("Clients exported successfully");
   };
 
-  const handleBulkUpload = async (file) => {
-    try {
-      await uploadClients(file);
-      toast.success("Clients uploaded successfully");
-      setShowBulkUpload(false);
-      refresh();
-    } catch (error) {
-      console.log("Error: ", error);
-      toast.error("Failed to upload clients");
-    }
-  };
+  // const handleBulkUpload = async (file) => {
+  //   try {
+  //     await uploadClients(file);
+  //     toast.success("Clients uploaded successfully");
+  //     setShowBulkUpload(false);
+  //     refresh();
+  //   } catch (error) {
+  //     console.log("Error: ", error);
+  //     toast.error("Failed to upload clients");
+  //   }
+  // };
 
   const handleRowClick = (client) => {
-    console.log("Client clicked:", client._id);
+    console.log("Client clicked:", client.clientId);
     
-    navigate(`/employee/clients/details/${client._id}`);
+    navigate(`/employee/clients/details/${client.clientId}`);
   };
 
   const handleRowSelect = (id) => {
@@ -486,7 +486,7 @@ const ClientList = () => {
 
             <Button
               variant="primary"
-              onClick={() => navigate("/clients/add")}
+              onClick={() => navigate("/employee/clients/intake")}
               className="flex items-center space-x-1"
             >
               <Plus className="w-4 h-4" />
@@ -507,15 +507,6 @@ const ClientList = () => {
             />
           ))}
         </div>
-
-        {/* Modals */}
-        <BulkUploadModal
-          isOpen={showBulkUpload}
-          onClose={() => setShowBulkUpload(false)}
-          onUpload={handleBulkUpload}
-          title="Upload Clients"
-          description="Upload multiple clients using Excel or CSV file"
-        />
 
         <ConfirmDialog
           isOpen={showDeleteDialog}
@@ -613,13 +604,13 @@ const ClientList = () => {
       />
 
       {/* Modals */}
-      <BulkUploadModal
+      {/* <BulkUploadModal
         isOpen={showBulkUpload}
         onClose={() => setShowBulkUpload(false)}
         onUpload={handleBulkUpload}
         title="Upload Clients"
         description="Upload multiple clients using Excel or CSV file"
-      />
+      /> */}
 
       <ConfirmDialog
         isOpen={showDeleteDialog}

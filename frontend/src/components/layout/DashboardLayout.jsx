@@ -43,7 +43,7 @@ const DashboardLayout = () => {
       </div>
 
       {/* Main layout container - medium z-index */}
-      <div className="relative flex w-full">
+      <div className="relative flex w-full overflow-auto">
         {/* Sidebar - medium z-index */}
         <div className="relative z-20">
           <Sidebar />

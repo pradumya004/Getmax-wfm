@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card } from "../ui/Card.jsx";
+import { Badge } from "../ui/Badge.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
 import { formatCurrency } from "../../lib/utils.js";

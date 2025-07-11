@@ -50,7 +50,10 @@ export const useClients = () => {
   const { execute: getClientById } = useApi(clientAPI.getClientById);
 
   const loadClients = async (params = {}) => {
+    console.log("🔍 Fetching Clients...");
+    console.log("Params:", params);
     const res = await fetchClients(params);
+    console.log("Response:", res);
     const clientList = Array.isArray(res) ? res : res?.data ?? [];
     setClients(clientList);
     return clientList;

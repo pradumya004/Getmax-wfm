@@ -33,7 +33,7 @@ export const Card = ({
     solid: `bg-gradient-to-br ${theme.secondary} border-${theme.accent}/20`,
   };
 
-  const hoverClasses = hover ? "hover:scale-[1.02] hover:shadow-xl" : "";
+  const hoverClasses = hover ? "hover:shadow-xl" : "";
   const clickable = onClick ? "cursor-pointer" : "";
 
   const variantClass = variants[variant] || variants.default;
