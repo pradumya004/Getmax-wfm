@@ -41,14 +41,23 @@ Getmax-wfm
 │     │  ├─ masterAdminAuth.middleware.js
 │     │  └─ upload.middleware.js
 │     ├─ models
-│     │  ├─ client.model.js
+│     │  ├─ claimtasks-model.js
+│     │  ├─ client-model.js
 │     │  ├─ company.model.js
 │     │  ├─ department.model.js
 │     │  ├─ designation.model.js
 │     │  ├─ employee.model.js
+│     │  ├─ floating-pool-model.js
 │     │  ├─ gamification.model.js
+│     │  ├─ notes-model.js
+│     │  ├─ notifications-model.js
+│     │  ├─ patient-model.js
+│     │  ├─ payer-model.js
 │     │  ├─ performance.model.js
+│     │  ├─ qa-audit-model.js
 │     │  ├─ role.model.js
+│     │  ├─ sla-tracking-model.js
+│     │  ├─ sow-model.js
 │     │  └─ subdepartment.model.js
 │     ├─ routes
 │     │  ├─ admin.route.js
@@ -75,7 +84,6 @@ Getmax-wfm
 │  ├─ README.md
 │  ├─ src
 │  │  ├─ api
-│  │  │  ├─ admin.api.js
 │  │  │  ├─ apiClient.js
 │  │  │  ├─ auth.api.js
 │  │  │  ├─ company.api.js
@@ -160,7 +168,6 @@ Getmax-wfm
 │  │  │  │     ├─ AddSubDepartmentModal.jsx
 │  │  │  │     └─ SubDepartmentCard.jsx
 │  │  │  ├─ testing
-│  │  │  │  └─ IntegrationTest.jsx
 │  │  │  └─ ui
 │  │  │     ├─ Badge.jsx
 │  │  │     ├─ Button.jsx
@@ -186,6 +193,7 @@ Getmax-wfm
 │  │  │  ├─ useCompany.jsx
 │  │  │  ├─ useEmployee.jsx
 │  │  │  ├─ useLocalStorage.jsx
+│  │  │  ├─ useMasterAdmin.jsx
 │  │  │  ├─ useOrganization.jsx
 │  │  │  ├─ usePagination.jsx
 │  │  │  └─ useSearch.jsx
@@ -201,21 +209,30 @@ Getmax-wfm
 │  │  ├─ main.jsx
 │  │  └─ pages
 │  │     ├─ admin
+│  │     │  ├─ AnnouncementManager.jsx
+│  │     │  ├─ AuditLogs.jsx
 │  │     │  ├─ company
 │  │     │  │  ├─ CompanyManagement.jsx
-│  │     │  │  └─ DetailedCompany.jsx
+│  │     │  │  ├─ DetailedCompany.jsx
+│  │     │  │  └─ ExportCompanies.jsx
 │  │     │  ├─ employee
-│  │     │  │  └─ EmployeeManagementAdmin.jsx
+│  │     │  │  ├─ EmployeeManagementAdmin.jsx
+│  │     │  │  └─ UserActivityMonitoring.jsx
 │  │     │  ├─ EmployeeFilterAdmin.jsx
+│  │     │  ├─ FeatureFlags.jsx
+│  │     │  ├─ FinalcialDashboard.jsx
 │  │     │  ├─ MasterAdminDashboard.jsx
 │  │     │  ├─ MasterAdminProfile.jsx
 │  │     │  ├─ NotificationCenter.jsx
+│  │     │  ├─ PlatformSettings.jsx
+│  │     │  ├─ SecurityCenter.jsx
 │  │     │  ├─ ShowCompany.jsx
 │  │     │  ├─ statistics
 │  │     │  │  └─ PlatformStats.jsx
 │  │     │  └─ system
 │  │     │     ├─ ApiMonitoring.jsx
-│  │     │     └─ SystemHealth.jsx
+│  │     │     ├─ SystemHealth.jsx
+│  │     │     └─ SystemPerformanceMonitor.jsx
 │  │     ├─ auth
 │  │     │  ├─ CompanyLogin.jsx
 │  │     │  ├─ CompanySignup.jsx

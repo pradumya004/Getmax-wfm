@@ -27,7 +27,7 @@ const ExportCompanies = ({ companies = [], isOpen, onClose, theme }) => {
     let fields = [];
 
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const fullPath = prefix ? `${prefix}.${key}` : key;
 
         if (
@@ -76,7 +76,7 @@ const ExportCompanies = ({ companies = [], isOpen, onClose, theme }) => {
   // Get nested value from object using dot notation path
   const getNestedValue = (obj, path) => {
     return path.split(".").reduce((acc, part) => {
-      if (acc && acc.hasOwnProperty(part)) {
+      if (acc && Object.prototype.hasOwnProperty.call(acc, part)) {
         return acc[part];
       }
       return undefined;

@@ -25,7 +25,7 @@ export const AddRoleModal = ({
   const theme = getTheme(userType);
   const { addRole, updateRole, orgData } = useOrganization();
   console.log("Org Data:", orgData);
-  
+
   const {
     enums,
     loading: enumsLoading,

@@ -1,4 +1,4 @@
-// backend/src/routes/client.routes.js
+// backend/src/routes/client.route.js
 
 import express from 'express';
 import {
@@ -50,7 +50,7 @@ router.get(
 );
 
 router.get(
-  '/:id',
+  '/details/:id',
   requirePermission('client', 'View'),
   getClientById
 );

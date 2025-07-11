@@ -57,6 +57,7 @@ import { LoadingSpinner } from "../../../components/ui/LoadingSpinner.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { Input } from "../../../components/ui/Input.jsx";
 import { Select } from "../../../components/ui/Select.jsx";
+import ExportCompanies from "./ExportCompanies"; // Adjust path as needed
 
 const EnhancedCompanyManagement = () => {
   const navigate = useNavigate();
@@ -87,7 +88,7 @@ const EnhancedCompanyManagement = () => {
     data: companiesData,
     loading: companiesLoading,
     execute: fetchCompanies,
-    error: companiesError,
+    // error: companiesError,
   } = useApi(masterAdminAPI.getAllCompanies);
 
   useEffect(() => {
@@ -179,20 +180,25 @@ const EnhancedCompanyManagement = () => {
               status: "active",
             });
           case "export":
-            return handleExport();
+            setShowExportModal(true);
+            setShowBulkModal(false);
+            return Promise.resolve();
           default:
             return Promise.resolve();
         }
       });
 
-      await Promise.all(promises);
-
-      toast.success(
-        `${bulkAction} completed for ${selectedCompanies.length} companies`
-      );
-      setSelectedCompanies([]);
-      setShowBulkModal(false);
-      loadCompanies();
+      if (bulkAction !== "export") {
+        await Promise.all(promises);
+        toast.success(
+          `${bulkAction} completed for ${selectedCompanies.length} companies`
+        );
+        setSelectedCompanies([]);
+        setShowBulkModal(false);
+        loadCompanies();
+      } else {
+        setShowBulkModal(false);
+      }
     } catch (error) {
       console.error(`Failed to ${bulkAction} companies:`, error);
       toast.error(`Failed to ${bulkAction} companies`);
@@ -200,34 +206,7 @@ const EnhancedCompanyManagement = () => {
   };
 
   const handleExport = async () => {
-    try {
-      const exportData = companies.map((company) => ({
-        ID: company.companyId,
-        Name: company.companyName,
-        Email: company.companyEmail,
-        Plan: company.subscriptionPlan,
-        Status: company.subscriptionStatus,
-        Employees: company.employeeCount || 0,
-        CreatedAt: new Date(company.createdAt).toLocaleDateString(),
-      }));
-
-      const csv = [
-        Object.keys(exportData[0]).join(","),
-        ...exportData.map((row) => Object.values(row).join(",")),
-      ].join("\n");
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `companies-${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-
-      toast.success("Companies exported successfully");
-    } catch (error) {
-      console.error("Failed to export companies:", error);
-      toast.error("Failed to export companies");
-    }
+    setShowExportModal(true);
   };
 
   const getStatusBadge = (status) => {
@@ -263,53 +242,7 @@ const EnhancedCompanyManagement = () => {
   };
 
   // Mock data fallback
-  const companies = companiesData?.companies || [
-    {
-      _id: "1",
-      companyId: "COMP001",
-      companyName: "TechCorp Solutions",
-      companyEmail: "admin@techcorp.com",
-      subscriptionPlan: "Enterprise",
-      subscriptionStatus: "active",
-      isActive: true,
-      employeeCount: 245,
-      contactPerson: "John Doe",
-      contactPhone: "+1-555-0123",
-      website: "techcorp.com",
-      createdAt: "2024-01-15T00:00:00Z",
-      address: { city: "San Francisco", country: "USA" },
-    },
-    {
-      _id: "2",
-      companyId: "COMP002",
-      companyName: "Digital Innovations",
-      companyEmail: "contact@digitalinnovations.com",
-      subscriptionPlan: "Professional",
-      subscriptionStatus: "active",
-      isActive: true,
-      employeeCount: 89,
-      contactPerson: "Jane Smith",
-      contactPhone: "+1-555-0124",
-      website: "digitalinnovations.com",
-      createdAt: "2024-02-01T00:00:00Z",
-      address: { city: "New York", country: "USA" },
-    },
-    {
-      _id: "3",
-      companyId: "COMP003",
-      companyName: "Global Manufacturing",
-      companyEmail: "info@globalmanufacturing.com",
-      subscriptionPlan: "Enterprise",
-      subscriptionStatus: "trial",
-      isActive: true,
-      employeeCount: 567,
-      contactPerson: "Mike Johnson",
-      contactPhone: "+1-555-0125",
-      website: "globalmanufacturing.com",
-      createdAt: "2024-01-20T00:00:00Z",
-      address: { city: "Chicago", country: "USA" },
-    },
-  ];
+  const companies = companiesData?.companies || [];
 
   console.log("Companies:", companies);
 
@@ -341,7 +274,7 @@ const EnhancedCompanyManagement = () => {
 
       {/* Header */}
       <div
-        className={`sticky top-0 z-40 ${theme.glass} backdrop-blur-xl border-b border-${theme.border}`}
+        className={`top-0 z-40 ${theme.glass} backdrop-blur-xl border-b border-${theme.border}`}
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -663,7 +596,7 @@ const EnhancedCompanyManagement = () => {
                               Employees
                             </p>
                             <p className={`text-${theme.text} font-semibold`}>
-                              {company.employeeCount || 0}
+                              {company.stats.totalEmployees || 0}
                             </p>
                           </div>
                         </div>
@@ -699,7 +632,7 @@ const EnhancedCompanyManagement = () => {
                         <span
                           className={`text-${theme.textSecondary} text-xs truncate`}
                         >
-                          {company.companyEmail}
+                          {company.billingEmail}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -728,7 +661,7 @@ const EnhancedCompanyManagement = () => {
                         theme={userType}
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/master-admin/companies/${company._id}`);
+                          navigate(`/master-admin/companies/${company.companyId}`);
                         }}
                         className="flex-1"
                       >
@@ -875,7 +808,7 @@ const EnhancedCompanyManagement = () => {
                         </td>
                         <td className="p-4">
                           <span className={`text-${theme.text} font-medium`}>
-                            {company.employeeCount || 0}
+                            {company.stats.totalEmployees || 0}
                           </span>
                         </td>
                         <td className="p-4">
@@ -974,7 +907,7 @@ const EnhancedCompanyManagement = () => {
       <Modal
         isOpen={showBulkModal}
         onClose={() => setShowBulkModal(false)}
-        title={`Bulk ${bulkAction}`}
+        title={`Bulk ${bulkAction || "Export"} companies`}
       >
         <div className="space-y-4">
           <p className={`text-${theme.text}`}>
@@ -1001,6 +934,20 @@ const EnhancedCompanyManagement = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Export Modal */}
+      <ExportCompanies
+        companies={
+          selectedCompanies.length > 0
+            ? companies.filter((company) =>
+                selectedCompanies.includes(company._id)
+              )
+            : companies
+        }
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        theme={theme}
+      />
     </div>
   );
 };

@@ -13,7 +13,7 @@ const DashboardLayout = () => {
 
   return (
     <div
-      className={`h-screen flex bg-gradient-to-br ${theme.primary} text-${theme.text} relative overflow-hidden`}
+      className={`h-screen flex bg-gradient-to-br ${theme.primary} text-${theme.text} relative`}
     >
       {/* Background elements - lowest z-index */}
       <div className="absolute inset-0 bg-black/20 z-0"></div>

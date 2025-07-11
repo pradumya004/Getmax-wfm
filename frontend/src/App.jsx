@@ -20,15 +20,30 @@ import MasterAdminLogin from "./pages/auth/MasterAdminLogin.jsx";
 import EmployeeLogin from "./pages/auth/EmployeeLogin.jsx";
 
 // Master Admin Pages
+// Platform Management
 import MasterAdminDashboard from "./pages/admin/MasterAdminDashboard.jsx";
 import MasterAdminProfile from "./pages/admin/MasterAdminProfile.jsx";
+
+// Company Management
 import CompanyManagement from "./pages/admin/company/CompanyManagement.jsx";
 import DetailedCompany from "./pages/admin/company/DetailedCompany.jsx";
+
+// Employee Management
 import EmployeeManagementAdmin from "./pages/admin/employee/EmployeeManagementAdmin.jsx";
+import UserActivityMonitoring from "./pages/admin/employee/UserActivityMonitoring.jsx";
+
+// Statistics
 import PlatformStats from "./pages/admin/statistics/PlatformStats.jsx";
 import FinancialDashboard from "./pages/admin/FinalcialDashboard.jsx";
+
+// System Management
 import SystemHealth from "./pages/admin/system/SystemHealth.jsx";
+import PerformanceMonitor from "./pages/admin/system/SystemPerformanceMonitor.jsx";
 import ApiMonitoring from "./pages/admin/system/APIMonitoring.jsx";
+import SecurityCenter from "./pages/admin/SecurityCenter.jsx";
+import AuditLogs from "./pages/admin/AuditLogs.jsx";
+import FeatureFlags from "./pages/admin/FeatureFlags.jsx";
+import PlatformSettings from "./pages/admin/PlatformSettings.jsx";
 import NotificationCenter from "./pages/admin/NotificationCenter.jsx";
 
 // Company Pages
@@ -55,9 +70,21 @@ import OrgHierarchyView from "./pages/company/organization/OrgHierarchyView.jsx"
 // Employee Pages
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard.jsx";
 import EmployeeProfile from "./pages/employee/EmployeeProfile.jsx";
+import EmployeeTasks from "./pages/employee/EmployeeTasks.jsx";
+import EmployeePerformance from "./pages/employee/EmployeePerformance.jsx";
 import EditProfile from "./pages/employee/EditProfile.jsx";
 import UploadAvatar from "./pages/employee/UploadAvatar.jsx";
 import MyPerformance from "./pages/employee/MyPerformance.jsx";
+
+// Client Pages
+import ClientDashboard from "./pages/client/ClientDashboard.jsx";
+import ClientList from "./pages/client/ClientList.jsx";
+import ClientIntake from "./pages/client/ClientIntake.jsx";
+import ClientDetails from "./pages/client/ClientDetails.jsx";
+import ClientEdit from "./pages/client/ClientEdit.jsx";
+import ClientBulkUpload from "./pages/client/ClientBulkUpload.jsx";
+import ClientOnboarding from "./pages/client/ClientOnboarding.jsx";
+import ClientReports from "./pages/client/ClientReports.jsx";
 
 // Public Pages
 import HomePage from "./pages/HomePage.jsx";
@@ -66,8 +93,6 @@ import ClaimIntake from "./pages/ClaimIntake.jsx";
 // Protected Route
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 
-// Testing
-import IntegrationTest from "./components/testing/IntegrationTest.jsx";
 import { getAuthDebugInfo } from "./lib/auth.js";
 
 function App() {
@@ -84,7 +109,6 @@ function App() {
           {/* PUBLIC ROUTES */}
           <Route path="/" element={<HomePage />} />
           <Route path="/claimintake" element={<ClaimIntake />} />
-          <Route path="/test" element={<IntegrationTest />} />
 
           {/* AUTH ROUTES */}
           <Route path="/signup" element={<CompanySignup />} />
@@ -119,6 +143,11 @@ function App() {
               path="employees/:employeeId"
               element={<EmployeeManagementAdmin />}
             />
+            <Route
+              path="employees/:employeeId/edit"
+              element={<EmployeeManagementAdmin />}
+            />
+            <Route path="users/activity" element={<UserActivityMonitoring />} />
 
             {/* Analytics & Reports */}
             <Route path="stats" element={<PlatformStats />} />
@@ -130,15 +159,15 @@ function App() {
             {/* System Management */}
             <Route path="system/health" element={<SystemHealth />} />
             {/* <Route path="system/database" element={<DatabaseMonitor />} /> */}
-            {/* <Route path="system/performance" element={<PerformanceMonitor />} /> */}
+            <Route path="system/performance" element={<PerformanceMonitor />} />
             {/* <Route path="system/alerts" element={<NotificationCenter />} /> */}
             <Route path="system/api" element={<ApiMonitoring />} />
 
             {/* Security & Configuration */}
-            {/* <Route path="security/settings" element={<SecuritySettings />} /> */}
-            {/* <Route path="security/audit" element={<AuditLogs />} /> */}
-            {/* <Route path="settings/platform" element={<PlatformSettings />} /> */}
-            {/* <Route path="settings/features" element={<PlatformSettings />} /> */}
+            <Route path="security/settings" element={<SecurityCenter />} />
+            <Route path="security/audit" element={<AuditLogs />} />
+            <Route path="settings/platform" element={<PlatformSettings />} />
+            <Route path="settings/features" element={<FeatureFlags />} />
 
             {/* Quick Actions */}
             {/* <Route path="companies/add" element={<CompanyManagement />} /> */}
@@ -217,6 +246,30 @@ function App() {
             <Route index element={<EmployeeDashboard />} />
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="profile" element={<EmployeeProfile />} />
+
+            {/* 🎯 CLIENT MANAGEMENT SYSTEM - COMPLETE */}
+            <Route
+              path="clients"
+              element={<Navigate to="clients/dashboard" replace />}
+            />
+            <Route path="clients/dashboard" element={<ClientDashboard />} />
+            <Route path="clients/list" element={<ClientList />} />
+            <Route path="clients/intake" element={<ClientIntake />} />
+            <Route
+              path="clients/details/:clientId"
+              element={<ClientDetails />}
+            />
+            <Route path="clients/edit/:clientId" element={<ClientEdit />} />
+            <Route path="clients/bulk-upload" element={<ClientBulkUpload />} />
+            <Route path="clients/onboarding" element={<ClientOnboarding />} />
+            <Route
+              path="clients/onboarding/:clientId"
+              element={<ClientOnboarding />}
+            />
+            <Route path="clients/reports" element={<ClientReports />} />
+
+            <Route path="tasks" element={<EmployeeTasks />} />
+            <Route path="performance" element={<EmployeePerformance />} />
             <Route path="profile/edit" element={<EditProfile />} />
             <Route path="profile/avatar" element={<UploadAvatar />} />
             <Route path="performance" element={<MyPerformance />} />

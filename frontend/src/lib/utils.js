@@ -19,13 +19,17 @@ export const formatCurrency = (amount, currency = 'INR') => {
 
 // Format date
 export const formatDate = (date, format = 'short') => {
+  if (!date) return 'N/A';
+
   const options = {
     short: { month: 'short', day: 'numeric', year: 'numeric' },
     long: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
     time: { hour: '2-digit', minute: '2-digit', hour12: true }
   };
 
-  return new Intl.DateTimeFormat('en-US', options[format]).format(new Date(date));
+  const formatOptions = options[format] || options['short'];
+
+  return new Intl.DateTimeFormat('en-US', formatOptions).format(new Date(date));
 };
 
 // Get initials from name

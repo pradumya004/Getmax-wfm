@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Check } from "lucide-react";
-import { getTheme } from "../../lib/theme.js";
 
 export const Checkbox = ({
   label,
@@ -14,7 +13,7 @@ export const Checkbox = ({
   className = "",
   ...props
 }) => {
-  const theme = themeProp ? getTheme(themeProp) : null;
+  const theme = themeProp;
 
   const handleChange = (e) => {
     if (onChange) {
@@ -40,10 +39,10 @@ export const Checkbox = ({
               ${
                 checked
                   ? theme
-                    ? `bg-${theme.accent} border-${theme.accent}`
-                    : "bg-blue-500 border-blue-500"
+                    ? `bg-[#1de9b6]/20 border-${theme.accent}`
+                    : "bg-gray-500 border-gray-700"
                   : theme
-                  ? `border-${theme.border} bg-transparent`
+                  ? `border-${theme.border} bg-${theme.accent}`
                   : "border-gray-400 bg-transparent"
               }
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}

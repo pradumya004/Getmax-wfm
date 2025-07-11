@@ -567,19 +567,19 @@ employeeSchema.virtual('age').get(function () {
     return age;
 });
 
-employeeSchema.virtual('activeSowAssignments').get(function () {
-    return this.sowAssignments.filter(assignment => assignment.isActive);
-});
+// employeeSchema.virtual('activeSowAssignments').get(function () {
+//     return this.sowAssignments.filter(assignment => assignment.isActive);
+// });
 
 employeeSchema.virtual('currentPerformanceLevel').get(function () {
-    return this.gamification.experience.currentLevel;
+    return this.gamification?.experience?.currentLevel ?? null;
 });
 
 employeeSchema.virtual('todaysMetrics').get(function () {
     const today = new Date().toDateString();
-    return this.performanceMetrics.dailyMetrics.find(metric =>
+    return this.performanceMetrics?.dailyMetrics?.find(metric =>
         new Date(metric.date).toDateString() === today
-    );
+    ) || null;
 });
 
 

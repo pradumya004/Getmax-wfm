@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useMasterAdmin } from "../../../hooks/useMasterAdmin.jsx";
+import { usePagination } from "../../../hooks/usePagination.jsx";
 import { getTheme } from "../../../lib/theme.js";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
@@ -59,15 +60,24 @@ const EnhancedEmployeeManagementAdmin = () => {
   const { userType } = useAuth();
   const theme = getTheme(userType);
 
-  // Using the new useMasterAdmin hook
   const {
     employees,
     companies,
     employeesLoading,
-    companiesLoading,
     loadEmployees,
     loadCompanies,
   } = useMasterAdmin();
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedData: paginatedEmployees,
+    nextPage,
+    prevPage,
+    goToPage,
+    hasNext,
+    hasPrev,
+  } = usePagination(employees);
 
   // Local state for employee management
   const [filters, setFilters] = useState({
@@ -79,7 +89,7 @@ const EnhancedEmployeeManagementAdmin = () => {
     sortBy: "createdAt",
     sortOrder: "desc",
   });
-  const [currentPage, setCurrentPage] = useState(1);
+  // const [currentPage, setCurrentPage] = useState(1);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -89,7 +99,7 @@ const EnhancedEmployeeManagementAdmin = () => {
 
   useEffect(() => {
     loadEmployeesData();
-  }, [filters, currentPage]);
+  }, [filters]);
 
   useEffect(() => {
     // Auto-refresh every 60 seconds
@@ -101,8 +111,6 @@ const EnhancedEmployeeManagementAdmin = () => {
     try {
       await Promise.all([
         loadEmployees({
-          page: currentPage,
-          limit: 20,
           search: filters.search,
           company: filters.company,
           role: filters.role,
@@ -124,7 +132,7 @@ const EnhancedEmployeeManagementAdmin = () => {
       ...prev,
       [key]: value,
     }));
-    setCurrentPage(1);
+    goToPage(1);
   };
 
   const handleSearch = (searchTerm) => {
@@ -141,7 +149,7 @@ const EnhancedEmployeeManagementAdmin = () => {
       sortBy: "createdAt",
       sortOrder: "desc",
     });
-    setCurrentPage(1);
+    goToPage(1);
   };
 
   const handleSelectEmployee = (employeeId) => {
@@ -153,9 +161,11 @@ const EnhancedEmployeeManagementAdmin = () => {
   };
 
   const handleSelectAll = () => {
-    const allEmployeeIds = mockEmployees.map((employee) => employee._id);
+    const allEmployeeIds = paginatedEmployees.map((employee) => employee._id);
     setSelectedEmployees(
-      selectedEmployees.length === mockEmployees.length ? [] : allEmployeeIds
+      selectedEmployees.length === paginatedEmployees.length
+        ? []
+        : allEmployeeIds
     );
   };
 
@@ -183,6 +193,7 @@ const EnhancedEmployeeManagementAdmin = () => {
       setShowBulkModal(false);
       loadEmployeesData();
     } catch (error) {
+      console.error(`Failed to ${bulkAction} employees:`, error);
       toast.error(`Failed to ${bulkAction} employees`);
     }
   };
@@ -196,7 +207,7 @@ const EnhancedEmployeeManagementAdmin = () => {
 
   const handleExport = async () => {
     try {
-      const exportData = mockEmployees.map((employee) => ({
+      const exportData = paginatedEmployees.map((employee) => ({
         ID: employee.employeeId,
         Name: `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`,
         Email: employee.personalInfo.primaryEmail,
@@ -223,6 +234,7 @@ const EnhancedEmployeeManagementAdmin = () => {
 
       toast.success("Employee data exported successfully");
     } catch (error) {
+      console.error("Failed to export employee data:", error);
       toast.error("Failed to export employee data");
     }
   };
@@ -249,113 +261,22 @@ const EnhancedEmployeeManagementAdmin = () => {
   };
 
   // Mock employee data (replace with real data from API)
-  const mockEmployees =
-    employees.length > 0
-      ? employees
-      : [
-          {
-            _id: "1",
-            employeeId: "EMP001",
-            personalInfo: {
-              firstName: "John",
-              lastName: "Doe",
-              primaryEmail: "john.doe@techcorp.com",
-              primaryPhone: "+1-555-0123",
-            },
-            company: {
-              _id: "comp1",
-              companyName: "TechCorp Solutions",
-              subscriptionPlan: "Enterprise",
-            },
-            role: {
-              roleName: "Software Engineer",
-            },
-            department: {
-              departmentName: "Engineering",
-            },
-            status: {
-              employeeStatus: "Active",
-            },
-            lastLoginAt: "2024-01-20T10:30:00Z",
-            createdAt: "2024-01-15T00:00:00Z",
-            workLocation: "Office",
-          },
-          {
-            _id: "2",
-            employeeId: "EMP002",
-            personalInfo: {
-              firstName: "Jane",
-              lastName: "Smith",
-              primaryEmail: "jane.smith@digitalinnovations.com",
-              primaryPhone: "+1-555-0124",
-            },
-            company: {
-              _id: "comp2",
-              companyName: "Digital Innovations",
-              subscriptionPlan: "Professional",
-            },
-            role: {
-              roleName: "Product Manager",
-            },
-            department: {
-              departmentName: "Product",
-            },
-            status: {
-              employeeStatus: "Active",
-            },
-            lastLoginAt: "2024-01-21T08:45:00Z",
-            createdAt: "2024-01-10T00:00:00Z",
-            workLocation: "Remote",
-          },
-          {
-            _id: "3",
-            employeeId: "EMP003",
-            personalInfo: {
-              firstName: "Mike",
-              lastName: "Johnson",
-              primaryEmail: "mike.johnson@globalmanufacturing.com",
-              primaryPhone: "+1-555-0125",
-            },
-            company: {
-              _id: "comp3",
-              companyName: "Global Manufacturing",
-              subscriptionPlan: "Enterprise",
-            },
-            role: {
-              roleName: "Operations Manager",
-            },
-            department: {
-              departmentName: "Operations",
-            },
-            status: {
-              employeeStatus: "Active",
-            },
-            lastLoginAt: "2024-01-19T14:20:00Z",
-            createdAt: "2024-01-08T00:00:00Z",
-            workLocation: "Hybrid",
-          },
-        ];
+  // const paginatedEmployees = employees.length > 0 ? employees : [];
 
-  const pagination = {
-    currentPage: 1,
-    totalPages: 5,
-    totalEmployees: mockEmployees.length,
-    hasNext: true,
-    hasPrev: false,
-  };
+  console.log("Employees:", employees);
+
+  console.log("Paginated Employees:", paginatedEmployees);
 
   const employeeStats = {
-    total: mockEmployees.length,
-    active: mockEmployees.filter(
-      (emp) => emp.status.employeeStatus === "Active"
-    ).length,
-    inactive: mockEmployees.filter(
-      (emp) => emp.status.employeeStatus !== "Active"
-    ).length,
-    companies: new Set(mockEmployees.map((emp) => emp.company?._id)).size,
+    total: employees.length,
+    active: employees.filter((emp) => emp.status.employeeStatus === "Active")
+      .length,
+    inactive: employees.filter((emp) => emp.status.employeeStatus !== "Active")
+      .length,
+    companies: new Set(employees.map((emp) => emp.companyRef?._id)).size,
   };
 
-  if (employeesLoading && mockEmployees.length === 0) {
+  if (employeesLoading && paginatedEmployees.length === 0) {
     return (
       <div
         className={`min-h-screen bg-gradient-to-br ${theme.primary} flex items-center justify-center`}
@@ -375,7 +296,7 @@ const EnhancedEmployeeManagementAdmin = () => {
 
       {/* Header */}
       <div
-        className={`sticky top-0 z-40 ${theme.glass} backdrop-blur-xl border-b border-${theme.border}`}
+        className={`top-0 z-40 ${theme.glass} backdrop-blur-xl border-b border-${theme.border}`}
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -386,8 +307,9 @@ const EnhancedEmployeeManagementAdmin = () => {
                 Employee Management
               </h1>
               <p className={`text-${theme.textSecondary} text-sm`}>
-                Cross-platform employee oversight ({pagination.totalEmployees}{" "}
-                total across {employeeStats.companies} companies)
+                Cross-platform employee oversight (
+                {employeeStats.total} total across{" "}
+                {employeeStats.companies} companies)
               </p>
             </div>
 
@@ -680,7 +602,7 @@ const EnhancedEmployeeManagementAdmin = () => {
         {/* Employees Grid/List */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockEmployees.map((employee) => {
+            {paginatedEmployees.map((employee) => {
               const isSelected = selectedEmployees.includes(employee._id);
 
               return (
@@ -745,7 +667,7 @@ const EnhancedEmployeeManagementAdmin = () => {
                           employee.company
                         )}`}
                       >
-                        {employee.company?.companyName || "No Company"}
+                        {employee.companyRef?.companyName || "No Company"}
                       </span>
                     </div>
 
@@ -758,7 +680,7 @@ const EnhancedEmployeeManagementAdmin = () => {
                         <span
                           className={`text-${theme.textSecondary} text-xs truncate`}
                         >
-                          {employee.personalInfo.primaryEmail}
+                          {employee.contactInfo.primaryEmail}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -766,8 +688,8 @@ const EnhancedEmployeeManagementAdmin = () => {
                           className={`w-3 h-3 text-${theme.textSecondary}`}
                         />
                         <span className={`text-${theme.textSecondary} text-xs`}>
-                          {employee.role?.roleName || "No Role"} •{" "}
-                          {employee.department?.departmentName || "No Dept"}
+                          {employee.roleRef?.roleName || "No Role"} •{" "}
+                          {employee.departmentRef?.departmentName || "No Dept"}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -776,7 +698,9 @@ const EnhancedEmployeeManagementAdmin = () => {
                         />
                         <span className={`text-${theme.textSecondary} text-xs`}>
                           Last login:{" "}
-                          {new Date(employee.lastLoginAt).toLocaleDateString()}
+                          {new Date(
+                            employee.authentication.lastLogin
+                          ).toLocaleDateString()}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -784,7 +708,7 @@ const EnhancedEmployeeManagementAdmin = () => {
                           className={`w-3 h-3 text-${theme.textSecondary}`}
                         />
                         <span className={`text-${theme.textSecondary} text-xs`}>
-                          {employee.workLocation}
+                          {employee.employmentInfo.workLocation}
                         </span>
                       </div>
                     </div>
@@ -835,13 +759,14 @@ const EnhancedEmployeeManagementAdmin = () => {
                         className={`w-5 h-5 rounded border-2 border-${
                           theme.border
                         } ${
-                          selectedEmployees.length === mockEmployees.length
+                          selectedEmployees.length === paginatedEmployees.length
                             ? "bg-red-500 border-red-500"
                             : "bg-transparent"
                         } flex items-center justify-center cursor-pointer`}
                         onClick={handleSelectAll}
                       >
-                        {selectedEmployees.length === mockEmployees.length && (
+                        {selectedEmployees.length ===
+                          paginatedEmployees.length && (
                           <Check className="w-3 h-3 text-white" />
                         )}
                       </div>
@@ -879,7 +804,7 @@ const EnhancedEmployeeManagementAdmin = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockEmployees.map((employee) => {
+                  {paginatedEmployees.map((employee) => {
                     const isSelected = selectedEmployees.includes(employee._id);
 
                     return (
@@ -929,15 +854,16 @@ const EnhancedEmployeeManagementAdmin = () => {
                               employee.company
                             )}`}
                           >
-                            {employee.company?.companyName || "No Company"}
+                            {employee.companyRef?.companyName || "No Company"}
                           </span>
                         </td>
                         <td className="p-4">
                           <span className={`text-${theme.text} font-medium`}>
-                            {employee.role?.roleName || "No Role"}
+                            {employee.roleRef?.roleName || "No Role"}
                           </span>
                           <p className={`text-${theme.textSecondary} text-sm`}>
-                            {employee.department?.departmentName || "No Dept"}
+                            {employee.departmentRef?.departmentName ||
+                              "No Dept"}
                           </p>
                         </td>
                         <td className="p-4">
@@ -954,7 +880,7 @@ const EnhancedEmployeeManagementAdmin = () => {
                             className={`text-${theme.textSecondary} text-sm`}
                           >
                             {new Date(
-                              employee.lastLoginAt
+                              employee.authentication.lastLogin
                             ).toLocaleDateString()}
                           </span>
                         </td>
@@ -989,9 +915,9 @@ const EnhancedEmployeeManagementAdmin = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between mt-6">
           <p className={`text-${theme.textSecondary} text-sm`}>
-            Showing {(currentPage - 1) * 20 + 1} to{" "}
-            {Math.min(currentPage * 20, pagination.totalEmployees)} of{" "}
-            {pagination.totalEmployees} employees
+            Showing {(currentPage - 1) * 10 + 1} to{" "}
+            {currentPage * 10} of{" "}
+            {employeeStats.total} employees
           </p>
 
           <div className="flex items-center space-x-2">
@@ -999,20 +925,20 @@ const EnhancedEmployeeManagementAdmin = () => {
               variant="outline"
               size="sm"
               theme={userType}
-              disabled={!pagination.hasPrev}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!hasPrev}
+              onClick={() => prevPage()}
             >
               Previous
             </Button>
 
             <div className="flex items-center space-x-1">
-              {[...Array(Math.min(5, pagination.totalPages))].map(
+              {[...Array(Math.min(5, totalPages))].map(
                 (_, index) => {
                   const page = index + 1;
                   return (
                     <button
                       key={page}
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => goToPage(page)}
                       className={`px-3 py-1 rounded text-sm transition-colors ${
                         page === currentPage
                           ? `${theme.button}`
@@ -1030,12 +956,8 @@ const EnhancedEmployeeManagementAdmin = () => {
               variant="outline"
               size="sm"
               theme={userType}
-              disabled={!pagination.hasNext}
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  Math.min(prev + 1, pagination.totalPages)
-                )
-              }
+              disabled={!hasNext}
+              onClick={() => nextPage()}
             >
               Next
             </Button>

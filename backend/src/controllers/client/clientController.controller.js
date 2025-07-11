@@ -1,8 +1,10 @@
-// backend/src/controllers/client.controller.js
+// backend/src/controllers/client/clientController.controller.js
 
+import { SOW } from '../../models/sow.model.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { Client } from '../../models/client-model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { ApiResponse } from '../../utils/ApiResponse.js';
 
 // 1. Create Client
 export const createClient = asyncHandler(async (req, res) => {
@@ -207,7 +209,7 @@ export const bulkUploadClients = asyncHandler(async (req, res) => {
 
   const companyRef = req.company._id;
   const createdBy = req.employee._id;
-  console.log("company" ,companyRef);
+  console.log("company", companyRef);
   console.log("createdBy", createdBy);
 
   if (!companyRef || !createdBy) {

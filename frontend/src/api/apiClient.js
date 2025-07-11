@@ -58,7 +58,10 @@ export const apiCall = async (method, url, data = null) => {
     } catch (error) {
         return {
             success: false,
-            error: error.response?.data?.message || 'Request failed'
+            error:
+                error.response?.data?.message ||
+                error.response?.data?.error || // 👈 add this
+                'Request failed'
         };
     }
 };

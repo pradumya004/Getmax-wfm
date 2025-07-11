@@ -1,5 +1,3 @@
-// frontend/src/components/ui/Modal.jsx
-
 import React from "react";
 import { X } from "lucide-react";
 
@@ -13,16 +11,16 @@ export const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99998]"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
-        className={`relative ${size} w-full bg-slate-800/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl`}
+        className={`relative z-[99999] ${size} w-full bg-slate-800/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">

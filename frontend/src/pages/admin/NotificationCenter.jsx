@@ -48,6 +48,7 @@ import { Button } from "../../components/ui/Button.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
 import { Modal } from "../../components/ui/Modal.jsx";
+import AnnouncementManager from "./AnnouncementManager.jsx";
 
 const NotificationCenter = () => {
   const navigate = useNavigate();
@@ -634,7 +635,9 @@ const NotificationCenter = () => {
           </Card>
         )}
 
-        {activeTab === "announcements" && (
+        {activeTab === "announcements" && <AnnouncementManager />}
+
+        {/* {activeTab === "announcements" && (
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-white">
@@ -714,7 +717,7 @@ const NotificationCenter = () => {
               ))}
             </div>
           </Card>
-        )}
+        )} */}
 
         {activeTab === "settings" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

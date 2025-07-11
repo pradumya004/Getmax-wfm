@@ -1,4 +1,4 @@
-// backend/src/models/client.model.js
+// backend/src/models/client-model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -167,12 +167,6 @@ const clientSchema = new mongoose.Schema({
             zipCode: {
                 type: String,
                 trim: true,
-                validate: {
-                    validator: function(v) {
-                        return !v || /^\d{5}(-\d{4})?$/.test(v); // US ZIP format
-                    },
-                    message: 'Invalid ZIP code format'
-                }
             },
             country: {
                 type: String,
@@ -199,13 +193,6 @@ const clientSchema = new mongoose.Schema({
         workflowType: {
             type: String,
             required: [true, 'Workflow type is required'],
-            enum: [
-                'Manual Only', 
-                'API Integration Only', 
-                'Hybrid (Manual + API)',
-                'SFTP Integration',
-                'Email Integration'
-            ],
             default: 'Manual Only',
             index: true
         },
@@ -214,24 +201,6 @@ const clientSchema = new mongoose.Schema({
         ehrPmSystem: {
             systemName: {
                 type: String,
-                enum: [
-                    'ClaimMD',
-                    'Medisoft', 
-                    'Epic',
-                    'Cerner',
-                    'AllScripts',
-                    'eClinicalWorks',
-                    'athenahealth',
-                    'NextGen',
-                    'Greenway',
-                    'Practice Fusion',
-                    'SimplePractice',
-                    'Kareo',
-                    'DrChrono',
-                    'AdvancedMD',
-                    'Custom/Other',
-                    'None'
-                ],
                 default: 'None'
             },
             systemVersion: {
@@ -261,7 +230,6 @@ const clientSchema = new mongoose.Schema({
             },
             authMethod: {
                 type: String,
-                enum: ['API Key', 'OAuth 2.0', 'Basic Auth', 'Bearer Token', 'Custom'],
                 default: 'API Key'
             },
             // Encrypted credentials - NEVER store in plain text

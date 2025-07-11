@@ -1,105 +1,73 @@
 // frontend/src/components/layout/Sidebar.jsx
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
-  Building,
-  UserCog,
+  UserPlus,
   Settings,
-  Shield,
-  Briefcase,
-  Layers,
-  TrendingUp,
-  BarChart3,
+  Crown,
+  Monitor,
   ChevronDown,
   ChevronRight,
-  Home,
-  Monitor,
-  Activity,
-  LogOut,
   User,
-  Mail,
-  BadgeCheck,
-  ChevronUp,
-  Network,
-  Database,
-  PieChart,
-  AlertTriangle,
-  Zap,
+  Building,
+  Briefcase,
+  Home,
+  ClipboardList,
+  Activity,
+  Clock,
   Eye,
-  Crown,
-  Cog,
-  FileText,
-  DollarSign,
-  Globe,
-  Server,
-  HardDrive,
-  Cpu,
-  Wifi,
-  Lock,
+  UserCog,
   Bell,
-  Download,
+  HelpCircle,
+  LogOut,
+  // Client-specific icons
+  Building2,
+  FileText,
+  Upload,
+  BarChart3,
+  UserCheck,
+  Zap,
+  DollarSign,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Table2,
+  PieChart,
+  Handshake,
+  Target,
+  Globe,
+  FileSpreadsheet,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
 
 const Sidebar = () => {
-  const { userType, user, logout } = useAuth();
-  console.log("userType:", userType);
-  console.log("user:", user);
   const location = useLocation();
+  const { user, userType, logout } = useAuth();
   const theme = getTheme(userType);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
 
-  const toggleSubMenu = (path) => {
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
-      [path]: !prev[path],
+      [menuKey]: !prev[menuKey],
     }));
-  };
-
-  const handleLogout = async () => {
-    console.log("Logging out...");
-
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-      localStorage.clear();
-      window.location.href = getLoginUrl();
-    }
-    // localStorage.removeItem("token");
-    // localStorage.removeItem("user");
-
-    // console.log(`Token: ${localStorage.getItem("token")}`);
-    // console.log(`User: ${localStorage.getItem("user")}`);
-    // switch (userType) {
-    //   case "master_admin":
-    //     window.location.href = "/master-admin/login";
-    //     break;
-    //   case "company":
-    //     window.location.href = "/company/login";
-    //     break;
-    //   case "employee":
-    //     window.location.href = "/employee/login";
-    //     break;
-    // }
-  };
-
-  const getLoginUrl = () => {
-    switch (userType) {
-      case "master_admin":
-        return "/master-admin/login";
-      case "company":
-        return "/company/login";
-      case "employee":
-        return "/employee/login";
-      default:
-        return "/master-admin/login";
-    }
   };
 
   const getNavigationItems = () => {
@@ -108,207 +76,33 @@ const Sidebar = () => {
         return [
           {
             icon: LayoutDashboard,
-            label: "Platform Overview",
+            label: "Dashboard",
             path: "/master-admin/dashboard",
-            description: "Main dashboard with key metrics",
+            description: "Master admin overview",
           },
           {
             icon: Building,
-            label: "Company Management",
+            label: "Companies",
             path: "/master-admin/companies",
-            submenu: [
-              {
-                icon: Eye,
-                label: "All Companies",
-                path: "/master-admin/companies",
-                description: "View and manage companies",
-              },
-              {
-                icon: AlertTriangle,
-                label: "Suspended Companies",
-                path: "/master-admin/companies?status=suspended",
-                description: "Companies that are suspended",
-              },
-              {
-                icon: Crown,
-                label: "Enterprise Clients",
-                path: "/master-admin/companies?plan=Enterprise",
-                description: "Enterprise subscription companies",
-              },
-              {
-                icon: TrendingUp,
-                label: "Company Analytics",
-                path: "/master-admin/companies/analytics",
-                description: "Company performance metrics",
-              },
-            ],
+            description: "Manage all companies",
           },
           {
             icon: Users,
-            label: "Platform Users",
-            path: "/master-admin/users",
-            submenu: [
-              {
-                icon: Users,
-                label: "All Employees",
-                path: "/master-admin/employees",
-                description: "All platform users",
-              },
-              {
-                icon: UserCog,
-                label: "Company Admins",
-                path: "/master-admin/employees?role=admin",
-                description: "Company administrators",
-              },
-              {
-                icon: Activity,
-                label: "User Activity",
-                path: "/master-admin/users/activity",
-                description: "Real-time user activity",
-              },
-              {
-                icon: Lock,
-                label: "Access Management",
-                path: "/master-admin/users/access",
-                description: "User permissions & access",
-              },
-            ],
+            label: "Employees",
+            path: "/master-admin/employees",
+            description: "Manage all employees",
           },
           {
             icon: BarChart3,
-            label: "Analytics & Reports",
+            label: "Analytics",
             path: "/master-admin/analytics",
-            submenu: [
-              {
-                icon: PieChart,
-                label: "Platform Statistics",
-                path: "/master-admin/stats",
-                description: "Comprehensive platform metrics",
-              },
-              {
-                icon: TrendingUp,
-                label: "Growth Analytics",
-                path: "/master-admin/analytics/growth",
-                description: "User and company growth",
-              },
-              {
-                icon: DollarSign,
-                label: "Revenue Analytics",
-                path: "/master-admin/analytics/revenue",
-                description: "Financial performance",
-              },
-              {
-                icon: FileText,
-                label: "Usage Reports",
-                path: "/master-admin/analytics/usage",
-                description: "Platform usage statistics",
-              },
-              {
-                icon: Download,
-                label: "Export Data",
-                path: "/master-admin/analytics/export",
-                description: "Download reports & data",
-              },
-            ],
+            description: "Platform analytics",
           },
           {
-            icon: Database,
-            label: "System Management",
-            path: "/master-admin/system",
-            submenu: [
-              {
-                icon: Server,
-                label: "System Health",
-                path: "/master-admin/system/health",
-                description: "Server status & performance",
-              },
-              {
-                icon: HardDrive,
-                label: "Database Stats",
-                path: "/master-admin/system/database",
-                description: "Database performance",
-              },
-              {
-                icon: Cpu,
-                label: "Performance Monitor",
-                path: "/master-admin/system/performance",
-                description: "System resource usage",
-              },
-              {
-                icon: Bell,
-                label: "System Alerts",
-                path: "/master-admin/system/alerts",
-                description: "Critical system notifications",
-              },
-              {
-                icon: Wifi,
-                label: "API Monitoring",
-                path: "/master-admin/system/api",
-                description: "API calls & performance",
-              },
-            ],
-          },
-          {
-            icon: Shield,
-            label: "Security & Config",
-            path: "/master-admin/security",
-            submenu: [
-              {
-                icon: Lock,
-                label: "Security Settings",
-                path: "/master-admin/security/settings",
-                description: "Platform security configuration",
-              },
-              {
-                icon: Eye,
-                label: "Audit Logs",
-                path: "/master-admin/security/audit",
-                description: "System activity logs",
-              },
-              {
-                icon: Globe,
-                label: "Platform Settings",
-                path: "/master-admin/settings/platform",
-                description: "Global platform configuration",
-              },
-              {
-                icon: Cog,
-                label: "Feature Flags",
-                path: "/master-admin/settings/features",
-                description: "Enable/disable features",
-              },
-            ],
-          },
-          {
-            icon: Zap,
-            label: "Quick Actions",
-            path: "/master-admin/actions",
-            submenu: [
-              {
-                icon: Building,
-                label: "Add Company",
-                path: "/master-admin/companies/add",
-                description: "Manually add new company",
-              },
-              {
-                icon: AlertTriangle,
-                label: "Emergency Actions",
-                path: "/master-admin/emergency",
-                description: "Critical system actions",
-              },
-              {
-                icon: Bell,
-                label: "Send Notifications",
-                path: "/master-admin/notifications",
-                description: "Platform-wide announcements",
-              },
-              {
-                icon: Download,
-                label: "Backup System",
-                path: "/master-admin/backup",
-                description: "Create system backup",
-              },
-            ],
+            icon: Settings,
+            label: "Settings",
+            path: "/master-admin/settings",
+            description: "Platform settings",
           },
         ];
       case "company":
@@ -317,63 +111,81 @@ const Sidebar = () => {
             icon: LayoutDashboard,
             label: "Dashboard",
             path: "/company/dashboard",
+            description: "Company overview",
           },
           {
             icon: Users,
-            label: "Employees",
+            label: "Employee Management",
             path: "/company/employees",
+            description: "Manage your employees",
             submenu: [
               {
                 icon: Users,
                 label: "All Employees",
                 path: "/company/employees",
+                description: "View all employees",
               },
               {
-                icon: UserCog,
+                icon: UserPlus,
                 label: "Add Employee",
                 path: "/company/employees/add",
+                description: "Add new employee",
+              },
+              {
+                icon: Upload,
+                label: "Bulk Upload",
+                path: "/company/employees/bulk",
+                description: "Upload employees in bulk",
               },
               {
                 icon: TrendingUp,
                 label: "Performance",
-                path: "/company/employees/performance",
+                path: "/company/employees/leaderboard",
+                description: "Performance leaderboard",
               },
             ],
           },
           {
             icon: Building,
-            label: "Organization",
+            label: "Organization Data",
             path: "/company/org-data",
+            description: "Manage organizational structure",
             submenu: [
               {
-                icon: Layers,
+                icon: Eye,
                 label: "Overview",
                 path: "/company/org-data/overview",
+                description: "Organization overview",
               },
               {
-                icon: Network,
+                icon: Layers,
                 label: "Hierarchy",
                 path: "/company/org-data/hierarchy",
+                description: "Organizational hierarchy",
               },
               {
-                icon: Shield,
+                icon: UserCog,
                 label: "Roles",
                 path: "/company/org-data/roles",
+                description: "Manage roles",
               },
               {
                 icon: Building,
                 label: "Departments",
                 path: "/company/org-data/departments",
+                description: "Manage departments",
               },
               {
                 icon: Briefcase,
                 label: "Designations",
                 path: "/company/org-data/designations",
+                description: "Manage designations",
               },
               {
                 icon: Users,
                 label: "Sub-Departments",
                 path: "/company/org-data/subdepartments",
+                description: "Manage sub-departments",
               },
             ],
           },
@@ -381,44 +193,120 @@ const Sidebar = () => {
             icon: UserCog,
             label: "Company Profile",
             path: "/company/profile",
+            description: "Manage company profile",
           },
           {
             icon: Settings,
             label: "Settings",
             path: "/company/settings",
+            description: "Company settings",
           },
         ];
-
       case "employee":
         return [
           {
             icon: LayoutDashboard,
             label: "Dashboard",
             path: "/employee/dashboard",
+            description: "Overview of your performance and tasks",
           },
           {
-            icon: UserCog,
+            icon: User,
             label: "My Profile",
             path: "/employee/profile",
+            description: "Manage your personal information",
+          },
+          {
+            icon: Building2,
+            label: "Client Management",
+            path: "/employee/clients",
+            description: "Manage client relationships",
+            submenu: [
+              {
+                icon: BarChart3,
+                label: "Dashboard",
+                path: "/employee/clients/dashboard",
+                description: "Client overview & analytics",
+              },
+              {
+                icon: Users,
+                label: "All Clients",
+                path: "/employee/clients/list",
+                description: "View and manage all clients",
+              },
+              {
+                icon: UserPlus,
+                label: "Client Intake",
+                path: "/employee/clients/intake",
+                description: "Add new client",
+              },
+              {
+                icon: Upload,
+                label: "Bulk Upload",
+                path: "/employee/clients/bulk-upload",
+                description: "Upload clients in bulk",
+              },
+              {
+                icon: UserCheck,
+                label: "Onboarding",
+                path: "/employee/clients/onboarding",
+                description: "Client onboarding workflow",
+              },
+              {
+                icon: FileText,
+                label: "Reports",
+                path: "/employee/clients/reports",
+                description: "Client analytics and reports",
+              },
+            ],
+          },
+          {
+            icon: ClipboardList,
+            label: "My Tasks",
+            path: "/employee/tasks",
+            description: "View and manage your assigned tasks",
+            submenu: [
+              {
+                icon: Clock,
+                label: "Pending Tasks",
+                path: "/employee/tasks?status=pending",
+                description: "Tasks awaiting your attention",
+              },
+              {
+                icon: Activity,
+                label: "In Progress",
+                path: "/employee/tasks?status=in-progress",
+                description: "Tasks currently being worked on",
+              },
+              {
+                icon: CheckCircle,
+                label: "Completed",
+                path: "/employee/tasks?status=completed",
+                description: "Recently completed tasks",
+              },
+            ],
           },
           {
             icon: TrendingUp,
             label: "Performance",
             path: "/employee/performance",
-          },
-          {
-            icon: Activity,
-            label: "My Tasks",
-            path: "/employee/tasks",
+            description: "Track your performance metrics",
           },
           {
             icon: Settings,
             label: "Settings",
             path: "/employee/settings",
+            description: "Manage your account settings",
           },
         ];
       default:
-        return [];
+        return [
+          {
+            icon: Home,
+            label: "Home",
+            path: "/",
+          },
+        ];
     }
   };
 
@@ -426,7 +314,6 @@ const Sidebar = () => {
     if (submenu) {
       return submenu.some((item) => location.pathname.startsWith(item.path));
     }
-
     return (
       location.pathname === path || location.pathname.startsWith(`${path}/`)
     );
@@ -434,7 +321,6 @@ const Sidebar = () => {
 
   const navigationItems = getNavigationItems();
 
-  // Get user display info
   const getUserDisplayInfo = () => {
     if (userType === "master_admin") {
       return {
@@ -444,7 +330,6 @@ const Sidebar = () => {
         initial: "S",
       };
     }
-
     if (userType === "company") {
       return {
         name: user?.companyName || "Company",
@@ -453,19 +338,14 @@ const Sidebar = () => {
         initial: user?.companyName?.charAt(0) || "C",
       };
     }
-
     if (userType === "employee") {
       return {
-        name:
-          `${user?.personalInfo?.firstName || ""} ${
-            user?.personalInfo?.lastName || ""
-          }`.trim() || "Employee",
+        name: `${user?.name || ""}`.trim() || "Employee",
         email: user?.contactInfo?.primaryEmail || user?.email,
-        role: user?.roleRef?.roleName || "Employee",
-        initial: user?.personalInfo?.firstName?.charAt(0) || "E",
+        role: user?.role || "Employee",
+        initial: user?.name?.charAt(0) || "E",
       };
     }
-
     return {
       name: "User",
       email: user?.email || "",
@@ -480,15 +360,16 @@ const Sidebar = () => {
     <div
       className={`w-64 ${theme.glass} border-r border-white/10 h-full relative`}
     >
-      {/* Background Elements */}
+      {/* Background Effects */}
       <div
         className={`absolute top-0 left-0 w-32 h-32 bg-${theme.accent}/10 rounded-full blur-2xl`}
       ></div>
       <div
         className={`absolute bottom-0 right-0 w-24 h-24 bg-${theme.accent}/10 rounded-full blur-xl`}
       ></div>
+
       <div className="relative z-10 h-full flex flex-col">
-        {/* Logo/Header */}
+        {/* Header */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center space-x-3">
             <div
@@ -506,8 +387,10 @@ const Sidebar = () => {
                 className={`text-${theme.textSecondary} text-xs uppercase tracking-wide font-medium`}
               >
                 {userType === "master_admin"
-                  ? "Master Control"
-                  : `${userType} Portal`}
+                  ? "Master Portal"
+                  : userType === "company"
+                  ? "Company Portal"
+                  : "Employee Portal"}
               </p>
             </div>
           </div>
@@ -515,48 +398,38 @@ const Sidebar = () => {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navigationItems.map((item) => (
-            <div key={item.path}>
+          {navigationItems.map((item, index) => (
+            <div key={index} className="relative">
               {item.submenu ? (
-                <div className="space-y-1">
-                  {/* Parent Menu Item */}
+                /* Menu with Submenu */
+                <div>
                   <button
-                    onClick={() => toggleSubMenu(item.path)}
+                    onClick={() => toggleMenu(item.label)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActiveRoute(item.path, item.submenu)
-                        ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg scale-105`
-                        : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:scale-102`
+                        ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`
+                        : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white`
                     }`}
+                    title={item.description}
                   >
                     <div className="flex items-center space-x-3">
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {item.submenu.length > 0 && (
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full bg-${theme.accent}/20 text-${theme.accent}`}
-                        >
-                          {item.submenu.length}
-                        </span>
-                      )}
-                      {expandedMenus[item.path] ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </div>
+                    {expandedMenus[item.label] ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
                   </button>
-
-                  {/* Submenu */}
-                  {expandedMenus[item.path] && (
-                    <div className="ml-6 space-y-1 pl-4 border-l-2 border-white/10">
-                      {item.submenu.map((subItem) => (
+                  {expandedMenus[item.label] && (
+                    <div className="mt-2 ml-4 space-y-1">
+                      {item.submenu.map((subItem, subIndex) => (
                         <NavLink
-                          key={subItem.path}
+                          key={subIndex}
                           to={subItem.path}
                           className={({ isActive }) =>
-                            `flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${
+                            `flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 ${
                               isActive
                                 ? `bg-${theme.accent}/20 text-${theme.accent} border-l-2 border-${theme.accent} shadow-md`
                                 : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:translate-x-1`
@@ -597,127 +470,81 @@ const Sidebar = () => {
           <div className="flex items-center space-x-3 cursor-pointer relative z-10">
             {/* User Avatar */}
             <div
-              className={`w-10 h-10 bg-gradient-to-br ${theme.secondary} rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-lg`}
+              className={`w-10 h-10 bg-gradient-to-br ${theme.secondary} rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-lg overflow-hidden`}
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
               {userType === "master_admin" ? (
                 <Crown className="w-5 h-5" />
+              ) : userInfo.avatar ? (
+                <img
+                  src={userInfo.avatar}
+                  alt="User Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                userInfo.initial
+                <span>{userInfo.initial}</span>
               )}
             </div>
 
-            {/* User Info */}
-            <div
-              className="flex-1 min-w-0"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <p className="text-white text-sm font-medium truncate">
+            {/* User Details */}
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-medium text-sm truncate">
                 {userInfo.name}
-              </p>
+              </h3>
               <p className={`text-${theme.textSecondary} text-xs truncate`}>
                 {userInfo.role}
               </p>
             </div>
 
-            {/* Action Icons */}
-            <div className="flex items-center space-x-2">
-              {/* Logout */}
-              <div className="relative group z-30">
-                <button
-                  onClick={handleLogout}
-                  className="p-1 rounded-lg hover:bg-red-500/20 transition-colors"
-                >
-                  <LogOut className="w-4 h-4 text-red-400 hover:text-red-300" />
-                </button>
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-black text-white rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 shadow-md">
-                  Logout
-                </span>
-              </div>
-
-              {/* Toggle Menu */}
-              <div className="relative group z-30">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-1 rounded-lg hover:bg-white/10 transition-colors"
-                >
-                  <ChevronUp
-                    className={`w-4 h-4 text-${
-                      theme.textSecondary
-                    } hover:text-white transition-transform duration-300 ${
-                      showUserMenu ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                <span className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs bg-black text-white rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 shadow-md">
-                  User Menu
-                </span>
-              </div>
-            </div>
+            {/* Dropdown Toggle */}
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className={`p-1 rounded-lg transition-colors hover:bg-white/10`}
+            >
+              <ChevronDown
+                className={`w-4 h-4 text-${
+                  theme.textSecondary
+                } transition-transform duration-200 ${
+                  showUserMenu ? "rotate-180" : ""
+                }`}
+              />
+            </button>
           </div>
 
-          {/* User Menu Dropdown */}
+          {/* User Menu */}
           {showUserMenu && (
             <div
-              className={`absolute bottom-16 left-4 right-4 z-40 rounded-xl ${theme.card} p-4 shadow-xl border border-${theme.accent}/30 backdrop-blur-md`}
+              ref={userMenuRef}
+              className={`absolute bottom-full left-4 right-4 mb-2 ${theme.glass} border border-white/20 rounded-lg shadow-xl z-50`}
             >
-              <div className="space-y-3">
-                {/* Email */}
-                <div className="flex items-start gap-2">
-                  <Mail
-                    className={`w-4 h-4 mt-[2px] text-${theme.accent} flex-shrink-0`}
-                  />
-                  <div className="text-sm text-white break-words overflow-hidden">
-                    {userInfo.email}
-                  </div>
-                </div>
-
-                {userType === "company" && (
-                  <>
-                    {/* Plan */}
-                    <div className="flex items-start gap-2">
-                      <BadgeCheck
-                        className={`w-4 h-4 text-${theme.accent} flex-shrink-0`}
-                      />
-                      <span className="text-sm text-white leading-snug">
-                        Plan:{" "}
-                        <span className="text-blue-300">
-                          {user?.subscriptionPlan}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-start gap-2">
-                      <User
-                        className={`w-4 h-4 text-${theme.accent} flex-shrink-0`}
-                      />
-                      <span className="text-sm text-white leading-snug">
-                        Status:{" "}
-                        <span
-                          className={
-                            user?.subscriptionStatus === "Active"
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {user?.subscriptionStatus}
-                        </span>
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {userType === "master_admin" && (
-                  <div className="flex items-start gap-2">
-                    <Shield
-                      className={`w-4 h-4 text-${theme.accent} flex-shrink-0`}
-                    />
-                    <span className="text-sm text-white leading-snug">
-                      Platform Owner & Administrator
-                    </span>
-                  </div>
-                )}
+              <div className="p-2 space-y-1">
+                <NavLink
+                  to="/employee/profile"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Profile</span>
+                </NavLink>
+                <NavLink
+                  to="/employee/settings"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10 transition-colors"
+                  onClick={() => setShowUserMenu(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </NavLink>
+                <hr className="border-white/20 my-1" />
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowUserMenu(false);
+                  }}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-red-300 hover:bg-white/10 transition-colors w-full text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
               </div>
             </div>
           )}

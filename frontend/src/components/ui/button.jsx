@@ -18,7 +18,7 @@ export const Button = ({
   ...props
 }) => {
   const { userType } = useAuth();
-  const raw = customTheme || userType;
+  const raw = typeof customTheme === 'string' ? customTheme : (customTheme?.userType || userType);
   const theme = getTheme(raw);
   // console.log("Theme:", theme);
 

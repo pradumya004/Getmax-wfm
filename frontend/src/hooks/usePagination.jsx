@@ -10,6 +10,9 @@ export const usePagination = (data, itemsPerPage = 10) => {
         return data.slice(startIndex, startIndex + itemsPerPage);
     }, [data, currentPage, itemsPerPage]);
 
+    console.log("Paginated Data:", paginatedData);
+    
+
     const totalPages = Math.ceil(data.length / itemsPerPage);
 
     const goToPage = (page) => {
