@@ -142,7 +142,6 @@ const ClientDetails = () => {
   };
 
   console.log("Client details:", client);
-  
 
   if (loading) {
     return (
@@ -294,8 +293,8 @@ const ClientDetails = () => {
         </Card>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="integration">Integration</TabsTrigger>

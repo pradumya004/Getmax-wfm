@@ -1,6 +1,7 @@
 // frontend/src/components/client/ClientOnboardingProcess.jsx
 
 import React from "react";
+import { CheckCircle } from "lucide-react";
 import { Card } from "../ui/Card.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";

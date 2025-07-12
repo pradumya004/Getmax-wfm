@@ -327,552 +327,466 @@ const ClientEdit = () => {
         <title>Edit {client.clientInfo?.clientName} - GetMax</title>
       </Helmet>
 
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              onClick={handleCancel}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Edit Client</h1>
-              <p className={`text-${theme.textSecondary} text-lg`}>
-                Update {client.clientInfo?.clientName}'s information
-              </p>
+      <div className="relative max-w-6xl mx-auto flex flex-col min-h-screen">
+        <div className="flex-grow">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                onClick={handleCancel}
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Edit Client</h1>
+                <p className={`text-${theme.textSecondary} text-lg`}>
+                  Update {client.clientInfo?.clientName}'s information
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {hasChanges && (
+                <span
+                  className={`text-${theme.textSecondary} text-sm flex items-center space-x-1`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Unsaved changes</span>
+                </span>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                loading={saving}
+                disabled={!hasChanges}
+                className="flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Changes</span>
+              </Button>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            {hasChanges && (
-              <span
-                className={`text-${theme.textSecondary} text-sm flex items-center space-x-1`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                <span>Unsaved changes</span>
-              </span>
-            )}
-            <Button variant="outline" onClick={handleCancel} disabled={saving}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              loading={saving}
-              disabled={!hasChanges}
-              className="flex items-center space-x-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Changes</span>
-            </Button>
-          </div>
-        </div>
+          {/* Form Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+              <TabsTrigger value="contact">Contact</TabsTrigger>
+              <TabsTrigger value="address">Address</TabsTrigger>
+              <TabsTrigger value="integration">Integration</TabsTrigger>
+              <TabsTrigger value="financial">Financial</TabsTrigger>
+            </TabsList>
 
-        {/* Form Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="basic">Basic Info</TabsTrigger>
-            <TabsTrigger value="contact">Contact</TabsTrigger>
-            <TabsTrigger value="address">Address</TabsTrigger>
-            <TabsTrigger value="integration">Integration</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
-          </TabsList>
-
-          {/* Basic Information Tab */}
-          <TabsContent value="basic" className="space-y-6">
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6">
-                Basic Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Client Name *"
-                  value={formData.clientInfo?.clientName || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "clientInfo",
-                      "clientName",
-                      e.target.value
-                    )
-                  }
-                  error={errors["clientInfo.clientName"]}
-                />
-
-                <Input
-                  label="Legal Name"
-                  value={formData.clientInfo?.legalName || ""}
-                  onChange={(e) =>
-                    handleInputChange("clientInfo", "legalName", e.target.value)
-                  }
-                />
-
-                <Select
-                  label="Client Type *"
-                  value={formData.clientInfo?.clientType || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "clientInfo",
-                      "clientType",
-                      e.target.value
-                    )
-                  }
-                  options={clientTypeOptions.map((type) => ({
-                    value: type,
-                    label: type,
-                  }))}
-                  error={errors["clientInfo.clientType"]}
-                />
-
-                <Select
-                  label="Client Sub-Type"
-                  value={formData.clientInfo?.clientSubType || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "clientInfo",
-                      "clientSubType",
-                      e.target.value
-                    )
-                  }
-                  options={
-                    formData.clientInfo?.clientType
-                      ? clientSubTypeOptions[
-                          formData.clientInfo.clientType
-                        ]?.map((subType) => ({
-                          value: subType,
-                          label: subType,
-                        })) || []
-                      : []
-                  }
-                  disabled={!formData.clientInfo?.clientType}
-                />
-
-                <Input
-                  label="Tax ID"
-                  value={formData.clientInfo?.taxId || ""}
-                  onChange={(e) =>
-                    handleInputChange("clientInfo", "taxId", e.target.value)
-                  }
-                  placeholder="XX-XXXXXXX"
-                />
-
-                <Input
-                  label="NPI Number"
-                  value={formData.clientInfo?.npiNumber || ""}
-                  onChange={(e) =>
-                    handleInputChange("clientInfo", "npiNumber", e.target.value)
-                  }
-                  placeholder="10-digit NPI number"
-                />
-              </div>
-
-              <div className="mt-6">
-                <Textarea
-                  label="Description"
-                  value={formData.clientInfo?.description || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "clientInfo",
-                      "description",
-                      e.target.value
-                    )
-                  }
-                  placeholder="Brief description of the client's business..."
-                  rows={4}
-                />
-              </div>
-            </Card>
-
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6">
-                Status Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Select
-                  label="Client Status"
-                  value={formData.status?.clientStatus || ""}
-                  onChange={(e) =>
-                    handleInputChange("status", "clientStatus", e.target.value)
-                  }
-                  options={statusOptions}
-                />
-
-                <Select
-                  label="Onboarding Status"
-                  value={formData.status?.onboardingStatus || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "status",
-                      "onboardingStatus",
-                      e.target.value
-                    )
-                  }
-                  options={onboardingStatusOptions}
-                />
-
-                <Input
-                  label="Onboarding Progress (%)"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.status?.onboardingProgress || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "status",
-                      "onboardingProgress",
-                      parseInt(e.target.value)
-                    )
-                  }
-                />
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Contact Information Tab */}
-          <TabsContent value="contact" className="space-y-6">
-            {/* Primary Contact */}
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
-                <User className="w-5 h-5 mr-2" />
-                Primary Contact
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Name *"
-                  value={formData.contactInfo?.primaryContact?.name || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "primaryContact",
-                      e.target.value,
-                      "name"
-                    )
-                  }
-                  error={errors["contactInfo.primaryContact.name"]}
-                />
-
-                <Input
-                  label="Title"
-                  value={formData.contactInfo?.primaryContact?.title || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "primaryContact",
-                      e.target.value,
-                      "title"
-                    )
-                  }
-                />
-
-                <Input
-                  label="Email *"
-                  type="email"
-                  value={formData.contactInfo?.primaryContact?.email || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "primaryContact",
-                      e.target.value,
-                      "email"
-                    )
-                  }
-                  error={errors["contactInfo.primaryContact.email"]}
-                />
-
-                <Input
-                  label="Phone"
-                  value={formData.contactInfo?.primaryContact?.phone || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "primaryContact",
-                      e.target.value,
-                      "phone"
-                    )
-                  }
-                />
-              </div>
-            </Card>
-
-            {/* Billing Contact */}
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
-                <DollarSign className="w-5 h-5 mr-2" />
-                Billing Contact
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Name"
-                  value={formData.contactInfo?.billingContact?.name || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "billingContact",
-                      e.target.value,
-                      "name"
-                    )
-                  }
-                />
-
-                <Input
-                  label="Email"
-                  type="email"
-                  value={formData.contactInfo?.billingContact?.email || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "billingContact",
-                      e.target.value,
-                      "email"
-                    )
-                  }
-                />
-
-                <Input
-                  label="Phone"
-                  value={formData.contactInfo?.billingContact?.phone || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "billingContact",
-                      e.target.value,
-                      "phone"
-                    )
-                  }
-                />
-              </div>
-            </Card>
-
-            {/* Technical Contact */}
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
-                Technical Contact
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Name"
-                  value={formData.contactInfo?.technicalContact?.name || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "technicalContact",
-                      e.target.value,
-                      "name"
-                    )
-                  }
-                />
-
-                <Input
-                  label="Email"
-                  type="email"
-                  value={formData.contactInfo?.technicalContact?.email || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "technicalContact",
-                      e.target.value,
-                      "email"
-                    )
-                  }
-                />
-
-                <Input
-                  label="Phone"
-                  value={formData.contactInfo?.technicalContact?.phone || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "technicalContact",
-                      e.target.value,
-                      "phone"
-                    )
-                  }
-                />
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Address Information Tab */}
-          <TabsContent value="address" className="space-y-6">
-            {/* Business Address */}
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6">
-                Business Address
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <Input
-                    label="Street Address *"
-                    value={formData.addressInfo?.businessAddress?.street || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "addressInfo",
-                        "businessAddress",
-                        e.target.value,
-                        "street"
-                      )
-                    }
-                    error={errors["addressInfo.businessAddress.street"]}
-                  />
-                </div>
-
-                <Input
-                  label="City *"
-                  value={formData.addressInfo?.businessAddress?.city || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "addressInfo",
-                      "businessAddress",
-                      e.target.value,
-                      "city"
-                    )
-                  }
-                  error={errors["addressInfo.businessAddress.city"]}
-                />
-
-                <Input
-                  label="State *"
-                  value={formData.addressInfo?.businessAddress?.state || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "addressInfo",
-                      "businessAddress",
-                      e.target.value,
-                      "state"
-                    )
-                  }
-                  error={errors["addressInfo.businessAddress.state"]}
-                />
-
-                <Input
-                  label="ZIP Code *"
-                  value={formData.addressInfo?.businessAddress?.zipCode || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "addressInfo",
-                      "businessAddress",
-                      e.target.value,
-                      "zipCode"
-                    )
-                  }
-                  error={errors["addressInfo.businessAddress.zipCode"]}
-                />
-
-                <Select
-                  label="Country *"
-                  value={formData.addressInfo?.businessAddress?.country || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "addressInfo",
-                      "businessAddress",
-                      e.target.value,
-                      "country"
-                    )
-                  }
-                  options={[
-                    { value: "United States", label: "United States" },
-                    { value: "Canada", label: "Canada" },
-                    { value: "Other", label: "Other" },
-                  ]}
-                />
-              </div>
-            </Card>
-
-            {/* Billing Address */}
-            <Card className={`${theme.card} p-6`}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-white text-lg font-semibold">
-                  Billing Address
+            {/* Basic Information Tab */}
+            <TabsContent value="basic" className="space-y-6">
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6">
+                  Basic Information
                 </h3>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={
-                      formData.addressInfo?.billingAddress
-                        ?.sameAsBusinessAddress || false
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "addressInfo",
-                        "billingAddress",
-                        e.target.checked,
-                        "sameAsBusinessAddress"
-                      )
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-white text-sm">
-                    Same as business address
-                  </span>
-                </label>
-              </div>
-
-              {!formData.addressInfo?.billingAddress?.sameAsBusinessAddress && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <Input
-                      label="Street Address"
-                      value={formData.addressInfo?.billingAddress?.street || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "addressInfo",
-                          "billingAddress",
-                          e.target.value,
-                          "street"
-                        )
-                      }
-                    />
-                  </div>
-
                   <Input
-                    label="City"
-                    value={formData.addressInfo?.billingAddress?.city || ""}
+                    label="Client Name *"
+                    value={formData.clientInfo?.clientName || ""}
                     onChange={(e) =>
                       handleInputChange(
-                        "addressInfo",
-                        "billingAddress",
-                        e.target.value,
-                        "city"
+                        "clientInfo",
+                        "clientName",
+                        e.target.value
                       )
                     }
+                    error={errors["clientInfo.clientName"]}
                   />
 
                   <Input
-                    label="State"
-                    value={formData.addressInfo?.billingAddress?.state || ""}
+                    label="Legal Name"
+                    value={formData.clientInfo?.legalName || ""}
                     onChange={(e) =>
                       handleInputChange(
-                        "addressInfo",
-                        "billingAddress",
-                        e.target.value,
-                        "state"
-                      )
-                    }
-                  />
-
-                  <Input
-                    label="ZIP Code"
-                    value={formData.addressInfo?.billingAddress?.zipCode || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "addressInfo",
-                        "billingAddress",
-                        e.target.value,
-                        "zipCode"
+                        "clientInfo",
+                        "legalName",
+                        e.target.value
                       )
                     }
                   />
 
                   <Select
-                    label="Country"
-                    value={formData.addressInfo?.billingAddress?.country || ""}
+                    label="Client Type *"
+                    value={formData.clientInfo?.clientType || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "clientInfo",
+                        "clientType",
+                        e.target.value
+                      )
+                    }
+                    options={clientTypeOptions.map((type) => ({
+                      value: type,
+                      label: type,
+                    }))}
+                    error={errors["clientInfo.clientType"]}
+                  />
+
+                  <Select
+                    label="Client Sub-Type"
+                    value={formData.clientInfo?.clientSubType || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "clientInfo",
+                        "clientSubType",
+                        e.target.value
+                      )
+                    }
+                    options={
+                      formData.clientInfo?.clientType
+                        ? clientSubTypeOptions[
+                            formData.clientInfo.clientType
+                          ]?.map((subType) => ({
+                            value: subType,
+                            label: subType,
+                          })) || []
+                        : []
+                    }
+                    disabled={!formData.clientInfo?.clientType}
+                  />
+
+                  <Input
+                    label="Tax ID"
+                    value={formData.clientInfo?.taxId || ""}
+                    onChange={(e) =>
+                      handleInputChange("clientInfo", "taxId", e.target.value)
+                    }
+                    placeholder="XX-XXXXXXX"
+                  />
+
+                  <Input
+                    label="NPI Number"
+                    value={formData.clientInfo?.npiNumber || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "clientInfo",
+                        "npiNumber",
+                        e.target.value
+                      )
+                    }
+                    placeholder="10-digit NPI number"
+                  />
+                </div>
+
+                <div className="mt-6">
+                  <Textarea
+                    label="Description"
+                    value={formData.clientInfo?.description || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "clientInfo",
+                        "description",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Brief description of the client's business..."
+                    rows={4}
+                  />
+                </div>
+              </Card>
+
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6">
+                  Status Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Select
+                    label="Client Status"
+                    value={formData.status?.clientStatus || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "status",
+                        "clientStatus",
+                        e.target.value
+                      )
+                    }
+                    options={statusOptions}
+                  />
+
+                  <Select
+                    label="Onboarding Status"
+                    value={formData.status?.onboardingStatus || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "status",
+                        "onboardingStatus",
+                        e.target.value
+                      )
+                    }
+                    options={onboardingStatusOptions}
+                  />
+
+                  <Input
+                    label="Onboarding Progress (%)"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.status?.onboardingProgress || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "status",
+                        "onboardingProgress",
+                        parseInt(e.target.value)
+                      )
+                    }
+                  />
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Contact Information Tab */}
+            <TabsContent value="contact" className="space-y-6">
+              {/* Primary Contact */}
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
+                  <User className="w-5 h-5 mr-2" />
+                  Primary Contact
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    label="Name *"
+                    value={formData.contactInfo?.primaryContact?.name || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "primaryContact",
+                        e.target.value,
+                        "name"
+                      )
+                    }
+                    error={errors["contactInfo.primaryContact.name"]}
+                  />
+
+                  <Input
+                    label="Title"
+                    value={formData.contactInfo?.primaryContact?.title || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "primaryContact",
+                        e.target.value,
+                        "title"
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Email *"
+                    type="email"
+                    value={formData.contactInfo?.primaryContact?.email || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "primaryContact",
+                        e.target.value,
+                        "email"
+                      )
+                    }
+                    error={errors["contactInfo.primaryContact.email"]}
+                  />
+
+                  <Input
+                    label="Phone"
+                    value={formData.contactInfo?.primaryContact?.phone || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "primaryContact",
+                        e.target.value,
+                        "phone"
+                      )
+                    }
+                  />
+                </div>
+              </Card>
+
+              {/* Billing Contact */}
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Billing Contact
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    label="Name"
+                    value={formData.contactInfo?.billingContact?.name || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "billingContact",
+                        e.target.value,
+                        "name"
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={formData.contactInfo?.billingContact?.email || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "billingContact",
+                        e.target.value,
+                        "email"
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Phone"
+                    value={formData.contactInfo?.billingContact?.phone || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "billingContact",
+                        e.target.value,
+                        "phone"
+                      )
+                    }
+                  />
+                </div>
+              </Card>
+
+              {/* Technical Contact */}
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6 flex items-center">
+                  <Settings className="w-5 h-5 mr-2" />
+                  Technical Contact
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    label="Name"
+                    value={formData.contactInfo?.technicalContact?.name || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "technicalContact",
+                        e.target.value,
+                        "name"
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={formData.contactInfo?.technicalContact?.email || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "technicalContact",
+                        e.target.value,
+                        "email"
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Phone"
+                    value={formData.contactInfo?.technicalContact?.phone || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "contactInfo",
+                        "technicalContact",
+                        e.target.value,
+                        "phone"
+                      )
+                    }
+                  />
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Address Information Tab */}
+            <TabsContent value="address" className="space-y-6">
+              {/* Business Address */}
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6">
+                  Business Address
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Street Address *"
+                      value={
+                        formData.addressInfo?.businessAddress?.street || ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "businessAddress",
+                          e.target.value,
+                          "street"
+                        )
+                      }
+                      error={errors["addressInfo.businessAddress.street"]}
+                    />
+                  </div>
+
+                  <Input
+                    label="City *"
+                    value={formData.addressInfo?.businessAddress?.city || ""}
                     onChange={(e) =>
                       handleInputChange(
                         "addressInfo",
-                        "billingAddress",
+                        "businessAddress",
+                        e.target.value,
+                        "city"
+                      )
+                    }
+                    error={errors["addressInfo.businessAddress.city"]}
+                  />
+
+                  <Input
+                    label="State *"
+                    value={formData.addressInfo?.businessAddress?.state || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "addressInfo",
+                        "businessAddress",
+                        e.target.value,
+                        "state"
+                      )
+                    }
+                    error={errors["addressInfo.businessAddress.state"]}
+                  />
+
+                  <Input
+                    label="ZIP Code *"
+                    value={formData.addressInfo?.businessAddress?.zipCode || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "addressInfo",
+                        "businessAddress",
+                        e.target.value,
+                        "zipCode"
+                      )
+                    }
+                    error={errors["addressInfo.businessAddress.zipCode"]}
+                  />
+
+                  <Select
+                    label="Country *"
+                    value={formData.addressInfo?.businessAddress?.country || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "addressInfo",
+                        "businessAddress",
                         e.target.value,
                         "country"
                       )
@@ -884,186 +798,299 @@ const ClientEdit = () => {
                     ]}
                   />
                 </div>
-              )}
-            </Card>
-          </TabsContent>
+              </Card>
 
-          {/* Integration Tab */}
-          <TabsContent value="integration" className="space-y-6">
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6">
-                Integration Settings
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Workflow Type"
-                  value={formData.integrationStrategy?.workflowType || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "integrationStrategy",
-                      "workflowType",
-                      e.target.value
-                    )
-                  }
-                  options={workflowTypeOptions.map((type) => ({
-                    value: type,
-                    label: type,
-                  }))}
-                />
+              {/* Billing Address */}
+              <Card className={`${theme.card} p-6`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-white text-lg font-semibold">
+                    Billing Address
+                  </h3>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        formData.addressInfo?.billingAddress
+                          ?.sameAsBusinessAddress || false
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "billingAddress",
+                          e.target.checked,
+                          "sameAsBusinessAddress"
+                        )
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">
+                      Same as business address
+                    </span>
+                  </label>
+                </div>
 
-                <Select
-                  label="EHR/PM System"
-                  value={
-                    formData.integrationStrategy?.ehrPmSystem?.systemName || ""
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      "integrationStrategy",
-                      "ehrPmSystem",
-                      e.target.value,
-                      "systemName"
-                    )
-                  }
-                  options={ehrSystemOptions.map((system) => ({
-                    value: system,
-                    label: system,
-                  }))}
-                />
+                {!formData.addressInfo?.billingAddress
+                  ?.sameAsBusinessAddress && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Street Address"
+                        value={
+                          formData.addressInfo?.billingAddress?.street || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "addressInfo",
+                            "billingAddress",
+                            e.target.value,
+                            "street"
+                          )
+                        }
+                      />
+                    </div>
 
-                <Input
-                  label="System Version"
-                  value={
-                    formData.integrationStrategy?.ehrPmSystem?.systemVersion ||
-                    ""
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      "integrationStrategy",
-                      "ehrPmSystem",
-                      e.target.value,
-                      "systemVersion"
-                    )
-                  }
-                />
+                    <Input
+                      label="City"
+                      value={formData.addressInfo?.billingAddress?.city || ""}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "billingAddress",
+                          e.target.value,
+                          "city"
+                        )
+                      }
+                    />
 
-                <Input
-                  label="API Endpoint"
-                  value={
-                    formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      "integrationStrategy",
-                      "apiConfig",
-                      e.target.value,
-                      "apiEndpoint"
-                    )
-                  }
-                  placeholder="https://api.example.com"
-                />
-              </div>
-            </Card>
-          </TabsContent>
+                    <Input
+                      label="State"
+                      value={formData.addressInfo?.billingAddress?.state || ""}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "billingAddress",
+                          e.target.value,
+                          "state"
+                        )
+                      }
+                    />
 
-          {/* Financial Tab */}
-          <TabsContent value="financial" className="space-y-6">
-            <Card className={`${theme.card} p-6`}>
-              <h3 className="text-white text-lg font-semibold mb-6">
-                Financial Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Billing Currency"
-                  value={formData.financialInfo?.billingCurrency || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "billingCurrency",
-                      e.target.value
-                    )
-                  }
-                  options={[
-                    { value: "USD", label: "USD - US Dollar" },
-                    { value: "CAD", label: "CAD - Canadian Dollar" },
-                    { value: "EUR", label: "EUR - Euro" },
-                    { value: "GBP", label: "GBP - British Pound" },
-                  ]}
-                />
+                    <Input
+                      label="ZIP Code"
+                      value={
+                        formData.addressInfo?.billingAddress?.zipCode || ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "billingAddress",
+                          e.target.value,
+                          "zipCode"
+                        )
+                      }
+                    />
 
-                <Select
-                  label="Payment Terms"
-                  value={formData.financialInfo?.paymentTerms || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "paymentTerms",
-                      e.target.value
-                    )
-                  }
-                  options={paymentTermsOptions.map((term) => ({
-                    value: term,
-                    label: term,
-                  }))}
-                />
+                    <Select
+                      label="Country"
+                      value={
+                        formData.addressInfo?.billingAddress?.country || ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "addressInfo",
+                          "billingAddress",
+                          e.target.value,
+                          "country"
+                        )
+                      }
+                      options={[
+                        { value: "United States", label: "United States" },
+                        { value: "Canada", label: "Canada" },
+                        { value: "Other", label: "Other" },
+                      ]}
+                    />
+                  </div>
+                )}
+              </Card>
+            </TabsContent>
 
-                <Input
-                  label="Credit Limit"
-                  type="number"
-                  value={formData.financialInfo?.creditLimit || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "creditLimit",
-                      e.target.value
-                    )
-                  }
-                  placeholder="0"
-                />
+            {/* Integration Tab */}
+            <TabsContent value="integration" className="space-y-6">
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6">
+                  Integration Settings
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Select
+                    label="Workflow Type"
+                    value={formData.integrationStrategy?.workflowType || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "integrationStrategy",
+                        "workflowType",
+                        e.target.value
+                      )
+                    }
+                    options={workflowTypeOptions.map((type) => ({
+                      value: type,
+                      label: type,
+                    }))}
+                  />
 
-                <Select
-                  label="Billing Frequency"
-                  value={formData.financialInfo?.billingFrequency || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "billingFrequency",
-                      e.target.value
-                    )
-                  }
-                  options={[
-                    { value: "Weekly", label: "Weekly" },
-                    { value: "Bi-weekly", label: "Bi-weekly" },
-                    { value: "Monthly", label: "Monthly" },
-                    { value: "Quarterly", label: "Quarterly" },
-                  ]}
-                />
-              </div>
+                  <Select
+                    label="EHR/PM System"
+                    value={
+                      formData.integrationStrategy?.ehrPmSystem?.systemName ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      handleInputChange(
+                        "integrationStrategy",
+                        "ehrPmSystem",
+                        e.target.value,
+                        "systemName"
+                      )
+                    }
+                    options={ehrSystemOptions.map((system) => ({
+                      value: system,
+                      label: system,
+                    }))}
+                  />
 
-              <div className="mt-6">
-                <Textarea
-                  label="Special Instructions"
-                  value={formData.financialInfo?.specialInstructions || ""}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "specialInstructions",
-                      e.target.value
-                    )
-                  }
-                  placeholder="Any special billing instructions or requirements..."
-                  rows={3}
-                />
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  <Input
+                    label="System Version"
+                    value={
+                      formData.integrationStrategy?.ehrPmSystem
+                        ?.systemVersion || ""
+                    }
+                    onChange={(e) =>
+                      handleInputChange(
+                        "integrationStrategy",
+                        "ehrPmSystem",
+                        e.target.value,
+                        "systemVersion"
+                      )
+                    }
+                  />
 
+                  <Input
+                    label="API Endpoint"
+                    value={
+                      formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
+                    }
+                    onChange={(e) =>
+                      handleInputChange(
+                        "integrationStrategy",
+                        "apiConfig",
+                        e.target.value,
+                        "apiEndpoint"
+                      )
+                    }
+                    placeholder="https://api.example.com"
+                  />
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Financial Tab */}
+            <TabsContent value="financial" className="space-y-6">
+              <Card className={`${theme.card} p-6`}>
+                <h3 className="text-white text-lg font-semibold mb-6">
+                  Financial Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Select
+                    label="Billing Currency"
+                    value={formData.financialInfo?.billingCurrency || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "billingCurrency",
+                        e.target.value
+                      )
+                    }
+                    options={[
+                      { value: "USD", label: "USD - US Dollar" },
+                      { value: "CAD", label: "CAD - Canadian Dollar" },
+                      { value: "EUR", label: "EUR - Euro" },
+                      { value: "GBP", label: "GBP - British Pound" },
+                    ]}
+                  />
+
+                  <Select
+                    label="Payment Terms"
+                    value={formData.financialInfo?.paymentTerms || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "paymentTerms",
+                        e.target.value
+                      )
+                    }
+                    options={paymentTermsOptions.map((term) => ({
+                      value: term,
+                      label: term,
+                    }))}
+                  />
+
+                  <Input
+                    label="Credit Limit"
+                    type="number"
+                    value={formData.financialInfo?.creditLimit || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "creditLimit",
+                        e.target.value
+                      )
+                    }
+                    placeholder="0"
+                  />
+
+                  <Select
+                    label="Billing Frequency"
+                    value={formData.financialInfo?.billingFrequency || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "billingFrequency",
+                        e.target.value
+                      )
+                    }
+                    options={[
+                      { value: "Weekly", label: "Weekly" },
+                      { value: "Bi-weekly", label: "Bi-weekly" },
+                      { value: "Monthly", label: "Monthly" },
+                      { value: "Quarterly", label: "Quarterly" },
+                    ]}
+                  />
+                </div>
+
+                <div className="mt-6">
+                  <Textarea
+                    label="Special Instructions"
+                    value={formData.financialInfo?.specialInstructions || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "specialInstructions",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Any special billing instructions or requirements..."
+                    rows={3}
+                  />
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
         {/* Fixed Save Bar */}
         {hasChanges && (
           <div
-            className={`fixed bottom-0 left-0 right-0 ${theme.glass} border-t border-white/10 p-4 z-50`}
+            className={`sticky bottom-0 left-0 w-full ${theme.glass} border-t border-white/10 p-4 z-40`}
           >
-            <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center justify-between max-w-6xl mx-auto">
               <div className="flex items-center space-x-2">
                 <AlertCircle className="w-5 h-5 text-yellow-400" />
                 <span className="text-white font-medium">

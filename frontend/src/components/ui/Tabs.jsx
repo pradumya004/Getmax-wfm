@@ -40,9 +40,9 @@ export const TabsList = ({ children, className = "" }) => {
 
   return (
     <div
-      className={`${theme.glass} p-1 rounded-lg border border-white/10 mb-6 ${className}`}
+      className={`w-full ${theme.glass} p-1 rounded-lg border border-white/10 mb-6 ${className}`}
     >
-      <div className="flex space-x-1">{children}</div>
+      <div className="flex w-full">{children}</div>
     </div>
   );
 };

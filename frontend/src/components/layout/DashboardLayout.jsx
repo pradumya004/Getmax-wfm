@@ -54,12 +54,13 @@ const DashboardLayout = () => {
           <Header />
 
           {/* Main content with content glass and lower z-index */}
-          <main className="flex-1 p-6 lg:p-8 overflow-y-auto relative z-10">
-            <div
-              className={`absolute inset-0 ${theme.glass} rounded-2xl m-2 z-0`}
-            ></div>
-
+          <main className="flex-1 p-2 lg:p-4 overflow-y-auto relative z-10">
             <div className="relative z-10">
+              <div className="absolute inset-0 p-2 z-[-1]">
+                <div
+                  className={`w-full h-full ${theme.glass} rounded-2xl`}
+                ></div>
+              </div>
               <Outlet />
             </div>
 

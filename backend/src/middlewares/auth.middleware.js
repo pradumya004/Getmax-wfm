@@ -386,35 +386,3 @@ export const requireSuperAdminAccess = asyncHandler(async (req, res, next) => {
 
     throw new ApiError(403, "Super Admin access required for this operation");
 });
-
-// // Rate Limiting Middleware (basic implementation)
-// export const rateLimitByIP = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
-//     const requests = new Map();
-
-//     return (req, res, next) => {
-//         const clientIP = getClientIP(req);
-//         const now = Date.now();
-//         const windowStart = now - windowMs;
-
-//         // Clean old entries
-//         for (const [ip, timestamps] of requests) {
-//             requests.set(ip, timestamps.filter(timestamp => timestamp > windowStart));
-//             if (requests.get(ip).length === 0) {
-//                 requests.delete(ip);
-//             }
-//         }
-
-//         // Check current IP
-//         const ipRequests = requests.get(clientIP) || [];
-
-//         if (ipRequests.length >= maxRequests) {
-//             throw new ApiError(429, "Too many requests from this IP, please try again later");
-//         }
-
-//         // Add current request
-//         ipRequests.push(now);
-//         requests.set(clientIP, ipRequests);
-
-//         next();
-//     };
-// };

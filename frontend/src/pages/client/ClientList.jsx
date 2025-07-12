@@ -32,7 +32,6 @@ import { Modal } from "../../components/ui/Modal.jsx";
 import { DataTable } from "../../components/common/DataTable.jsx";
 import { ClientCard } from "../../components/client/ClientCard.jsx";
 import { ClientStatusBadge } from "../../components/client/ClientStatusBadge.jsx";
-import { BulkUploadModal } from "../../components/common/BulkUploadModal.jsx";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog.jsx";
 import { useClients } from "../../hooks/useClient.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -365,21 +364,9 @@ const ClientList = () => {
     toast.success("Clients exported successfully");
   };
 
-  // const handleBulkUpload = async (file) => {
-  //   try {
-  //     await uploadClients(file);
-  //     toast.success("Clients uploaded successfully");
-  //     setShowBulkUpload(false);
-  //     refresh();
-  //   } catch (error) {
-  //     console.log("Error: ", error);
-  //     toast.error("Failed to upload clients");
-  //   }
-  // };
-
   const handleRowClick = (client) => {
     console.log("Client clicked:", client.clientId);
-    
+
     navigate(`/employee/clients/details/${client.clientId}`);
   };
 
@@ -602,15 +589,6 @@ const ClientList = () => {
         // Row key
         rowKey="_id"
       />
-
-      {/* Modals */}
-      {/* <BulkUploadModal
-        isOpen={showBulkUpload}
-        onClose={() => setShowBulkUpload(false)}
-        onUpload={handleBulkUpload}
-        title="Upload Clients"
-        description="Upload multiple clients using Excel or CSV file"
-      /> */}
 
       <ConfirmDialog
         isOpen={showDeleteDialog}
