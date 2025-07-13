@@ -190,6 +190,50 @@ const Sidebar = () => {
             ],
           },
           {
+            icon: Building2,
+            label: "Client Management",
+            path: "/company/clients",
+            description: "Manage client relationships",
+            submenu: [
+              {
+                icon: BarChart3,
+                label: "Dashboard",
+                path: "/company/clients/dashboard",
+                description: "Client overview & analytics",
+              },
+              {
+                icon: Users,
+                label: "All Clients",
+                path: "/company/clients/list",
+                description: "View and manage all clients",
+              },
+              {
+                icon: UserPlus,
+                label: "Client Intake",
+                path: "/company/clients/intake",
+                description: "Add new client",
+              },
+              {
+                icon: Upload,
+                label: "Bulk Upload",
+                path: "/company/clients/bulk-upload",
+                description: "Upload clients in bulk",
+              },
+              {
+                icon: UserCheck,
+                label: "Onboarding",
+                path: "/company/clients/onboarding",
+                description: "Client onboarding workflow",
+              },
+              {
+                icon: FileText,
+                label: "Reports",
+                path: "/company/clients/reports",
+                description: "Client analytics and reports",
+              },
+            ],
+          },
+          {
             icon: UserCog,
             label: "Company Profile",
             path: "/company/profile",
@@ -215,50 +259,6 @@ const Sidebar = () => {
             label: "My Profile",
             path: "/employee/profile",
             description: "Manage your personal information",
-          },
-          {
-            icon: Building2,
-            label: "Client Management",
-            path: "/employee/clients",
-            description: "Manage client relationships",
-            submenu: [
-              {
-                icon: BarChart3,
-                label: "Dashboard",
-                path: "/employee/clients/dashboard",
-                description: "Client overview & analytics",
-              },
-              {
-                icon: Users,
-                label: "All Clients",
-                path: "/employee/clients/list",
-                description: "View and manage all clients",
-              },
-              {
-                icon: UserPlus,
-                label: "Client Intake",
-                path: "/employee/clients/intake",
-                description: "Add new client",
-              },
-              {
-                icon: Upload,
-                label: "Bulk Upload",
-                path: "/employee/clients/bulk-upload",
-                description: "Upload clients in bulk",
-              },
-              {
-                icon: UserCheck,
-                label: "Onboarding",
-                path: "/employee/clients/onboarding",
-                description: "Client onboarding workflow",
-              },
-              {
-                icon: FileText,
-                label: "Reports",
-                path: "/employee/clients/reports",
-                description: "Client analytics and reports",
-              },
-            ],
           },
           {
             icon: ClipboardList,

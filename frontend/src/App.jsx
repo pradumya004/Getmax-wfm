@@ -213,6 +213,27 @@ function App() {
               element={<EditEmployee />}
             />
 
+            {/* 🎯 CLIENT MANAGEMENT SYSTEM - COMPLETE */}
+            <Route
+              path="clients"
+              element={<Navigate to="clients/dashboard" replace />}
+            />
+            <Route path="clients/dashboard" element={<ClientDashboard />} />
+            <Route path="clients/list" element={<ClientList />} />
+            <Route path="clients/intake" element={<ClientIntake />} />
+            <Route
+              path="clients/details/:clientId"
+              element={<ClientDetails />}
+            />
+            <Route path="clients/edit/:clientId" element={<ClientEdit />} />
+            <Route path="clients/bulk-upload" element={<ClientBulkUpload />} />
+            <Route path="clients/onboarding" element={<ClientOnboarding />} />
+            <Route
+              path="clients/onboarding/:clientId"
+              element={<ClientOnboarding />}
+            />
+            <Route path="clients/reports" element={<ClientReports />} />
+
             {/* ORG MGMT */}
             <Route
               path="org-data/overview"
@@ -246,28 +267,6 @@ function App() {
             <Route index element={<EmployeeDashboard />} />
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="profile" element={<EmployeeProfile />} />
-
-            {/* 🎯 CLIENT MANAGEMENT SYSTEM - COMPLETE */}
-            <Route
-              path="clients"
-              element={<Navigate to="clients/dashboard" replace />}
-            />
-            <Route path="clients/dashboard" element={<ClientDashboard />} />
-            <Route path="clients/list" element={<ClientList />} />
-            <Route path="clients/intake" element={<ClientIntake />} />
-            <Route
-              path="clients/details/:clientId"
-              element={<ClientDetails />}
-            />
-            <Route path="clients/edit/:clientId" element={<ClientEdit />} />
-            <Route path="clients/bulk-upload" element={<ClientBulkUpload />} />
-            <Route path="clients/onboarding" element={<ClientOnboarding />} />
-            <Route
-              path="clients/onboarding/:clientId"
-              element={<ClientOnboarding />}
-            />
-            <Route path="clients/reports" element={<ClientReports />} />
-
             <Route path="tasks" element={<EmployeeTasks />} />
             <Route path="performance" element={<EmployeePerformance />} />
             <Route path="profile/edit" element={<EditProfile />} />

@@ -1,5 +1,5 @@
 // frontend/src/api/apiClient.js
-
+import { getUserType } from '../lib/auth.js';
 // Base API client - clean and simple
 
 import axios from 'axios';
@@ -19,10 +19,19 @@ const apiClient = axios.create({
 // Request interceptor - add auth token
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const userType = getUserType(); // 'company' | 'employee' | 'master_admin'
+        let token = null;
+
+        if (userType === 'company' || userType === 'admin') {
+            token = localStorage.getItem('companyToken');
+        } else if (userType === 'employee' || userType === 'master_admin') {
+            token = localStorage.getItem('employeeToken');
+        }
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+
         return config;
     },
     (error) => Promise.reject(error)

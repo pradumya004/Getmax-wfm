@@ -83,11 +83,13 @@ const CompanyLogin = () => {
       if (response.success) {
         const data =
           response.data && response.data.data ? response.data.data : {};
-        const { company, token } = data;
+        const { company, employee, companyToken, employeeToken } = data;
         console.log("Company data:", company);
-        console.log("Token:", token);
+        console.log("Employee data:", employee);
+        console.log("Company token:", companyToken);
+        console.log("Employee token:", employeeToken);
 
-        await login(company, token, "company");
+        await login(company, companyToken, employeeToken, "company");
         toast.success(response.message || "Login successful!");
         navigate("/company/dashboard");
       } else {

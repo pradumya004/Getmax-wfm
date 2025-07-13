@@ -11,18 +11,26 @@ export const getStoredUser = () => {
     }
 };
 
-export const getStoredToken = () => localStorage.getItem('token');
+export const getStoredToken = () => ({
+    companyToken: localStorage.getItem('companyToken'),
+    employeeToken: localStorage.getItem('employeeToken')
+});
 
-export const setAuthData = (token, user) => {
+export const setAuthData = (companyToken, user, employeeToken = null) => {
     const userType = user?.userType || determineUserType(user);
-    console.log(`Setting auth data: token=${token}, userType=${userType}`, user);
-    localStorage.setItem('token', token);
+    console.log(`Setting auth data: Company Token=${companyToken}, Employee Token=${employeeToken}, userType=${userType}`, user);
+    localStorage.setItem('companyToken', companyToken);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('userType', userType);
+
+    if (employeeToken) {
+        localStorage.setItem('employeeToken', employeeToken);
+    }
 };
 
 export const clearAuthData = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('companyToken');
+    localStorage.removeItem('employeeToken');
     localStorage.removeItem('user');
     localStorage.removeItem('userType');
 };
@@ -84,8 +92,11 @@ export const isAuthenticated = () => {
 };
 
 // Helper to get auth headers for API calls
-export const getAuthHeaders = () => {
-    const token = getStoredToken();
+export const getAuthHeaders = (tokenType = 'company') => {
+    const token = tokenType === 'employee'
+        ? localStorage.getItem('employeeToken')
+        : localStorage.getItem('companyToken');
+
     return token ? { Authorization: `Bearer ${token}` } : {};
 };
 

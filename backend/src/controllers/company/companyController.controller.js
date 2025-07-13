@@ -3,7 +3,7 @@
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { generateCompanyToken } from "../../utils/jwtHelper.js";
+import { generateCompanyToken, generateEmployeeToken } from "../../utils/jwtHelper.js";
 import { Company } from "../../models/company.model.js";
 import { Employee } from "../../models/employee.model.js";
 import { Role } from "../../models/role.model.js";
@@ -289,13 +289,44 @@ const loginCompany = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Email and password are required");
     }
 
-    const company = await Company.findOne({ contactEmail: companyEmail.toLowerCase().trim() }).select('+companyPassword');
+    const normalizedEmail = companyEmail.toLowerCase().trim();
+
+    const company = await Company.findOne({ contactEmail: normalizedEmail }).select('+companyPassword');
     if (!company || !(await company.comparePassword(companyPassword))) {
         throw new ApiError(401, "Invalid Credentials");
     }
 
-    const token = generateCompanyToken(company._id);
-    res.cookie("companyToken", token, {
+    const companyToken = generateCompanyToken(company._id);
+    res.cookie("companyToken", companyToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    const employee = await Employee.findOne({
+        companyRef: company._id,
+        'contactInfo.primaryEmail': normalizedEmail
+    });
+
+    if (!employee) {
+        employee = await Employee.findOne({
+            companyRef: company._id,
+        }).populate('roleRef').where('roleRef.roleLevel').equals(10);
+    }
+
+    if (!employee) {
+        throw new ApiError(404, "No employee or super admin found for this company");
+    }
+
+    const employeeToken = generateEmployeeToken({
+        employeeId: employee._id,
+        companyId: company._id,
+        role: employee.roleRef,
+        email: employee.contactInfo.primaryEmail
+    });
+
+    res.cookie("employeeToken", employeeToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
@@ -313,7 +344,13 @@ const loginCompany = asyncHandler(async (req, res) => {
                 subscriptionPlan: company.subscriptionPlan,
                 apiKey: company.apiKey
             },
-            token
+            employee: {
+                id: employee.employeeId,
+                name: employee.fullName,
+                role: employee.roleRef.roleName
+            },
+            companyToken,
+            employeeToken
         }, "Company Login Successful")
     );
 });

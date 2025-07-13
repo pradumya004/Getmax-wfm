@@ -39,9 +39,10 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = (userData, token, userType) => {
+  const login = (userData, companyToken, employeeToken, userType) => {
     console.log("Logging in user:", userData);
-    console.log("With token:", token);
+    console.log("With Company Token:", companyToken);
+    console.log("With Employee Token:", employeeToken);
     console.log("User type:", userType);
 
     const userWithType = {
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Store auth data first
-    setAuthData(token, userWithType);
+    setAuthData(companyToken, userWithType, employeeToken);
 
     // Update state
     setUser(userWithType);
@@ -106,7 +107,7 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const  useAuth = () => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
