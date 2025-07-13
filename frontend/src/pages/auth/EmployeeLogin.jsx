@@ -71,8 +71,8 @@ const EmployeeLogin = () => {
     try {
       const response = await authAPI.employeeLogin(formData);
       if (response.success) {
-        const { employee, token } = response.data.data;
-        await login(employee, token, "employee");
+        const {company, employee, companyToken, employeeToken } = response.data.data;
+        await login(employee, companyToken, employeeToken, "employee");
         toast.success(response.message || "Login successful!");
         navigate("/employee/dashboard");
       } else {

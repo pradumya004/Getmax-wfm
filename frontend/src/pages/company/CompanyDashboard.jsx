@@ -65,38 +65,39 @@ const CompanyDashboard = () => {
     try {
       setLoading(true);
 
-      // Parallel API calls for dashboard data
-      const [profileResponse, employeesResponse, orgResponse] =
-        await Promise.all([
-          companyAPI.getProfile().catch(() => null),
-          employeeAPI
-            .getCompanyEmployees({ limit: 5, page: 1 })
-            .catch(() => null),
-          companyAPI.getOrgData().catch(() => null),
-        ]);
-
-      // console.log("Profile Response:", profileResponse);
-      // console.log("Employees Response:", employeesResponse);
-      // console.log("Organization Response:", orgResponse);
+      const [profileResponse, employeesResponse, orgResponse] = await Promise.all([
+        companyAPI.getProfile().catch(() => null),
+        employeeAPI.getCompanyEmployees({ limit: 5, page: 1 }).catch(() => null),
+        companyAPI.getOrgData().catch(() => null),
+      ]);
 
       const profileData = profileResponse?.data?.data || {};
-      const employeesData = employeesResponse?.data?.data || [];
-      const orgData = orgResponse?.data?.data || {};
 
-      console.log("Profile Data:", profileData);
-      console.log("Employees Data:", employeesData);
-      console.log("Organization Data:", orgData);
+      const employeesRawData = employeesResponse?.data?.data || {};
+      const employees = employeesRawData?.employees || [];
+
+      const orgRawData = orgResponse?.data?.data || {};
+      const orgData = {
+        organizationalHealth: orgRawData?.organizationalHealth || 0,
+        data: {
+          departments: orgRawData?.data?.departments || [],
+          roles: orgRawData?.data?.roles || [],
+          designations: orgRawData?.data?.designations || [],
+          subdepartments: orgRawData?.data?.subdepartments || [],
+        }
+      };
 
       const mockDashboard = {
-        profile: profileData || {},
+        profile: profileData,
         employeeStats: {
-          totalEmployees: employeesData?.employees.length || 0,
-          activeEmployees: employeesData?.employees.filter(
-            (emp) => emp.systemInfo?.isActive
-          ).length,
+          totalEmployees: employees.length,
+          activeEmployees: employees.filter((emp) => emp.systemInfo?.isActive).length,
+          newHiresThisMonth: 2,       // You can replace with real logic later
+          topPerformers: 3,           // Same here
+          employeeGrowth: 12,         // Dummy % growth
         },
-        recentEmployees: employeesResponse?.employees || [{}],
-        organizationStats: orgResponse?.data || {},
+        recentEmployees: employees.slice(0, 5),
+        organizationStats: orgData,
         notifications: [
           {
             id: 1,
@@ -147,6 +148,7 @@ const CompanyDashboard = () => {
           },
         ],
       };
+
       setDashboardData(mockDashboard);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -155,6 +157,7 @@ const CompanyDashboard = () => {
       setLoading(false);
     }
   };
+
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {

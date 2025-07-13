@@ -86,6 +86,9 @@ import ClientBulkUpload from "./pages/client/ClientBulkUpload.jsx";
 import ClientOnboarding from "./pages/client/ClientOnboarding.jsx";
 import ClientReports from "./pages/client/ClientReports.jsx";
 
+// Sow Pages
+import SowIntake from "./pages/sow/SowIntake.jsx";
+
 // Public Pages
 import HomePage from "./pages/HomePage.jsx";
 import ClaimIntake from "./pages/ClaimIntake.jsx";
@@ -234,6 +237,11 @@ function App() {
             />
             <Route path="clients/reports" element={<ClientReports />} />
 
+            {/* SOW ROUTES */}
+
+            
+
+
             {/* ORG MGMT */}
             <Route
               path="org-data/overview"
@@ -272,6 +280,18 @@ function App() {
             <Route path="profile/edit" element={<EditProfile />} />
             <Route path="profile/avatar" element={<UploadAvatar />} />
             <Route path="performance" element={<MyPerformance />} />
+          </Route>
+
+
+          {/* SOW ROUTES */}
+
+          <Route path="/sows" element={
+            <ProtectedRoute userType="company">
+              <DashboardLayout />
+            </ProtectedRoute>
+          } > 
+            <Route path="intake" element={<SowIntake />} />
+
           </Route>
 
           {/* 404 */}

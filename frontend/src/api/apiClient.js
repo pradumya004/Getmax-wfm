@@ -11,6 +11,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 10000,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -38,20 +39,25 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor - handle errors globally
-apiClient.interceptors.response.use(
-    (response) => response.data,
-    (error) => {
-        const message = error.response?.data?.message || 'Something went wrong';
+apiClient.interceptors.request.use(
+    (config) => {
+        const userType = getUserType(); // should return 'employee' or 'company'
+        let token = null;
 
-        // Handle specific status codes
-        if (error.response?.status === 401) {
-            toast.error('Session expired or unauthorized. Please refresh the page.');
-            return Promise.reject({ ...error, unauthorized: true });
+        if (userType === 'company') {
+            token = localStorage.getItem('companyToken');
+        } else if (userType === 'employee') {
+            token = localStorage.getItem('employeeToken');
         }
 
-        toast.error(message);
-        return Promise.reject(error);
-    }
+        // Ensure token is valid
+        if (token && token !== "undefined" && token !== "null") {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => Promise.reject(error)
 );
 
 export default apiClient;
