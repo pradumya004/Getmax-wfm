@@ -49,6 +49,7 @@ const OrganizationOverview = () => {
       toast.error("Some organization sections could not be loaded");
     }
   }, [orgData, loading]);
+  
 
   const managementCards = [
     {

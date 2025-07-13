@@ -85,10 +85,10 @@ export const useOrganization = () => {
       }
 
       const newData = {
-        roles: roles ?? [],
-        departments: departments ?? [],
-        designations: designations ?? [],
-        subdepartments: subdepartments ?? [],
+        roles: roles.data ?? [],
+        departments: departments.data ?? [],
+        designations: designations.data ?? [],
+        subdepartments: subdepartments.data ?? [],
       };
 
       setOrgData(newData);

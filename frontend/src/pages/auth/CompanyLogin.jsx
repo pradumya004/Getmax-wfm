@@ -82,7 +82,11 @@ const CompanyLogin = () => {
 
       if (response.success) {
         const data =
-          response.data && response.data.data ? response.data.data : {};
+          response.data && response.data.data && response.data.data.data
+            ? response.data.data.data
+            : {};
+        console.log("Parsed data:", data);
+
         const { company, employee, companyToken, employeeToken } = data;
         console.log("Company data:", company);
         console.log("Employee data:", employee);

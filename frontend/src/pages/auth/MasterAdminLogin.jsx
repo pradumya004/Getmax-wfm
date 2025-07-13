@@ -81,22 +81,18 @@ const MasterAdminLogin = () => {
 
       if (response.success) {
         const data =
-          response.data && response.data.data ? response.data.data : {};
+          response.data && response.data.data && response.data.data.data
+            ? response.data.data.data
+            : {};
         console.log("Master Admin data:", data);
-        const { adminInfo, token } = data;
-        console.log("Master Admin Info:", adminInfo);
-        console.log("Token:", token);
+        const { master, token1, token2 } = data;
+        console.log("Master Admin Info:", master);
+        console.log("Token1:", token1);
+        console.log("Token2:", token2);
 
         // Using fake master-admin-token for master admin
-        await login(adminInfo, token, "master_admin");
+        await login(master, token1, token2, "master_admin");
         toast.success(response.message || "Master Admin Login successful!");
-
-        console.log("✅ Login Debug:", {
-          token: localStorage.getItem("token"),
-          user: JSON.parse(localStorage.getItem("user")),
-          userType: localStorage.getItem("userType"),
-        });
-
         navigate("/master-admin/dashboard");
       } else {
         toast.error(response.message || "Invalid credentials");

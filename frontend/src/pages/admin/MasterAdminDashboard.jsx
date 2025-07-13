@@ -114,10 +114,10 @@ const MasterAdminDashboard = () => {
           fetchEmployees({ page: 1, limit: 5 }),
         ]);
 
-        console.log("📊 Stats result:", statsResult);
-        console.log("🏢 Companies result:", companiesResult);
-        console.log("⚙️ Health result:", healthResult);
-        console.log("👥 Employees result:", employeesResult);
+      console.log("📊 Stats result:", statsResult.value);
+      console.log("🏢 Companies result:", companiesResult.value);
+      console.log("⚙️ Health result:", healthResult.value);
+      console.log("👥 Employees result:", employeesResult.value);
 
       // Handle results
       if (statsResult.status === "rejected") {

@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }) => {
       ...userData,
       userType: userType || getUserType(userData), // Determine user type if not provided
     };
+    console.log("User with type:", userWithType);
 
     // Store auth data first
     setAuthData(companyToken, userWithType, employeeToken);

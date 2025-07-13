@@ -239,9 +239,6 @@ function App() {
 
             {/* SOW ROUTES */}
 
-            
-
-
             {/* ORG MGMT */}
             <Route
               path="org-data/overview"
@@ -282,16 +279,17 @@ function App() {
             <Route path="performance" element={<MyPerformance />} />
           </Route>
 
-
           {/* SOW ROUTES */}
 
-          <Route path="/sows" element={
-            <ProtectedRoute userType="company">
-              <DashboardLayout />
-            </ProtectedRoute>
-          } > 
+          <Route
+            path="/sows"
+            element={
+              <ProtectedRoute userType="company">
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="intake" element={<SowIntake />} />
-
           </Route>
 
           {/* 404 */}

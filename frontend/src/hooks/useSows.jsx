@@ -1,8 +1,8 @@
-// frontend/src/hooks/useSOWs.jsx
+// frontend/src/hooks/useSows.jsx
 
-import { useState, useEffect } from 'react';
-import { sowAPI } from '../api/sow.api';
-import { toast } from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { sowAPI } from "../api/sow.api";
+import { toast } from "react-hot-toast";
 
 export const useSOWs = () => {
   const [sows, setSOWs] = useState([]);
@@ -24,7 +24,7 @@ export const useSOWs = () => {
   const addSOW = async (sowData) => {
     try {
       const newSow = await sowAPI.create(sowData);
-      setSOWs(prev => [...prev, newSow]);
+      setSOWs((prev) => [...prev, newSow]);
       return newSow;
     } catch (err) {
       toast.error("Failed to create SOW.");
@@ -35,7 +35,7 @@ export const useSOWs = () => {
   const updateSOW = async (id, updatedData) => {
     try {
       const updated = await sowAPI.update(id, updatedData);
-      setSOWs(prev => prev.map(sow => (sow._id === id ? updated : sow)));
+      setSOWs((prev) => prev.map((sow) => (sow._id === id ? updated : sow)));
       return updated;
     } catch (err) {
       toast.error("Failed to update SOW.");
@@ -58,6 +58,6 @@ export const useSOWs = () => {
     fetchSOWs,
     addSOW,
     updateSOW,
-    getSOW
+    getSOW,
   };
 };

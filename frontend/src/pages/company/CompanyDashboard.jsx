@@ -71,12 +71,15 @@ const CompanyDashboard = () => {
         companyAPI.getOrgData().catch(() => null),
       ]);
 
-      const profileData = profileResponse?.data?.data || {};
+      console.log("API responses:", { profileResponse, employeesResponse, orgResponse });
+      
 
-      const employeesRawData = employeesResponse?.data?.data || {};
+      const profileData = profileResponse?.data?.data?.data || {};
+
+      const employeesRawData = employeesResponse?.data?.data?.data || {};
       const employees = employeesRawData?.employees || [];
 
-      const orgRawData = orgResponse?.data?.data || {};
+      const orgRawData = orgResponse?.data?.data?.data || {};
       const orgData = {
         organizationalHealth: orgRawData?.organizationalHealth || 0,
         data: {

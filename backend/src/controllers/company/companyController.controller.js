@@ -357,6 +357,7 @@ const loginCompany = asyncHandler(async (req, res) => {
 
 const logoutCompany = asyncHandler(async (req, res) => {
     res.clearCookie("companyToken");
+    res.clearCookie("employeeToken");
     return res.status(200).json(new ApiResponse(200, {}, "Company Logout Successful!"));
 });
 
