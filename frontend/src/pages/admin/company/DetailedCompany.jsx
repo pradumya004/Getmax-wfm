@@ -187,7 +187,7 @@ const DetailedCompany = () => {
     );
   }
 
-  const company = companyDetails;
+  const company = companyDetails.data;
   const analytics = company.analytics || {};
   const employeeStats = analytics.employees || {};
   const recentEmployees = analytics.recent || [];
@@ -774,7 +774,7 @@ const ActionModal = ({
               onClick={onClose}
               className={`p-2 rounded-lg hover:bg-white/10 text-${theme.textSecondary} hover:text-white transition-colors`}
             >
-              ×
+              x
             </button>
           </div>
 

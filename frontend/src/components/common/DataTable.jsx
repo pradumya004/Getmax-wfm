@@ -247,9 +247,6 @@ export const DataTable = ({
     return String(value);
   };
 
-  console.log("Filtered data:", filteredData);
-  
-
   // Render loading state
   if (loading) {
     return (

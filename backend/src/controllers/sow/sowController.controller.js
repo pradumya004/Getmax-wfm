@@ -12,18 +12,20 @@ export const createSOW = asyncHandler(async (req, res) => {
   const companyId = req.company._id;
   const employeeId = req.employee._id;
 
+  const sowData = {
+    ...req.body,
+    companyRef: req.company._id,
+    auditInfo: {
+      createdBy: req.employee._id,
+      lastModifiedBy: req.employee._id
+    }
+  }
+
   // Validate client ownership
-  const client = await Client.findOne({ _id: data.clientRef, companyRef: companyId });
+  const client = await Client.findOne({ companyRef: company._id });
   if (!client) throw new ApiError(404, 'Client not found or unauthorized');
 
-  const sow = await SOW.create({
-    ...data,
-    companyRef: companyId,
-    auditInfo: {
-      createdBy: employeeId,
-      lastModifiedBy: employeeId
-    }
-  });
+  const sow = await SOW.create(sowData);
 
   // Optionally push into client's activeSOWs[]
   client.serviceAgreements.activeSOWs.push(sow._id);

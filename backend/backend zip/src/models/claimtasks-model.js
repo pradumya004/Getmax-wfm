@@ -47,8 +47,9 @@ const claimTasksSchema = new mongoose.Schema({
     primaryPayerRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Payer', // Primary insurance payer
-        required: [true, 'Primary payer reference is required'],
-        index: true
+        // required: [true, 'Primary payer reference is required'],
+        // index: true
+        default: null
     },
     secondaryPayerRef: {
         type: mongoose.Schema.Types.ObjectId,

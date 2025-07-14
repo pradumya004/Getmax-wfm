@@ -73,7 +73,7 @@ const ClientDetails = () => {
   const { userType } = useAuth();
   const theme = getTheme(userType);
   const {
-    getClientById,
+    fetchClientById,
     removeClient,
     updateIntegrationConfig,
     updateSyncStatus,
@@ -98,7 +98,9 @@ const ClientDetails = () => {
   const loadClientDetails = async () => {
     try {
       setLoading(true);
-      const clientData = await getClientById(clientId);
+      const clientData = await fetchClientById(clientId);
+      console.log("Client data loaded:", clientData);
+      
       setClient(clientData);
       setError(null);
     } catch (err) {
@@ -177,7 +179,7 @@ const ClientDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br p-6">
       <Helmet>
-        <title>{client.clientInfo?.clientName} - Client Details - GetMax</title>
+        <title>{`${client.clientInfo?.clientName} - Client Details - GetMax`}</title>
       </Helmet>
 
       <div className="max-w-7xl mx-auto">

@@ -982,7 +982,7 @@ const ClientBulkUpload = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => navigate("/employee/clients/list")}
+              onClick={() => navigate("/company/clients/list")}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -214,8 +214,9 @@ export const useMasterAdmin = () => {
         };
 
         const result = await fetchEmployees(queryParams);
+        console.log("result", result);
         if (result) {
-          setEmployees(result.employees || []);
+          setEmployees(result.data.employees || []);
         }
       } catch (error) {
         console.error("Failed to load employees:", error);

@@ -5,45 +5,67 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
-  UserPlus,
-  Settings,
-  Crown,
-  Monitor,
-  ChevronDown,
-  ChevronRight,
   User,
   Building,
-  Briefcase,
-  Home,
-  ClipboardList,
-  Activity,
-  Clock,
-  Eye,
-  UserCog,
-  Bell,
-  HelpCircle,
+  Settings,
   LogOut,
-  // Client-specific icons
+  ChevronDown,
+  ChevronRight,
+  Crown,
+  Monitor,
+  UserPlus,
+  Upload,
+  TrendingUp,
+  Eye,
+  AlertTriangle,
+  AlertCircle,
+  Star,
   Building2,
   FileText,
-  Upload,
-  BarChart3,
+  Plus,
   UserCheck,
-  Zap,
-  DollarSign,
-  TrendingUp,
+  BarChart3,
+  Briefcase,
+  ClipboardList,
+  Clock,
+  Activity,
   CheckCircle,
-  AlertCircle,
-  Table2,
-  PieChart,
-  Handshake,
-  Target,
-  Globe,
-  FileSpreadsheet,
+  UserCog,
   Layers,
+  Award,
+  Target,
+  DollarSign,
+  Calendar,
+  Zap,
+  Shield,
+  Globe,
+  Package,
+  Server,
+  Database,
+  Cpu,
+  HardDrive,
+  Wifi,
+  RefreshCw,
+  Bell,
+  Search,
+  Filter,
+  Download,
+  MoreHorizontal,
+  Home,
+  FileCheck,
+  Handshake,
+  PieChart,
+  LineChart,
+  Folder,
+  FolderPlus,
+  FileSpreadsheet,
+  UserX,
+  Pause,
+  Play,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
+import { getLoginUrl } from "../../lib/auth.js";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -70,6 +92,17 @@ const Sidebar = () => {
     }));
   };
 
+  const handleLogout = async () => {
+    console.log("Logging out...");
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      localStorage.clear();
+      window.location.href = getLoginUrl();
+    }
+  };
+
   const getNavigationItems = () => {
     switch (userType) {
       case "master_admin":
@@ -78,19 +111,19 @@ const Sidebar = () => {
             icon: LayoutDashboard,
             label: "Dashboard",
             path: "/master-admin/dashboard",
-            description: "Master admin overview",
+            description: "Platform overview and metrics",
           },
           {
             icon: Building,
             label: "Companies",
             path: "/master-admin/companies",
-            description: "Manage all companies",
+            description: "Manage billing companies",
           },
           {
             icon: Users,
-            label: "Employees",
+            label: "Platform Employees",
             path: "/master-admin/employees",
-            description: "Manage all employees",
+            description: "All employees across platform",
           },
           {
             icon: BarChart3,
@@ -102,22 +135,23 @@ const Sidebar = () => {
             icon: Settings,
             label: "Settings",
             path: "/master-admin/settings",
-            description: "Platform settings",
+            description: "Platform configuration",
           },
         ];
+
       case "company":
         return [
           {
             icon: LayoutDashboard,
             label: "Dashboard",
             path: "/company/dashboard",
-            description: "Company overview",
+            description: "Company Overview - Key Metrics & KPIs",
           },
           {
             icon: Users,
-            label: "Employee Management",
+            label: "Workforce Management",
             path: "/company/employees",
-            description: "Manage your employees",
+            description: "Manage your employees and performance",
             submenu: [
               {
                 icon: Users,
@@ -139,15 +173,21 @@ const Sidebar = () => {
               },
               {
                 icon: TrendingUp,
-                label: "Performance",
+                label: "Performance Leaderboard",
                 path: "/company/employees/leaderboard",
                 description: "Performance leaderboard",
+              },
+              {
+                icon: BarChart3,
+                label: "Workforce Analytics",
+                path: "/company/employees/analytics",
+                description: "Workforce analytics and insights",
               },
             ],
           },
           {
             icon: Building,
-            label: "Organization Data",
+            label: "Organization Setup",
             path: "/company/org-data",
             description: "Manage organizational structure",
             submenu: [
@@ -193,11 +233,11 @@ const Sidebar = () => {
             icon: Building2,
             label: "Client Management",
             path: "/company/clients",
-            description: "Manage client relationships",
+            description: "Manage healthcare provider relationships",
             submenu: [
               {
                 icon: BarChart3,
-                label: "Dashboard",
+                label: "Client Dashboard",
                 path: "/company/clients/dashboard",
                 description: "Client overview & analytics",
               },
@@ -221,44 +261,353 @@ const Sidebar = () => {
               },
               {
                 icon: UserCheck,
-                label: "Onboarding",
+                label: "Onboarding Pipeline",
                 path: "/company/clients/onboarding",
                 description: "Client onboarding workflow",
               },
               {
                 icon: FileText,
-                label: "Reports",
+                label: "Client Reports",
                 path: "/company/clients/reports",
                 description: "Client analytics and reports",
+              },
+              {
+                icon: Globe,
+                label: "Integration Status",
+                path: "/company/clients/integration",
+                description: "EHR/PM integration monitoring",
               },
             ],
           },
           {
-            icon: UserCog,
-            label: "Company Profile",
-            path: "/company/profile",
-            description: "Manage company profile",
+            icon: FileCheck,
+            label: "SOW Management",
+            path: "/company/sow",
+            description: "Manage Statements of Work",
+            submenu: [
+              {
+                icon: BarChart3,
+                label: "SOW Dashboard",
+                path: "/company/sow/dashboard",
+                description: "SOW overview & metrics",
+              },
+              {
+                icon: FileText,
+                label: "All SOWs",
+                path: "/company/sow/list",
+                description: "View all Statements of Work",
+              },
+              {
+                icon: Plus,
+                label: "Create SOW",
+                path: "/company/sow/create",
+                description: "Create new Statement of Work",
+              },
+              {
+                icon: Folder,
+                label: "SOW Templates",
+                path: "/company/sow/templates",
+                description: "Manage SOW templates",
+              },
+              {
+                icon: DollarSign,
+                label: "Pricing Models",
+                path: "/company/sow/pricing",
+                description: "Configure pricing models",
+              },
+              {
+                icon: Clock,
+                label: "SLA Configuration",
+                path: "/company/sow/sla",
+                description: "Service Level Agreements",
+              },
+              {
+                icon: PieChart,
+                label: "SOW Analytics",
+                path: "/company/sow/analytics",
+                description: "Performance and financial analytics",
+              },
+            ],
+          },
+          {
+            icon: Users,
+            label: "Patient Registry",
+            path: "/company/patients",
+            description: "Manage patient records",
+            submenu: [
+              {
+                icon: Users,
+                label: "All Patients",
+                path: "/company/patients/list",
+                description: "View all patients",
+              },
+              {
+                icon: UserPlus,
+                label: "Add Patient",
+                path: "/company/patients/add",
+                description: "Add new patient",
+              },
+              {
+                icon: Upload,
+                label: "Bulk Upload",
+                path: "/company/patients/bulk",
+                description: "Upload patients in bulk",
+              },
+              {
+                icon: Search,
+                label: "Patient Search",
+                path: "/company/patients/search",
+                description: "Advanced patient search",
+              },
+              {
+                icon: FileText,
+                label: "Patient Reports",
+                path: "/company/patients/reports",
+                description: "Patient analytics and reports",
+              },
+              {
+                icon: CheckCircle,
+                label: "Eligibility Status",
+                path: "/company/patients/eligibility",
+                description: "Insurance eligibility tracking",
+              },
+            ],
+          },
+          {
+            icon: ClipboardList,
+            label: "Claims Management",
+            path: "/company/claims",
+            description: "Process and track medical claims",
+            submenu: [
+              {
+                icon: BarChart3,
+                label: "Claims Dashboard",
+                path: "/company/claims/dashboard",
+                description: "Claims overview and metrics",
+              },
+              {
+                icon: FileText,
+                label: "All Claims",
+                path: "/company/claims/list",
+                description: "View all claims",
+              },
+              {
+                icon: Plus,
+                label: "Manual Entry",
+                path: "/company/claims/create",
+                description: "Manually enter new claim",
+              },
+              {
+                icon: Upload,
+                label: "Bulk Upload",
+                path: "/company/claims/bulk",
+                description: "Upload claims in bulk",
+              },
+              {
+                icon: Target,
+                label: "Floating Pool",
+                path: "/company/claims/floating-pool",
+                description: "Unassigned claims pool",
+              },
+              {
+                icon: AlertCircle,
+                label: "High Priority",
+                path: "/company/claims/high-priority",
+                description: "High priority claims",
+              },
+              {
+                icon: DollarSign,
+                label: "High Value Claims",
+                path: "/company/claims/high-value",
+                description: "High value claims tracking",
+              },
+              {
+                icon: PieChart,
+                label: "Claims Analytics",
+                path: "/company/claims/analytics",
+                description: "Claims performance analytics",
+              },
+            ],
+          },
+          {
+            icon: Building2,
+            label: "Payer Management",
+            path: "/company/payers",
+            description: "Manage insurance payers",
+            submenu: [
+              {
+                icon: Building2,
+                label: "All Payers",
+                path: "/company/payers/list",
+                description: "View all insurance payers",
+              },
+              {
+                icon: Plus,
+                label: "Add Payer",
+                path: "/company/payers/add",
+                description: "Add new payer",
+              },
+              {
+                icon: FileText,
+                label: "Payer Profiles",
+                path: "/company/payers/profiles",
+                description: "Detailed payer information",
+              },
+              {
+                icon: DollarSign,
+                label: "Payment Terms",
+                path: "/company/payers/payment-terms",
+                description: "Manage payment terms",
+              },
+              {
+                icon: BarChart3,
+                label: "Payer Analytics",
+                path: "/company/payers/analytics",
+                description: "Payer performance analytics",
+              },
+              {
+                icon: Globe,
+                label: "Integration Setup",
+                path: "/company/payers/integration",
+                description: "Payer integration configuration",
+              },
+            ],
+          },
+          {
+            icon: Clock,
+            label: "SLA & Quality",
+            path: "/company/sla",
+            description: "Service Level Agreement monitoring",
+            submenu: [
+              {
+                icon: BarChart3,
+                label: "SLA Dashboard",
+                path: "/company/sla/dashboard",
+                description: "SLA performance overview",
+              },
+              {
+                icon: AlertCircle,
+                label: "SLA Breaches",
+                path: "/company/sla/breaches",
+                description: "SLA breach monitoring",
+              },
+              {
+                icon: Target,
+                label: "Performance Targets",
+                path: "/company/sla/targets",
+                description: "Set performance targets",
+              },
+              {
+                icon: Search,
+                label: "QA Queue",
+                path: "/company/sla/qa-queue",
+                description: "Quality assurance queue",
+              },
+              {
+                icon: CheckCircle,
+                label: "QA Reviews",
+                path: "/company/sla/qa-reviews",
+                description: "Quality review management",
+              },
+              {
+                icon: FileText,
+                label: "Quality Reports",
+                path: "/company/sla/quality-reports",
+                description: "Quality assurance reports",
+              },
+              {
+                icon: Settings,
+                label: "QA Configuration",
+                path: "/company/sla/qa-config",
+                description: "Configure QA parameters",
+              },
+            ],
+          },
+          {
+            icon: BarChart3,
+            label: "Analytics & Reports",
+            path: "/company/analytics",
+            description: "Comprehensive reporting and analytics",
+            submenu: [
+              {
+                icon: TrendingUp,
+                label: "Performance Dashboard",
+                path: "/company/analytics/performance",
+                description: "Overall performance metrics",
+              },
+              {
+                icon: DollarSign,
+                label: "Financial Reports",
+                path: "/company/analytics/financial",
+                description: "Revenue and financial analytics",
+              },
+              {
+                icon: Users,
+                label: "Employee Reports",
+                path: "/company/analytics/employees",
+                description: "Employee performance reports",
+              },
+              {
+                icon: Building2,
+                label: "Client Reports",
+                path: "/company/analytics/clients",
+                description: "Client-specific analytics",
+              },
+              {
+                icon: Clock,
+                label: "SLA Reports",
+                path: "/company/analytics/sla",
+                description: "SLA compliance reports",
+              },
+              {
+                icon: Filter,
+                label: "Custom Reports",
+                path: "/company/analytics/custom",
+                description: "Build custom reports",
+              },
+            ],
           },
           {
             icon: Settings,
-            label: "Settings",
+            label: "Company Settings",
             path: "/company/settings",
-            description: "Company settings",
+            description: "Company configuration and preferences",
+            submenu: [
+              {
+                icon: Building2,
+                label: "Company Profile",
+                path: "/company/settings/profile",
+                description: "Manage company profile",
+              },
+              {
+                icon: Settings,
+                label: "System Settings",
+                path: "/company/settings/system",
+                description: "System configuration",
+              },
+              {
+                icon: Shield,
+                label: "Security Settings",
+                path: "/company/settings/security",
+                description: "Security and access control",
+              },
+              {
+                icon: Globe,
+                label: "Integrations",
+                path: "/company/settings/integrations",
+                description: "Third-party integrations",
+              },
+            ],
           },
         ];
+
       case "employee":
         return [
           {
             icon: LayoutDashboard,
-            label: "Dashboard",
+            label: "My Dashboard",
             path: "/employee/dashboard",
             description: "Overview of your performance and tasks",
-          },
-          {
-            icon: User,
-            label: "My Profile",
-            path: "/employee/profile",
-            description: "Manage your personal information",
           },
           {
             icon: ClipboardList,
@@ -288,9 +637,15 @@ const Sidebar = () => {
           },
           {
             icon: TrendingUp,
-            label: "Performance",
+            label: "My Performance",
             path: "/employee/performance",
             description: "Track your performance metrics",
+          },
+          {
+            icon: Users,
+            label: "My Profile",
+            path: "/employee/profile",
+            description: "Manage your personal information",
           },
           {
             icon: Settings,
@@ -299,6 +654,7 @@ const Sidebar = () => {
             description: "Manage your account settings",
           },
         ];
+
       default:
         return [
           {
@@ -321,6 +677,7 @@ const Sidebar = () => {
 
   const navigationItems = getNavigationItems();
 
+  // Get user display info
   const getUserDisplayInfo = () => {
     if (userType === "master_admin") {
       return {
@@ -330,6 +687,7 @@ const Sidebar = () => {
         initial: "S",
       };
     }
+
     if (userType === "company") {
       return {
         name: user?.companyName || "Company",
@@ -338,14 +696,19 @@ const Sidebar = () => {
         initial: user?.companyName?.charAt(0) || "C",
       };
     }
+
     if (userType === "employee") {
       return {
-        name: `${user?.name || ""}`.trim() || "Employee",
+        name:
+          `${user?.personalInfo?.firstName || ""} ${
+            user?.personalInfo?.lastName || ""
+          }`.trim() || "Employee",
         email: user?.contactInfo?.primaryEmail || user?.email,
-        role: user?.role || "Employee",
-        initial: user?.name?.charAt(0) || "E",
+        role: user?.roleRef?.roleName || "Employee",
+        initial: user?.personalInfo?.firstName?.charAt(0) || "E",
       };
     }
+
     return {
       name: "User",
       email: user?.email || "",
@@ -405,7 +768,7 @@ const Sidebar = () => {
                 <div>
                   <button
                     onClick={() => toggleMenu(item.label)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                    className={`w-full text-sm flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActiveRoute(item.path, item.submenu)
                         ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`
                         : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white`
@@ -414,7 +777,7 @@ const Sidebar = () => {
                   >
                     <div className="flex items-center space-x-3">
                       <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
+                      <span className="text-sm">{item.label}</span>
                     </div>
                     {expandedMenus[item.label] ? (
                       <ChevronDown className="w-4 h-4" />
@@ -429,7 +792,7 @@ const Sidebar = () => {
                           key={subIndex}
                           to={subItem.path}
                           className={({ isActive }) =>
-                            `flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 ${
+                            `flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
                               isActive
                                 ? `bg-${theme.accent}/20 text-${theme.accent} border-l-2 border-${theme.accent} shadow-md`
                                 : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:translate-x-1`
@@ -449,7 +812,7 @@ const Sidebar = () => {
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                    `flex text-sm items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActive
                         ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg scale-105`
                         : `text-${theme.textSecondary} hover:bg-white/5 hover:text-white hover:scale-102`
@@ -537,7 +900,7 @@ const Sidebar = () => {
                 <hr className="border-white/20 my-1" />
                 <button
                   onClick={() => {
-                    logout();
+                    handleLogout();
                     setShowUserMenu(false);
                   }}
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-red-300 hover:bg-white/10 transition-colors w-full text-left"

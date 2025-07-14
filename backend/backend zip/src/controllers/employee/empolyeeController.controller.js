@@ -10,7 +10,7 @@ import { Department } from "../../models/department.model.js";
 import { Designation } from "../../models/designation.model.js";
 import { SubDepartment } from "../../models/subdepartment.model.js";
 import { EMAIL_TEMPLATES } from "../../constants.js";
-import { generateEmployeeToken } from "../../utils/jwtHelper.js";
+import { generateEmployeeToken, generateCompanyToken } from "../../utils/jwtHelper.js";
 import { getClientIP } from "../../utils/helpers.js";
 import crypto from 'crypto';
 import xlsx from 'xlsx';
@@ -242,47 +242,59 @@ const loginEmployee = asyncHandler(async (req, res) => {
 
     await employee.save();
 
-    // Generate JWT token with employee info
-    const token = generateEmployeeToken({
-        employeeId: employee._id,
-        companyId: employee.companyRef._id,
-        role: employee.roleRef,
-        email: employee.contactInfo.primaryEmail
+
+// Generate tokens
+    const employeeToken = generateEmployeeToken({
+    employeeId: employee._id,
+    companyId: employee.companyRef._id,
+    role: employee.roleRef,
+    email: employee.contactInfo.primaryEmail,
     });
 
+    const companyToken = generateCompanyToken(employee.companyRef._id);
+
     const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        maxAge: 12 * 60 * 60 * 1000 // 12 hours for employees
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 12 * 60 * 60 * 1000, // 12 hours for employees
     };
 
-    res.cookie("employeeToken", token, cookieOptions);
+    // Set both cookies
+    res
+    .cookie("employeeToken", employeeToken, cookieOptions)
+    .cookie("companyToken", companyToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for companyToken
+    });
 
+    // Send response
     return res.status(200).json(
-        new ApiResponse(200, {
-            employee: {
-                employeeId: employee.employeeId,
-                name: employee.fullName,
-                email: employee.contactInfo.primaryEmail,
-                companyName: company.companyName,
-                role: employee.roleRef.roleName,
-                department: employee.departmentRef.departmentName,
-                designation: employee.designationRef.designationName,
-                isFromOffice,
-                avatar: employee.avatarUrl,
-                permissions: employee.roleRef.permissions,
-                dataAccess: employee.roleRef.dataAccess,
-                loginTime: new Date(),
-                currentLevel: employee.gamification.experience.currentLevel,
-                totalXP: employee.gamification.experience.totalXP,
-                profileCompletion: employee.systemInfo.profileCompletionPercentage,
-            },
-            token
+    new ApiResponse(200, {
+        employee: {
+        employeeId: employee.employeeId,
+        name: employee.fullName,
+        email: employee.contactInfo.primaryEmail,
+        companyName: company.companyName,
+        role: employee.roleRef.roleName,
+        department: employee.departmentRef.departmentName,
+        designation: employee.designationRef.designationName,
+        isFromOffice,
+        avatar: employee.avatarUrl,
+        permissions: employee.roleRef.permissions,
+        dataAccess: employee.roleRef.dataAccess,
+        loginTime: new Date(),
+        currentLevel: employee.gamification.experience.currentLevel,
+        totalXP: employee.gamification.experience.totalXP,
+        profileCompletion: employee.systemInfo.profileCompletionPercentage,
         },
-            "Login successful"
-        )
+        employeeToken, // Optional: for frontend debugging
+        companyToken,
+    },
+        "Login successful"
+    )
     );
+
 });
 
 // =================================================

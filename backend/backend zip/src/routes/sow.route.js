@@ -1,4 +1,4 @@
-// backend/src/routes/sow.routes.js
+// backend/src/routes/sow.route.js
 
 import express from 'express';
 import {
@@ -9,7 +9,7 @@ import {
   assignEmployeesToSOW,
   changeSOWStatus,
   getClientSOWs
-} from '../controllers/sow.controller.js';
+} from '../controllers/sow/sowController.controller.js';
 
 import {
   verifyEmployeeToken,

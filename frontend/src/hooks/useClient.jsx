@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useApi } from "./useApi.jsx";
 import { clientAPI } from "../api/client.api.js";
+import { toast } from "react-hot-toast";
 
 export const useClients = () => {
   const [clients, setClients] = useState([]);
@@ -16,37 +17,33 @@ export const useClients = () => {
   const { execute: createClient } = useApi(clientAPI.createClient);
   const { execute: updateClient } = useApi(clientAPI.updateClient);
   const { execute: deleteClient } = useApi(clientAPI.deleteClient);
-  const { execute: bulkUploadClients } = useApi(clientAPI.bulkUploadClients);
+  const { execute: bulkUploadClients } = useApi(clientAPI.bulkUpload);
 
   // Config Updaters
-  const { execute: updateIntegrationConfig } = useApi(
-    clientAPI.updateIntegrationConfig
-  );
-  const { execute: updateProcessingConfig } = useApi(
-    clientAPI.updateProcessingConfig
-  );
-  const { execute: updateFinancialInfo } = useApi(
-    clientAPI.updateFinancialInfo
-  );
+  const { execute: updateIntegration } = useApi(clientAPI.updateIntegration);
+  const { execute: updateProcessing } = useApi(clientAPI.updateProcessing);
+  const { execute: updateFinancial } = useApi(clientAPI.updateFinancial);
   const { execute: updateSyncStatus } = useApi(clientAPI.updateSyncStatus);
 
   // Agreements
-  const { execute: uploadAgreements } = useApi(clientAPI.uploadAgreements);
+  const { execute: updateAgreements } = useApi(clientAPI.updateAgreements);
 
   // Filtering
-  const { execute: getClientsByEHR } = useApi(clientAPI.getClientsByEHR);
-  const { execute: getPendingOnboardingClients } = useApi(
-    clientAPI.getClientsNeedingOnboarding
+  const { execute: getClientsByEHR } = useApi(clientAPI.getByEHR);
+  const { execute: getClientsNeedingOnboarding } = useApi(
+    clientAPI.getNeedingOnboarding
   );
-  const { execute: getActiveClients } = useApi(clientAPI.getActiveClients);
+  const { execute: getActiveClients } = useApi(clientAPI.getActive);
+
+  // SOW readiness
+  const { execute: checkSOWReadiness } = useApi(clientAPI.checkSOWReadiness);
 
   // Decryption (admin-only)
   const { execute: getDecryptedCredentials } = useApi(
     clientAPI.getDecryptedCredentials
   );
 
-  // Extra
-  const { execute: checkSOWReadiness } = useApi(clientAPI.checkSOWReadiness);
+  // Fetch client by ID
   const { execute: getClientById } = useApi(clientAPI.getClientById);
 
   const loadClients = async (params = {}) => {
@@ -54,9 +51,117 @@ export const useClients = () => {
     console.log("Params:", params);
     const res = await fetchClients(params);
     console.log("Response:", res);
-    const clientList = Array.isArray(res) ? res : res?.data ?? [];
+    const clientList = Array.isArray(res)
+      ? res
+      : res?.data ?? res?.clients ?? [];
+    console.log("Setting clients:", clientList);
     setClients(clientList);
     return clientList;
+  };
+
+  const addClient = async (data) => {
+    console.log("➕ Creating Client:", data);
+    const res = await createClient(data);
+    if (res) await loadClients();
+    return res;
+  };
+
+  const editClient = async (id, data) => {
+    console.log("✏️ Updating Client:", id, data);
+    const res = await updateClient(id, data);
+    if (res) await loadClients();
+    return res;
+  };
+
+  const removeClient = async (id) => {
+    console.log("🗑️ Deleting Client:", id);
+    const res = await deleteClient(id);
+    if (res) await loadClients();
+    return res;
+  };
+
+  const uploadBulkClients = async (clientsData) => {
+    console.log("📤 Bulk Uploading Clients:", clientsData);
+    const res = await bulkUploadClients(clientsData);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const updateClientIntegration = async (id, integrationData) => {
+    console.log("🔧 Updating Integration:", id, integrationData);
+    const res = await updateIntegration(id, integrationData);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const updateClientProcessing = async (id, processingData) => {
+    console.log("⚙️ Updating Processing:", id, processingData);
+    const res = await updateProcessing(id, processingData);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const updateClientFinancial = async (id, financialData) => {
+    console.log("💰 Updating Financial:", id, financialData);
+    const res = await updateFinancial(id, financialData);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const updateClientSyncStatus = async (id, syncData) => {
+    console.log("🔄 Updating Sync Status:", id, syncData);
+    const res = await updateSyncStatus(id, syncData);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const updateClientAgreements = async (id, agreements) => {
+    console.log("📄 Updating Agreements:", id, agreements);
+    const res = await updateAgreements(id, agreements);
+    if (res) {
+      await loadClients(); // Refresh the list
+    }
+    return res;
+  };
+
+  const getClientsByEHRSystem = async (ehrSystem) => {
+    console.log("🏥 Getting Clients by EHR:", ehrSystem);
+    return await getClientsByEHR(ehrSystem);
+  };
+
+  const getPendingOnboardingClients = async () => {
+    console.log("📋 Getting Pending Onboarding Clients");
+    return await getClientsNeedingOnboarding();
+  };
+
+  const getAllActiveClients = async () => {
+    console.log("✅ Getting Active Clients");
+    return await getActiveClients();
+  };
+
+  const validateSOWReadiness = async (id) => {
+    console.log("✔️ Checking SOW Readiness:", id);
+    return await checkSOWReadiness(id);
+  };
+
+  const fetchClientById = async (id) => {
+    console.log("👁️ Fetching Client by ID:", id);
+    return await getClientById(id);
+  };
+
+  const fetchDecryptedCredentials = async (id) => {
+    console.log("🔐 Fetching Decrypted Credentials:", id);
+    return await getDecryptedCredentials(id);
   };
 
   useEffect(() => {
@@ -64,54 +169,47 @@ export const useClients = () => {
   }, []);
 
   return {
-    // 🔄 Client List
+    // State
     clients,
     loading,
     error,
-    refresh: loadClients,
 
-    // ➕ CRUD
-    addClient: async (data) => {
-      console.log("🔍 Client Create Payload:", data); // 👈 Check this
-      const res = await createClient(data);
-      if (res) await loadClients();
-      return res;
-    },
-    editClient: async (id, data) => {
-      const res = await updateClient(id, data);
-      if (res) await loadClients();
-      return res;
-    },
-    removeClient: async (id) => {
-      const res = await deleteClient(id);
-      if (res) await loadClients();
-      return res;
-    },
-    uploadClients: async (formData) => {
-      const res = await bulkUploadClients(formData);
-      if (res) await loadClients();
-      return res;
-    },
-
-    // ⚙️ Config Updates
-    updateIntegrationConfig,
-    updateProcessingConfig,
-    updateFinancialInfo,
-    updateSyncStatus,
-
-    // 📄 Agreements
-    uploadAgreements,
-
-    // 🔍 Filters
-    getClientsByEHR,
+    // Functions
+    loadClients,
+    addClient,
+    editClient,
+    removeClient,
+    uploadBulkClients,
+    updateClientIntegration,
+    updateClientProcessing,
+    updateClientFinancial,
+    updateClientSyncStatus,
+    updateClientAgreements,
+    getClientsByEHRSystem,
     getPendingOnboardingClients,
-    getActiveClients,
+    getAllActiveClients,
+    validateSOWReadiness,
+    fetchClientById,
+    fetchDecryptedCredentials,
 
-    // 🔐 Decryption
-    getDecryptedCredentials,
-
-    // 🧠 Insights
-    checkSOWReadiness,
-    getClientById,
+    // Direct execute functions (for advanced usage)
+    execute: {
+      fetchClients,
+      createClient,
+      updateClient,
+      deleteClient,
+      bulkUploadClients,
+      updateIntegration,
+      updateProcessing,
+      updateFinancial,
+      updateSyncStatus,
+      updateAgreements,
+      getClientsByEHR,
+      getClientsNeedingOnboarding,
+      getActiveClients,
+      checkSOWReadiness,
+      getClientById,
+      getDecryptedCredentials,
+    },
   };
 };

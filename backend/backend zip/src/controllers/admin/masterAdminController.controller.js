@@ -16,8 +16,8 @@ const loginMasterAdmin = asyncHandler(async (req, res) => {
     // The verifyMasterAdminLogin middleware already handles credential verification
     // If we reach here, credentials are valid and req.masterAdmin is set
 
-    const token = generateMasterAdminToken();
-    res.cookie("masterAdminToken", token, {
+    const masterAdminToken = generateMasterAdminToken();
+    res.cookie("masterAdminToken", masterAdminToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
@@ -29,8 +29,9 @@ const loginMasterAdmin = asyncHandler(async (req, res) => {
         new ApiResponse(
             200,
             {
-                adminInfo,
-                token
+                master: adminInfo,
+                token1: masterAdminToken,
+                token2: masterAdminToken
             },
             "Login successful"
         )

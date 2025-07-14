@@ -92,8 +92,8 @@ const MasterAdminDashboard = () => {
     fetchDashboardData();
 
     // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchDashboardData, 30000);
+    // return () => clearInterval(interval);
   }, [selectedPeriod]);
 
   const fetchDashboardData = async () => {
@@ -118,6 +118,7 @@ const MasterAdminDashboard = () => {
       console.log("🏢 Companies result:", companiesResult.value);
       console.log("⚙️ Health result:", healthResult.value);
       console.log("👥 Employees result:", employeesResult.value);
+      console.log("platform Stats ..... ", platformStats);
 
       // Handle results
       if (statsResult.status === "rejected") {
@@ -149,10 +150,10 @@ const MasterAdminDashboard = () => {
 
   // Mock data for demonstration (replace with real data from APIs)
   const mockStats = {
-    totalCompanies: platformStats?.overview?.totalCompanies || 156,
-    activeCompanies: platformStats?.overview?.activeCompanies || 142,
-    totalEmployees: platformStats?.overview?.totalEmployees || 8742,
-    activeEmployees: platformStats?.overview?.activeEmployees || 8234,
+    totalCompanies: platformStats?.data?.overview?.totalCompanies || 156,
+    activeCompanies: platformStats?.data?.overview?.activeCompanies || 142,
+    totalEmployees: platformStats?.data?.overview?.totalEmployees || 8742,
+    activeEmployees: platformStats?.data?.overview?.activeEmployees || 8234,
     monthlyRevenue: 284750,
     growthRate: 12.5,
     systemUptime: 99.98,
@@ -237,7 +238,7 @@ const MasterAdminDashboard = () => {
     },
   ];
 
-  const topCompanies = companiesData?.companies?.slice(0, 5) || [
+  const topCompanies = companiesData?.data?.companies?.slice(0, 5) || [
     {
       companyName: "TechCorp Solutions",
       employeeCount: 245,

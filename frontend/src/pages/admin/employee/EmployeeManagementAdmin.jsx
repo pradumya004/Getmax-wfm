@@ -103,8 +103,8 @@ const EnhancedEmployeeManagementAdmin = () => {
 
   useEffect(() => {
     // Auto-refresh every 60 seconds
-    const interval = setInterval(loadEmployeesData, 60000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(loadEmployeesData, 60000);
+    // return () => clearInterval(interval);
   }, []);
 
   const loadEmployeesData = async () => {
@@ -121,6 +121,7 @@ const EnhancedEmployeeManagementAdmin = () => {
         }),
         loadCompanies({ limit: 1000 }), // Load all companies for filtering
       ]);
+      console.log("check employees",employees);
     } catch (error) {
       console.error("Failed to load employee data:", error);
       toast.error("Failed to load employee data");

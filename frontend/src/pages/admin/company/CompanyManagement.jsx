@@ -97,8 +97,8 @@ const EnhancedCompanyManagement = () => {
 
   useEffect(() => {
     // Auto-refresh every 30 seconds
-    const interval = setInterval(loadCompanies, 30000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(loadCompanies, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const loadCompanies = async () => {
@@ -109,6 +109,8 @@ const EnhancedCompanyManagement = () => {
         sortBy: "createdAt",
         sortOrder: "desc",
       });
+
+      // console.log(object);
     } catch (error) {
       console.error("Failed to load companies:", error);
       toast.error("Failed to load companies");
@@ -242,7 +244,8 @@ const EnhancedCompanyManagement = () => {
   };
 
   // Mock data fallback
-  const companies = companiesData?.companies || [];
+  const companies = companiesData?.data?.companies || [];
+  console.log("company Data" ,companiesData);
 
   console.log("Companies:", companies);
 

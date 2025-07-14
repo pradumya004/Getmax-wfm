@@ -1,289 +1,418 @@
 // frontend/src/pages/sow/SowIntake.jsx
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
-
-// Custom hooks
+import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Building2,
+  User,
+  Settings,
+  Target,
+  DollarSign,
+  Users,
+  Shield,
+  Clock,
+  BarChart3,
+  Zap,
+  Award,
+} from "lucide-react";
+import { Input } from "../../components/ui/Input.jsx";
+import { Select } from "../../components/ui/Select.jsx";
+import { Button } from "../../components/ui/Button.jsx";
+import { Card } from "../../components/ui/Card.jsx";
+import { Badge } from "../../components/ui/Badge.jsx";
+import { Textarea } from "../../components/ui/Textarea.jsx";
+import { FileUpload } from "../../components/ui/FileUpload.jsx";
+import { Progress } from "../../components/ui/Progress.jsx";
+import { getTheme } from "../../lib/theme.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useSOWs } from "../../hooks/useSows.jsx";
-
-// Utility
-import { getTheme } from "../../lib/theme";
-
-// UI Components (you may need to adjust the import path if using a UI library or custom card)
-import { Card } from "../../components/ui/Card.jsx";
-import { Button } from "../../components/ui/Button.jsx";
+import { useClients } from "../../hooks/useClient.jsx";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const SOWIntake = () => {
   const { userType } = useAuth();
   const theme = getTheme(userType);
   const navigate = useNavigate();
-  const { addSOW } = useSOWs(); // Assuming you have a useSOWs hook
+  const { addSOW } = useSOWs();
+  const { clients, fetchClients } = useClients();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
   const progress = (currentStep / totalSteps) * 100;
 
-  const steps = [
-    {
-      id: 1,
-      title: "Basic Information",
-      description: "SOW details and client",
-    },
-    { id: 2, title: "Service Details", description: "Service configuration" },
-    {
-      id: 3,
-      title: "Volume & Forecasting",
-      description: "Capacity and targets",
-    },
-    { id: 4, title: "Financial Terms", description: "Pricing and payment" },
-    {
-      id: 5,
-      title: "Resource Planning",
-      description: "Skills and assignments",
-    },
-    { id: 6, title: "Review & Submit", description: "Final review" },
-  ];
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const [formData, setFormData] = useState({
-    // Basic Information
+    // Step 1: Basic Information
     basicInfo: {
-      sowTitle: "",
+      sowName: "",
       sowDescription: "",
       clientCompanyRef: "",
-      sowType: "Fixed",
-      priority: "Medium",
     },
 
-    // Service Details
+    // Step 2: Service Configuration
     serviceDetails: {
       serviceType: "",
-      serviceDescription: "",
-      deliverables: [],
-      qualityMetrics: {
-        accuracyTarget: 95,
-        turnaroundTime: 24,
-        qualityCheckpoints: [],
-      },
-      complianceRequirements: [],
-      specialInstructions: "",
+      serviceSubType: "",
+      scopeFormatId: "EMSMC",
     },
 
-    // Volume & Forecasting
-    volumeForecasting: {
-      expectedDailyVolume: 0,
-      peakVolumeExpected: 0,
-      minimumVolumeGuaranteed: 0,
-      volumeVariabilityFactor: 1.0,
-      historicalVolumeData: [],
-      seasonalityFactors: {
-        quarterlyMultipliers: [1.0, 1.0, 1.0, 1.0],
-        monthlyPatterns: [],
-      },
-    },
-
-    // Financial Terms
-    financialTerms: {
-      pricingModel: "PerUnit",
-      baseRate: 0,
+    // Step 3: Contract & Billing
+    contractDetails: {
+      contractType: "Transactional",
+      billingModel: "Per Transaction",
+      ratePerTransaction: 0,
+      monthlyFixedRate: 0,
       currency: "USD",
-      volumeDiscounts: [],
-      paymentTerms: {
-        paymentSchedule: "Monthly",
-        paymentDueDays: 30,
-        lateFeePercentage: 0,
-        earlyPaymentDiscount: 0,
-      },
-      invoicingDetails: {
-        invoiceFrequency: "Monthly",
-        invoiceDeliveryMethod: "Email",
-        billingContact: "",
+    },
+
+    // Step 4: Performance Targets & SLA
+    performanceTargets: {
+      dailyTargetPerEmp: 50,
+      qualityBenchmark: 95,
+      slaConfig: {
+        slaHours: 48,
+        triggerEvent: "Assign Date",
+        warningThresholdPercent: 85,
+        resetOnReassign: false,
       },
     },
 
-    // Resource Planning
-    resourcePlanning: {
-      estimatedFTE: 0,
-      requiredSkills: [],
-      preferredEmployees: [],
-      workingHours: {
-        startTime: "09:00",
-        endTime: "17:00",
-        timeZone: "UTC",
-        workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    // Step 5: Volume Forecasting & Resource Planning
+    volumeAndResources: {
+      volumeForecasting: {
+        expectedDailyVolume: 100,
+        expectedMonthlyVolume: 2200,
+        peakSeasonMultiplier: 1.2,
       },
-      capacityAllocation: {
-        maxConcurrentTasks: 10,
-        bufferCapacityPercentage: 20,
+      resourcePlanning: {
+        plannedHeadcount: 2,
+        requiredRoleLevel: 3,
+        requiredSkills: [],
+        minExperienceYears: 1,
       },
     },
 
-    // Status (will be set automatically)
-    status: {
-      sowStatus: "Draft",
-      startDate: "",
-      endDate: "",
-      autoRenewal: false,
-      renewalTerms: "",
+    // Step 6: Work Allocation & QA Configuration
+    allocationAndQA: {
+      allocationConfig: {
+        allocationMode: "Capacity Based",
+        priorityFormula: {
+          agingWeight: 0.4,
+          payerWeight: 0.3,
+          denialWeight: 0.3,
+        },
+        floatingPoolConfig: {
+          enabled: true,
+          maxClaimsInPool: 50,
+          autoReassignAfterHours: 4,
+        },
+        maxClaimsPerEmp: 50,
+      },
+      qaConfig: {
+        qaRequired: true,
+        qaPercentage: 10,
+        errorCategories: [
+          { category: "Clinical", weightage: 25 },
+          { category: "Administrative", weightage: 25 },
+          { category: "Technical", weightage: 20 },
+          { category: "Compliance", weightage: 20 },
+          { category: "Documentation", weightage: 10 },
+        ],
+        passingScore: 85,
+      },
+      notesConfig: {
+        useStructuredNotes: true,
+        requiredNoteCategories: [
+          {
+            categoryName: "Resolution Notes",
+            isRequired: true,
+            fieldType: "Textarea",
+            options: [],
+          },
+          {
+            categoryName: "Follow-up Required",
+            isRequired: false,
+            fieldType: "Dropdown",
+            options: ["Yes", "No", "Pending"],
+          },
+        ],
+        notesMandatory: true,
+      },
     },
 
-    // System Info (will be set automatically)
-    systemInfo: {
-      isActive: true,
-      autoAssignmentEnabled: false,
-      notificationSettings: {
-        volumeThresholds: true,
-        qualityAlerts: true,
-        deadlineReminders: true,
+    // Step 7: Timeline & System Configuration
+    finalConfig: {
+      status: {
+        sowStatus: "Draft",
+        startDate: "",
+        endDate: "",
+        lastReviewDate: null,
+        nextReviewDate: null,
+      },
+      systemInfo: {
+        isActive: true,
+        isTemplate: false,
+        autoAssignmentEnabled: true,
       },
     },
   });
 
-  // Validation rules for each step
-  const validationRules = {
-    1: {
-      "basicInfo.sowTitle": { required: true },
-      "basicInfo.sowDescription": { required: true },
-      "basicInfo.clientCompanyRef": { required: true },
-      "basicInfo.sowType": { required: true },
-      "basicInfo.priority": { required: true },
-    },
-    2: {
-      "serviceDetails.serviceType": { required: true },
-      "serviceDetails.serviceDescription": { required: true },
-      "serviceDetails.qualityMetrics.accuracyTarget": {
-        required: true,
-        min: 0,
-        max: 100,
-      },
-      "serviceDetails.qualityMetrics.turnaroundTime": {
-        required: true,
-        min: 1,
-      },
-    },
-    3: {
-      "volumeForecasting.expectedDailyVolume": { required: true, min: 1 },
-      "volumeForecasting.peakVolumeExpected": { required: true, min: 1 },
-      "volumeForecasting.volumeVariabilityFactor": {
-        required: true,
-        min: 0.1,
-        max: 5.0,
-      },
-    },
-    4: {
-      "financialTerms.pricingModel": { required: true },
-      "financialTerms.baseRate": { required: true, min: 0 },
-      "financialTerms.currency": { required: true },
-      "financialTerms.paymentTerms.paymentSchedule": { required: true },
-      "financialTerms.paymentTerms.paymentDueDays": { required: true, min: 1 },
-    },
-    5: {
-      "resourcePlanning.estimatedFTE": { required: true, min: 0.1 },
-      "resourcePlanning.workingHours.startTime": { required: true },
-      "resourcePlanning.workingHours.endTime": { required: true },
-      "resourcePlanning.workingHours.timeZone": { required: true },
-    },
-    6: {
-      "status.startDate": { required: true },
-      "status.endDate": { required: true },
-    },
-  };
-
   // Options for dropdowns
-  const sowTypeOptions = ["Fixed", "Time & Material", "Hybrid", "Subscription"];
-  const priorityOptions = ["Low", "Medium", "High", "Critical"];
   const serviceTypeOptions = [
+    "AR Calling",
     "Medical Coding",
-    "Claims Processing",
     "Prior Authorization",
-    "Billing",
-    "Auditing",
-    "Data Entry",
+    "Eligibility Verification",
+    "Charge Entry",
+    "Payment Posting",
+    "Denial Management",
+    "Quality Assurance",
+    "Custom Service",
   ];
-  const pricingModelOptions = [
-    "PerUnit",
+
+  const contractTypeOptions = ["End-to-End", "Transactional", "FTE", "Hybrid"];
+
+  const billingModelOptions = [
+    "Per Transaction",
+    "Monthly Fixed",
     "Hourly",
-    "Monthly",
-    "Annual",
-    "Milestone",
+    "Performance Based",
   ];
-  const currencyOptions = ["USD", "EUR", "GBP", "CAD", "AUD"];
-  const paymentScheduleOptions = [
-    "Weekly",
-    "Bi-weekly",
-    "Monthly",
-    "Quarterly",
-    "Annual",
+
+  const currencyOptions = ["USD", "INR", "EUR", "GBP", "CAD", "AED"];
+
+  const triggerEventOptions = [
+    "Import Date",
+    "Assign Date",
+    "First Status Update",
   ];
-  const invoiceFrequencyOptions = ["Weekly", "Monthly", "Quarterly"];
-  const invoiceDeliveryOptions = ["Email", "Portal", "Mail"];
-  const timeZoneOptions = ["UTC", "EST", "PST", "CST", "MST", "IST"];
-  const workingDaysOptions = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+
+  const allocationModeOptions = [
+    "Round Robin",
+    "Capacity Based",
+    "Priority Based",
+    "Skill Based",
   ];
-  const complianceOptions = ["HIPAA", "SOX", "GDPR", "ISO 27001", "PCI DSS"];
+
+  const scopeFormatOptions = [
+    "EMSMC",
+    "ClaimMD",
+    "Medisoft",
+    "Epic",
+    "Cerner",
+    "AllScripts",
+    "Other",
+  ];
+
   const skillOptions = [
     "Medical Coding",
     "ICD-10",
     "CPT",
     "HCPCS",
-    "Claims Processing",
     "Prior Auth",
-    "Billing",
-    "Auditing",
+    "AR Calling",
+    "Denial Management",
+    "Payment Posting",
+    "Eligibility Verification",
+    "Insurance Knowledge",
+    "EMR Systems",
+    "Excel Advanced",
+    "Data Entry",
+    "Customer Service",
+    "Healthcare RCM",
   ];
 
-  const handleInputChange = (section, field, value, subField = null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: subField
-          ? {
-              ...prev[section][field],
-              [subField]: value,
-            }
-          : value,
-      },
-    }));
+  const errorCategoryOptions = [
+    "Clinical",
+    "Administrative",
+    "Technical",
+    "Compliance",
+    "Documentation",
+  ];
+
+  const fieldTypeOptions = [
+    "Text",
+    "Dropdown",
+    "Multi-select",
+    "Date",
+    "Number",
+    "Textarea",
+  ];
+
+  const handleInputChange = (
+    section,
+    field,
+    value,
+    subField = null,
+    index = null
+  ) => {
+    setFormData((prev) => {
+      const newData = { ...prev };
+
+      if (index !== null) {
+        // Handle array updates
+        if (!newData[section][field][index]) {
+          newData[section][field][index] = {};
+        }
+        newData[section][field][index][subField] = value;
+      } else if (subField) {
+        // Handle nested object updates
+        if (!newData[section][field]) {
+          newData[section][field] = {};
+        }
+        newData[section][field][subField] = value;
+      } else {
+        // Handle direct field updates
+        newData[section][field] = value;
+      }
+
+      return newData;
+    });
 
     // Clear error for this field
     const errorKey = subField
       ? `${section}.${field}.${subField}`
       : `${section}.${field}`;
-    setErrors((prev) => ({
-      ...prev,
-      [errorKey]: null,
-    }));
+    if (errors[errorKey]) {
+      setErrors((prev) => ({
+        ...prev,
+        [errorKey]: undefined,
+      }));
+    }
   };
 
   const validateCurrentStep = () => {
-    const currentValidations = validationRules[currentStep] || {};
+    const stepValidations = {
+      1: {
+        "basicInfo.sowName": {
+          required: true,
+          message: "SOW name is required",
+        },
+        "basicInfo.sowDescription": {
+          required: true,
+          message: "SOW description is required",
+        },
+        "basicInfo.clientCompanyRef": {
+          required: true,
+          message: "Client selection is required",
+        },
+      },
+      2: {
+        "serviceDetails.serviceType": {
+          required: true,
+          message: "Service type is required",
+        },
+        "serviceDetails.scopeFormatId": {
+          required: true,
+          message: "Scope format is required",
+        },
+      },
+      3: {
+        "contractDetails.contractType": {
+          required: true,
+          message: "Contract type is required",
+        },
+        "contractDetails.billingModel": {
+          required: true,
+          message: "Billing model is required",
+        },
+        "contractDetails.ratePerTransaction": {
+          required: formData.contractDetails.billingModel === "Per Transaction",
+          min: 0,
+          message: "Rate per transaction is required and must be positive",
+        },
+        "contractDetails.monthlyFixedRate": {
+          required: formData.contractDetails.billingModel === "Monthly Fixed",
+          min: 0,
+          message: "Monthly fixed rate is required and must be positive",
+        },
+      },
+      4: {
+        "performanceTargets.dailyTargetPerEmp": {
+          required: true,
+          min: 1,
+          max: 500,
+          message: "Daily target must be between 1 and 500",
+        },
+        "performanceTargets.qualityBenchmark": {
+          required: true,
+          min: 80,
+          max: 100,
+          message: "Quality benchmark must be between 80% and 100%",
+        },
+        "performanceTargets.slaConfig.slaHours": {
+          required: true,
+          min: 1,
+          max: 168,
+          message: "SLA hours must be between 1 and 168",
+        },
+      },
+      5: {
+        "volumeAndResources.volumeForecasting.expectedDailyVolume": {
+          required: true,
+          min: 1,
+          message: "Expected daily volume must be at least 1",
+        },
+        "volumeAndResources.resourcePlanning.plannedHeadcount": {
+          required: true,
+          min: 1,
+          max: 500,
+          message: "Planned headcount must be between 1 and 500",
+        },
+      },
+      6: {
+        "allocationAndQA.qaConfig.qaPercentage": {
+          required: true,
+          min: 5,
+          max: 100,
+          message: "QA percentage must be between 5% and 100%",
+        },
+        "allocationAndQA.qaConfig.passingScore": {
+          required: true,
+          min: 70,
+          max: 100,
+          message: "Passing score must be between 70% and 100%",
+        },
+      },
+      7: {
+        "finalConfig.status.startDate": {
+          required: true,
+          message: "Start date is required",
+        },
+      },
+    };
+
+    const currentValidations = stepValidations[currentStep];
     const newErrors = {};
 
     Object.entries(currentValidations).forEach(([fieldPath, validation]) => {
       const value = getNestedValue(formData, fieldPath);
 
       if (validation.required && (!value || value.toString().trim() === "")) {
-        newErrors[fieldPath] = "This field is required";
+        newErrors[fieldPath] = validation.message;
       }
 
       if (validation.min && value < validation.min) {
-        newErrors[fieldPath] = `Minimum value is ${validation.min}`;
+        newErrors[fieldPath] = validation.message;
       }
 
       if (validation.max && value > validation.max) {
-        newErrors[fieldPath] = `Maximum value is ${validation.max}`;
+        newErrors[fieldPath] = validation.message;
       }
     });
 
@@ -310,27 +439,35 @@ const SOWIntake = () => {
 
     setLoading(true);
     try {
+      // Prepare final data according to SOW model structure
       const finalData = {
-        ...formData,
-        auditInfo: {
-          createdAt: new Date(),
-          createdBy: userType.id, // Assuming userType has id
-          lastModifiedAt: new Date(),
-          lastModifiedBy: userType.id,
-        },
+        sowName: formData.basicInfo.sowName,
+        sowDescription: formData.basicInfo.sowDescription,
+        clientCompanyRef: formData.basicInfo.clientCompanyRef,
+        serviceDetails: formData.serviceDetails,
+        contractDetails: formData.contractDetails,
+        performanceTargets: formData.performanceTargets,
+        volumeForecasting: formData.volumeAndResources.volumeForecasting,
+        resourcePlanning: formData.volumeAndResources.resourcePlanning,
+        allocationConfig: formData.allocationAndQA.allocationConfig,
+        qaConfig: formData.allocationAndQA.qaConfig,
+        notesConfig: formData.allocationAndQA.notesConfig,
+        status: formData.finalConfig.status,
+        systemInfo: formData.finalConfig.systemInfo,
         activityMetrics: {
           totalClaimsAssigned: 0,
           totalClaimsCompleted: 0,
-          averageCompletionTime: 0,
-          qualityScore: 0,
-          employeeUtilization: 0,
+          averageCompletionTimeHours: 0,
+          currentSlaComplianceRate: 0,
+          currentQualityScoreAverage: 0,
+          monthlyRevenueGenerated: 0,
         },
         uploadedFiles: uploadedFiles,
       };
 
       await addSOW(finalData);
       toast.success("SOW created successfully!");
-      //   navigate("/employee");
+      navigate("/employee/sows/list");
     } catch (error) {
       console.error(error);
       toast.error("Failed to create SOW. Please try again.");
@@ -344,24 +481,60 @@ const SOWIntake = () => {
     toast.success(`${files.length} file(s) uploaded successfully`);
   };
 
-  const handleArrayAdd = (section, field, item) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: [...prev[section][field], item],
-      },
-    }));
+  const handleSkillToggle = (skill) => {
+    const currentSkills =
+      formData.volumeAndResources.resourcePlanning.requiredSkills;
+    const skillExists = currentSkills.find((s) => s.skill === skill);
+
+    if (skillExists) {
+      const newSkills = currentSkills.filter((s) => s.skill !== skill);
+      handleInputChange(
+        "volumeAndResources",
+        "resourcePlanning",
+        newSkills,
+        "requiredSkills"
+      );
+    } else {
+      const newSkills = [
+        ...currentSkills,
+        { skill, proficiencyLevel: "Intermediate" },
+      ];
+      handleInputChange(
+        "volumeAndResources",
+        "resourcePlanning",
+        newSkills,
+        "requiredSkills"
+      );
+    }
   };
 
-  const handleArrayRemove = (section, field, index) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: prev[section][field].filter((_, i) => i !== index),
-      },
-    }));
+  const addNoteCategory = () => {
+    const currentCategories =
+      formData.allocationAndQA.notesConfig.requiredNoteCategories;
+    const newCategory = {
+      categoryName: "",
+      isRequired: true,
+      fieldType: "Textarea",
+      options: [],
+    };
+    handleInputChange(
+      "allocationAndQA",
+      "notesConfig",
+      [...currentCategories, newCategory],
+      "requiredNoteCategories"
+    );
+  };
+
+  const removeNoteCategory = (index) => {
+    const currentCategories =
+      formData.allocationAndQA.notesConfig.requiredNoteCategories;
+    const newCategories = currentCategories.filter((_, i) => i !== index);
+    handleInputChange(
+      "allocationAndQA",
+      "notesConfig",
+      newCategories,
+      "requiredNoteCategories"
+    );
   };
 
   const renderStepContent = () => {
@@ -369,108 +542,51 @@ const SOWIntake = () => {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Basic Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SOW Title *
-                </label>
-                <input
-                  type="text"
-                  value={formData.basicInfo.sowTitle}
-                  onChange={(e) =>
-                    handleInputChange("basicInfo", "sowTitle", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["basicInfo.sowTitle"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter SOW title"
-                />
-                {errors["basicInfo.sowTitle"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["basicInfo.sowTitle"]}
-                  </p>
-                )}
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <Building2 className="w-8 h-8 text-white" />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client Company *
-                </label>
-                <select
-                  value={formData.basicInfo.clientCompanyRef}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "basicInfo",
-                      "clientCompanyRef",
-                      e.target.value
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["basicInfo.clientCompanyRef"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select client company</option>
-                  <option value="client">Company 1</option>
-                </select>
-                {errors["basicInfo.clientCompanyRef"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["basicInfo.clientCompanyRef"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SOW Type *
-                </label>
-                <select
-                  value={formData.basicInfo.sowType}
-                  onChange={(e) =>
-                    handleInputChange("basicInfo", "sowType", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {sowTypeOptions.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Priority *
-                </label>
-                <select
-                  value={formData.basicInfo.priority}
-                  onChange={(e) =>
-                    handleInputChange("basicInfo", "priority", e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {priorityOptions.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                SOW Basic Information
+              </h3>
+              <p className="text-gray-400">
+                Let's start with the basic details about this Statement of Work
+              </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                SOW Description *
-              </label>
-              <textarea
+            <div className="grid grid-cols-1 gap-6">
+              <Input
+                label="SOW Name *"
+                value={formData.basicInfo.sowName}
+                onChange={(e) =>
+                  handleInputChange("basicInfo", "sowName", e.target.value)
+                }
+                error={errors["basicInfo.sowName"]}
+                placeholder="Enter SOW name (e.g., Medical Coding - ABC Hospital)"
+              />
+
+              <Select
+                label="Client Company *"
+                value={formData.basicInfo.clientCompanyRef}
+                onChange={(e) =>
+                  handleInputChange(
+                    "basicInfo",
+                    "clientCompanyRef",
+                    e.target.value
+                  )
+                }
+                options={clients.map((client) => ({
+                  value: client._id,
+                  label: client.clientInfo?.clientName || client.clientName,
+                }))}
+                error={errors["basicInfo.clientCompanyRef"]}
+                placeholder="Select client company"
+              />
+
+              <Textarea
+                label="SOW Description *"
                 value={formData.basicInfo.sowDescription}
                 onChange={(e) =>
                   handleInputChange(
@@ -479,19 +595,10 @@ const SOWIntake = () => {
                     e.target.value
                   )
                 }
+                error={errors["basicInfo.sowDescription"]}
+                placeholder="Provide a detailed description of the services to be provided..."
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors["basicInfo.sowDescription"]
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="Enter detailed SOW description"
               />
-              {errors["basicInfo.sowDescription"] && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors["basicInfo.sowDescription"]}
-                </p>
-              )}
             </div>
           </div>
         );
@@ -499,189 +606,66 @@ const SOWIntake = () => {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Service Details
-            </h2>
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <Settings className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Service Configuration
+              </h3>
+              <p className="text-gray-400">
+                Define the specific services and technical requirements
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Type *
-                </label>
-                <select
-                  value={formData.serviceDetails.serviceType}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "serviceDetails",
-                      "serviceType",
-                      e.target.value
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["serviceDetails.serviceType"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select service type</option>
-                  {serviceTypeOptions.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                {errors["serviceDetails.serviceType"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["serviceDetails.serviceType"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Accuracy Target (%) *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.serviceDetails.qualityMetrics.accuracyTarget}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "serviceDetails",
-                      "qualityMetrics",
-                      parseInt(e.target.value),
-                      "accuracyTarget"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["serviceDetails.qualityMetrics.accuracyTarget"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["serviceDetails.qualityMetrics.accuracyTarget"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["serviceDetails.qualityMetrics.accuracyTarget"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Turnaround Time (hours) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.serviceDetails.qualityMetrics.turnaroundTime}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "serviceDetails",
-                      "qualityMetrics",
-                      parseInt(e.target.value),
-                      "turnaroundTime"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["serviceDetails.qualityMetrics.turnaroundTime"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["serviceDetails.qualityMetrics.turnaroundTime"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["serviceDetails.qualityMetrics.turnaroundTime"]}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Service Description *
-              </label>
-              <textarea
-                value={formData.serviceDetails.serviceDescription}
+              <Select
+                label="Service Type *"
+                value={formData.serviceDetails.serviceType}
                 onChange={(e) =>
                   handleInputChange(
                     "serviceDetails",
-                    "serviceDescription",
+                    "serviceType",
                     e.target.value
                   )
                 }
-                rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors["serviceDetails.serviceDescription"]
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                placeholder="Enter detailed service description"
+                options={serviceTypeOptions.map((type) => ({
+                  value: type,
+                  label: type,
+                }))}
+                error={errors["serviceDetails.serviceType"]}
               />
-              {errors["serviceDetails.serviceDescription"] && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors["serviceDetails.serviceDescription"]}
-                </p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Compliance Requirements
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {complianceOptions.map((option) => (
-                  <div key={option} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`compliance-${option}`}
-                      checked={formData.serviceDetails.complianceRequirements.includes(
-                        option
-                      )}
-                      onChange={(e) => {
-                        const newRequirements = e.target.checked
-                          ? [
-                              ...formData.serviceDetails.complianceRequirements,
-                              option,
-                            ]
-                          : formData.serviceDetails.complianceRequirements.filter(
-                              (item) => item !== option
-                            );
-                        handleInputChange(
-                          "serviceDetails",
-                          "complianceRequirements",
-                          newRequirements
-                        );
-                      }}
-                      className="mr-2"
-                    />
-                    <label
-                      htmlFor={`compliance-${option}`}
-                      className="text-sm text-gray-700"
-                    >
-                      {option}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Special Instructions
-              </label>
-              <textarea
-                value={formData.serviceDetails.specialInstructions}
+              <Input
+                label="Service Sub-Type"
+                value={formData.serviceDetails.serviceSubType}
                 onChange={(e) =>
                   handleInputChange(
                     "serviceDetails",
-                    "specialInstructions",
+                    "serviceSubType",
                     e.target.value
                   )
                 }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter any special instructions or requirements"
+                placeholder="e.g., Emergency Medicine, Cardiology"
+              />
+
+              <Select
+                label="Scope Format ID *"
+                value={formData.serviceDetails.scopeFormatId}
+                onChange={(e) =>
+                  handleInputChange(
+                    "serviceDetails",
+                    "scopeFormatId",
+                    e.target.value
+                  )
+                }
+                options={scopeFormatOptions.map((format) => ({
+                  value: format,
+                  label: format,
+                }))}
+                error={errors["serviceDetails.scopeFormatId"]}
               />
             </div>
           </div>
@@ -690,159 +674,108 @@ const SOWIntake = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Volume & Forecasting
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Expected Daily Volume *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.volumeForecasting.expectedDailyVolume}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "volumeForecasting",
-                      "expectedDailyVolume",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["volumeForecasting.expectedDailyVolume"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter expected daily volume"
-                />
-                {errors["volumeForecasting.expectedDailyVolume"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["volumeForecasting.expectedDailyVolume"]}
-                  </p>
-                )}
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <DollarSign className="w-8 h-8 text-white" />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Peak Volume Expected *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.volumeForecasting.peakVolumeExpected}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "volumeForecasting",
-                      "peakVolumeExpected",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["volumeForecasting.peakVolumeExpected"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter peak volume expected"
-                />
-                {errors["volumeForecasting.peakVolumeExpected"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["volumeForecasting.peakVolumeExpected"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Volume Guaranteed
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.volumeForecasting.minimumVolumeGuaranteed}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "volumeForecasting",
-                      "minimumVolumeGuaranteed",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter minimum volume guaranteed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Volume Variability Factor *
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  max="5.0"
-                  step="0.1"
-                  value={formData.volumeForecasting.volumeVariabilityFactor}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "volumeForecasting",
-                      "volumeVariabilityFactor",
-                      parseFloat(e.target.value) || 1.0
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["volumeForecasting.volumeVariabilityFactor"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter volume variability factor"
-                />
-                {errors["volumeForecasting.volumeVariabilityFactor"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["volumeForecasting.volumeVariabilityFactor"]}
-                  </p>
-                )}
-              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Contract & Billing
+              </h3>
+              <p className="text-gray-400">
+                Set up pricing model and billing configuration
+              </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quarterly Multipliers
-              </label>
-              <div className="grid grid-cols-4 gap-4">
-                {["Q1", "Q2", "Q3", "Q4"].map((quarter, index) => (
-                  <div key={quarter}>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      {quarter}
-                    </label>
-                    <input
-                      type="number"
-                      min="0.1"
-                      max="3.0"
-                      step="0.1"
-                      value={
-                        formData.volumeForecasting.seasonalityFactors
-                          .quarterlyMultipliers[index]
-                      }
-                      onChange={(e) => {
-                        const newMultipliers = [
-                          ...formData.volumeForecasting.seasonalityFactors
-                            .quarterlyMultipliers,
-                        ];
-                        newMultipliers[index] =
-                          parseFloat(e.target.value) || 1.0;
-                        handleInputChange(
-                          "volumeForecasting",
-                          "seasonalityFactors",
-                          newMultipliers,
-                          "quarterlyMultipliers"
-                        );
-                      }}
-                      className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Select
+                label="Contract Type *"
+                value={formData.contractDetails.contractType}
+                onChange={(e) =>
+                  handleInputChange(
+                    "contractDetails",
+                    "contractType",
+                    e.target.value
+                  )
+                }
+                options={contractTypeOptions.map((type) => ({
+                  value: type,
+                  label: type,
+                }))}
+                error={errors["contractDetails.contractType"]}
+              />
+
+              <Select
+                label="Billing Model *"
+                value={formData.contractDetails.billingModel}
+                onChange={(e) =>
+                  handleInputChange(
+                    "contractDetails",
+                    "billingModel",
+                    e.target.value
+                  )
+                }
+                options={billingModelOptions.map((model) => ({
+                  value: model,
+                  label: model,
+                }))}
+                error={errors["contractDetails.billingModel"]}
+              />
+
+              {formData.contractDetails.billingModel === "Per Transaction" && (
+                <Input
+                  label="Rate Per Transaction *"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.contractDetails.ratePerTransaction}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "contractDetails",
+                      "ratePerTransaction",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  error={errors["contractDetails.ratePerTransaction"]}
+                  placeholder="0.00"
+                />
+              )}
+
+              {formData.contractDetails.billingModel === "Monthly Fixed" && (
+                <Input
+                  label="Monthly Fixed Rate *"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.contractDetails.monthlyFixedRate}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "contractDetails",
+                      "monthlyFixedRate",
+                      parseFloat(e.target.value) || 0
+                    )
+                  }
+                  error={errors["contractDetails.monthlyFixedRate"]}
+                  placeholder="0.00"
+                />
+              )}
+
+              <Select
+                label="Currency *"
+                value={formData.contractDetails.currency}
+                onChange={(e) =>
+                  handleInputChange(
+                    "contractDetails",
+                    "currency",
+                    e.target.value
+                  )
+                }
+                options={currencyOptions.map((currency) => ({
+                  value: currency,
+                  label: currency,
+                }))}
+              />
             </div>
           </div>
         );
@@ -850,817 +783,1102 @@ const SOWIntake = () => {
       case 4:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Financial Terms
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pricing Model *
-                </label>
-                <select
-                  value={formData.financialTerms.pricingModel}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialTerms",
-                      "pricingModel",
-                      e.target.value
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["financialTerms.pricingModel"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select pricing model</option>
-                  {pricingModelOptions.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-                {errors["financialTerms.pricingModel"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["financialTerms.pricingModel"]}
-                  </p>
-                )}
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <Target className="w-8 h-8 text-white" />
               </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Performance Targets & SLA
+              </h3>
+              <p className="text-gray-400">
+                Define performance expectations and service level agreements
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Base Rate *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.financialTerms.baseRate}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialTerms",
-                      "baseRate",
-                      parseFloat(e.target.value) || 0
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["financialTerms.baseRate"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter base rate"
-                />
-                {errors["financialTerms.baseRate"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["financialTerms.baseRate"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Currency *
-                </label>
-                <select
-                  value={formData.financialTerms.currency}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialTerms",
-                      "currency",
-                      e.target.value
-                    )
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {currencyOptions.map((currency) => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Schedule *
-                </label>
-                <select
-                  value={formData.financialTerms.paymentTerms.paymentSchedule}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialTerms",
-                      "paymentTerms",
-                      e.target.value,
-                      "paymentSchedule"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["financialTerms.paymentTerms.paymentSchedule"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Select payment schedule</option>
-                  {paymentScheduleOptions.map((schedule) => (
-                    <option key={schedule} value={schedule}>
-                      {schedule}
-                    </option>
-                  ))}
-                </select>
-                {errors["financialTerms.paymentTerms.paymentSchedule"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["financialTerms.paymentTerms.paymentSchedule"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Due Days *
-                </label>
-                <input
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Target className="w-5 h-5 mr-2" />
+                Performance Targets
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Daily Target Per Employee *"
                   type="number"
                   min="1"
-                  value={formData.financialTerms.paymentTerms.paymentDueDays}
+                  max="500"
+                  value={formData.performanceTargets.dailyTargetPerEmp}
                   onChange={(e) =>
                     handleInputChange(
-                      "financialTerms",
-                      "paymentTerms",
-                      parseInt(e.target.value) || 30,
-                      "paymentDueDays"
+                      "performanceTargets",
+                      "dailyTargetPerEmp",
+                      parseInt(e.target.value) || 0
                     )
                   }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["financialTerms.paymentTerms.paymentDueDays"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter payment due days"
+                  error={errors["performanceTargets.dailyTargetPerEmp"]}
+                  placeholder="50"
                 />
-                {errors["financialTerms.paymentTerms.paymentDueDays"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["financialTerms.paymentTerms.paymentDueDays"]}
-                  </p>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Late Fee Percentage
-                </label>
-                <input
+                <Input
+                  label="Quality Benchmark (%) *"
                   type="number"
-                  min="0"
+                  min="80"
                   max="100"
-                  step="0.1"
-                  value={formData.financialTerms.paymentTerms.lateFeePercentage}
+                  value={formData.performanceTargets.qualityBenchmark}
                   onChange={(e) =>
                     handleInputChange(
-                      "financialTerms",
-                      "paymentTerms",
-                      parseFloat(e.target.value) || 0,
-                      "lateFeePercentage"
+                      "performanceTargets",
+                      "qualityBenchmark",
+                      parseInt(e.target.value) || 0
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter late fee percentage"
+                  error={errors["performanceTargets.qualityBenchmark"]}
+                  placeholder="95"
                 />
               </div>
+            </Card>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Early Payment Discount
-                </label>
-                <input
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                SLA Configuration
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="SLA Hours *"
                   type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={
-                    formData.financialTerms.paymentTerms.earlyPaymentDiscount
-                  }
+                  min="1"
+                  max="168"
+                  value={formData.performanceTargets.slaConfig.slaHours}
                   onChange={(e) =>
                     handleInputChange(
-                      "financialTerms",
-                      "paymentTerms",
-                      parseFloat(e.target.value) || 0,
-                      "earlyPaymentDiscount"
+                      "performanceTargets",
+                      "slaConfig",
+                      parseInt(e.target.value) || 48,
+                      "slaHours"
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter early payment discount"
+                  error={errors["performanceTargets.slaConfig.slaHours"]}
+                  placeholder="48"
                 />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Invoice Frequency
-                </label>
-                <select
+                <Select
+                  label="SLA Trigger Event *"
+                  value={formData.performanceTargets.slaConfig.triggerEvent}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "performanceTargets",
+                      "slaConfig",
+                      e.target.value,
+                      "triggerEvent"
+                    )
+                  }
+                  options={triggerEventOptions.map((event) => ({
+                    value: event,
+                    label: event,
+                  }))}
+                />
+
+                <Input
+                  label="Warning Threshold (%)"
+                  type="number"
+                  min="50"
+                  max="95"
                   value={
-                    formData.financialTerms.invoicingDetails.invoiceFrequency
+                    formData.performanceTargets.slaConfig
+                      .warningThresholdPercent
                   }
                   onChange={(e) =>
                     handleInputChange(
-                      "financialTerms",
-                      "invoicingDetails",
-                      e.target.value,
-                      "invoiceFrequency"
+                      "performanceTargets",
+                      "slaConfig",
+                      parseInt(e.target.value) || 85,
+                      "warningThresholdPercent"
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {invoiceFrequencyOptions.map((frequency) => (
-                    <option key={frequency} value={frequency}>
-                      {frequency}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  placeholder="85"
+                />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Invoice Delivery Method
-                </label>
-                <select
-                  value={
-                    formData.financialTerms.invoicingDetails
-                      .invoiceDeliveryMethod
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialTerms",
-                      "invoicingDetails",
-                      e.target.value,
-                      "invoiceDeliveryMethod"
-                    )
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {invoiceDeliveryOptions.map((method) => (
-                    <option key={method} value={method}>
-                      {method}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="resetOnReassign"
+                    checked={
+                      formData.performanceTargets.slaConfig.resetOnReassign
+                    }
+                    onChange={(e) =>
+                      handleInputChange(
+                        "performanceTargets",
+                        "slaConfig",
+                        e.target.checked,
+                        "resetOnReassign"
+                      )
+                    }
+                    className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="resetOnReassign"
+                    className="text-white text-sm"
+                  >
+                    Reset SLA on Reassignment
+                  </label>
+                </div>
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Billing Contact
-              </label>
-              <input
-                type="email"
-                value={formData.financialTerms.invoicingDetails.billingContact}
-                onChange={(e) =>
-                  handleInputChange(
-                    "financialTerms",
-                    "invoicingDetails",
-                    e.target.value,
-                    "billingContact"
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter billing contact email"
-              />
-            </div>
+            </Card>
           </div>
         );
 
       case 5:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Resource Planning
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated FTE *
-                </label>
-                <input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={formData.resourcePlanning.estimatedFTE}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "resourcePlanning",
-                      "estimatedFTE",
-                      parseFloat(e.target.value) || 0
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["resourcePlanning.estimatedFTE"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="Enter estimated FTE"
-                />
-                {errors["resourcePlanning.estimatedFTE"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["resourcePlanning.estimatedFTE"]}
-                  </p>
-                )}
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <BarChart3 className="w-8 h-8 text-white" />
               </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Volume Forecasting & Resource Planning
+              </h3>
+              <p className="text-gray-400">
+                Plan capacity and resource requirements
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Concurrent Tasks
-                </label>
-                <input
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Volume Forecasting
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Expected Daily Volume *"
                   type="number"
                   min="1"
                   value={
-                    formData.resourcePlanning.capacityAllocation
-                      .maxConcurrentTasks
+                    formData.volumeAndResources.volumeForecasting
+                      .expectedDailyVolume
+                  }
+                  onChange={(e) => {
+                    const dailyVolume = parseInt(e.target.value) || 0;
+                    handleInputChange(
+                      "volumeAndResources",
+                      "volumeForecasting",
+                      dailyVolume,
+                      "expectedDailyVolume"
+                    );
+                    // Auto-calculate monthly volume
+                    handleInputChange(
+                      "volumeAndResources",
+                      "volumeForecasting",
+                      dailyVolume * 22,
+                      "expectedMonthlyVolume"
+                    );
+                  }}
+                  error={
+                    errors[
+                      "volumeAndResources.volumeForecasting.expectedDailyVolume"
+                    ]
+                  }
+                  placeholder="100"
+                />
+
+                <Input
+                  label="Expected Monthly Volume"
+                  type="number"
+                  min="1"
+                  value={
+                    formData.volumeAndResources.volumeForecasting
+                      .expectedMonthlyVolume
                   }
                   onChange={(e) =>
                     handleInputChange(
-                      "resourcePlanning",
-                      "capacityAllocation",
-                      parseInt(e.target.value) || 10,
-                      "maxConcurrentTasks"
+                      "volumeAndResources",
+                      "volumeForecasting",
+                      parseInt(e.target.value) || 0,
+                      "expectedMonthlyVolume"
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter max concurrent tasks"
+                  placeholder="2200"
+                  disabled
+                />
+
+                <Input
+                  label="Peak Season Multiplier"
+                  type="number"
+                  min="1"
+                  max="3"
+                  step="0.1"
+                  value={
+                    formData.volumeAndResources.volumeForecasting
+                      .peakSeasonMultiplier
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      "volumeAndResources",
+                      "volumeForecasting",
+                      parseFloat(e.target.value) || 1.2,
+                      "peakSeasonMultiplier"
+                    )
+                  }
+                  placeholder="1.2"
                 />
               </div>
+            </Card>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Buffer Capacity Percentage
-                </label>
-                <input
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                Resource Planning
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label="Planned Headcount *"
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={
+                    formData.volumeAndResources.resourcePlanning
+                      .plannedHeadcount
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      "volumeAndResources",
+                      "resourcePlanning",
+                      parseInt(e.target.value) || 0,
+                      "plannedHeadcount"
+                    )
+                  }
+                  error={
+                    errors[
+                      "volumeAndResources.resourcePlanning.plannedHeadcount"
+                    ]
+                  }
+                  placeholder="2"
+                />
+
+                <Input
+                  label="Required Role Level"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={
+                    formData.volumeAndResources.resourcePlanning
+                      .requiredRoleLevel
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      "volumeAndResources",
+                      "resourcePlanning",
+                      parseInt(e.target.value) || 3,
+                      "requiredRoleLevel"
+                    )
+                  }
+                  placeholder="3"
+                />
+
+                <Input
+                  label="Min Experience (Years)"
                   type="number"
                   min="0"
-                  max="100"
+                  max="20"
                   value={
-                    formData.resourcePlanning.capacityAllocation
-                      .bufferCapacityPercentage
+                    formData.volumeAndResources.resourcePlanning
+                      .minExperienceYears
                   }
                   onChange={(e) =>
                     handleInputChange(
+                      "volumeAndResources",
                       "resourcePlanning",
-                      "capacityAllocation",
-                      parseInt(e.target.value) || 20,
-                      "bufferCapacityPercentage"
+                      parseInt(e.target.value) || 1,
+                      "minExperienceYears"
                     )
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter buffer capacity percentage"
+                  placeholder="1"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Time Zone *
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Required Skills
                 </label>
-                <select
-                  value={formData.resourcePlanning.workingHours.timeZone}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "resourcePlanning",
-                      "workingHours",
-                      e.target.value,
-                      "timeZone"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["resourcePlanning.workingHours.timeZone"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {timeZoneOptions.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz}
-                    </option>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {skillOptions.map((skill) => (
+                    <div key={skill} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`skill-${skill}`}
+                        checked={formData.volumeAndResources.resourcePlanning.requiredSkills.some(
+                          (s) => s.skill === skill
+                        )}
+                        onChange={() => handleSkillToggle(skill)}
+                        className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor={`skill-${skill}`}
+                        className="text-sm text-gray-300 cursor-pointer"
+                      >
+                        {skill}
+                      </label>
+                    </div>
                   ))}
-                </select>
-                {errors["resourcePlanning.workingHours.timeZone"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["resourcePlanning.workingHours.timeZone"]}
-                  </p>
-                )}
+                </div>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Time *
-                </label>
-                <input
-                  type="time"
-                  value={formData.resourcePlanning.workingHours.startTime}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "resourcePlanning",
-                      "workingHours",
-                      e.target.value,
-                      "startTime"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["resourcePlanning.workingHours.startTime"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["resourcePlanning.workingHours.startTime"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["resourcePlanning.workingHours.startTime"]}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Time *
-                </label>
-                <input
-                  type="time"
-                  value={formData.resourcePlanning.workingHours.endTime}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "resourcePlanning",
-                      "workingHours",
-                      e.target.value,
-                      "endTime"
-                    )
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["resourcePlanning.workingHours.endTime"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["resourcePlanning.workingHours.endTime"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["resourcePlanning.workingHours.endTime"]}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Working Days
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {workingDaysOptions.map((day) => (
-                  <div key={day} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`working-day-${day}`}
-                      checked={formData.resourcePlanning.workingHours.workingDays.includes(
-                        day
-                      )}
-                      onChange={(e) => {
-                        const newDays = e.target.checked
-                          ? [
-                              ...formData.resourcePlanning.workingHours
-                                .workingDays,
-                              day,
-                            ]
-                          : formData.resourcePlanning.workingHours.workingDays.filter(
-                              (d) => d !== day
-                            );
-                        handleInputChange(
-                          "resourcePlanning",
-                          "workingHours",
-                          newDays,
-                          "workingDays"
-                        );
-                      }}
-                      className="mr-2"
-                    />
-                    <label
-                      htmlFor={`working-day-${day}`}
-                      className="text-sm text-gray-700"
-                    >
-                      {day}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Required Skills
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {skillOptions.map((skill) => (
-                  <div key={skill} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id={`skill-${skill}`}
-                      checked={formData.resourcePlanning.requiredSkills.some(
-                        (s) => s.skill === skill
-                      )}
-                      onChange={(e) => {
-                        const newSkills = e.target.checked
-                          ? [
-                              ...formData.resourcePlanning.requiredSkills,
-                              {
-                                skill,
-                                proficiencyLevel: "Intermediate",
-                                mandatory: true,
-                              },
-                            ]
-                          : formData.resourcePlanning.requiredSkills.filter(
-                              (s) => s.skill !== skill
-                            );
-                        handleInputChange(
-                          "resourcePlanning",
-                          "requiredSkills",
-                          newSkills
-                        );
-                      }}
-                      className="mr-2"
-                    />
-                    <label
-                      htmlFor={`skill-${skill}`}
-                      className="text-sm text-gray-700"
-                    >
-                      {skill}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </Card>
           </div>
         );
 
       case 6:
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Review & Submit
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.status.startDate}
-                  onChange={(e) =>
-                    handleInputChange("status", "startDate", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["status.startDate"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["status.startDate"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["status.startDate"]}
-                  </p>
-                )}
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <Zap className="w-8 h-8 text-white" />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.status.endDate}
-                  onChange={(e) =>
-                    handleInputChange("status", "endDate", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors["status.endDate"]
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
-                />
-                {errors["status.endDate"] && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors["status.endDate"]}
-                  </p>
-                )}
-              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Work Allocation & QA Configuration
+              </h3>
+              <p className="text-gray-400">
+                Configure work distribution and quality assurance
+              </p>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="auto-renewal"
-                  checked={formData.status.autoRenewal}
-                  onChange={(e) =>
-                    handleInputChange("status", "autoRenewal", e.target.checked)
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Zap className="w-5 h-5 mr-2" />
+                Allocation Configuration
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select
+                  label="Allocation Mode *"
+                  value={
+                    formData.allocationAndQA.allocationConfig.allocationMode
                   }
-                  className="mr-2"
-                />
-                <label htmlFor="auto-renewal" className="text-sm text-gray-700">
-                  Auto Renewal
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="auto-assignment"
-                  checked={formData.systemInfo.autoAssignmentEnabled}
                   onChange={(e) =>
                     handleInputChange(
-                      "systemInfo",
-                      "autoAssignmentEnabled",
-                      e.target.checked
+                      "allocationAndQA",
+                      "allocationConfig",
+                      e.target.value,
+                      "allocationMode"
                     )
                   }
-                  className="mr-2"
+                  options={allocationModeOptions.map((mode) => ({
+                    value: mode,
+                    label: mode,
+                  }))}
                 />
-                <label
-                  htmlFor="auto-assignment"
-                  className="text-sm text-gray-700"
-                >
-                  Auto Assignment Enabled
-                </label>
-              </div>
-            </div>
 
-            {formData.status.autoRenewal && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Renewal Terms
-                </label>
-                <textarea
-                  value={formData.status.renewalTerms}
-                  onChange={(e) =>
-                    handleInputChange("status", "renewalTerms", e.target.value)
+                <Input
+                  label="Max Claims Per Employee"
+                  type="number"
+                  min="1"
+                  max="200"
+                  value={
+                    formData.allocationAndQA.allocationConfig.maxClaimsPerEmp
                   }
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter renewal terms and conditions"
+                  onChange={(e) =>
+                    handleInputChange(
+                      "allocationAndQA",
+                      "allocationConfig",
+                      parseInt(e.target.value) || 50,
+                      "maxClaimsPerEmp"
+                    )
+                  }
+                  placeholder="50"
                 />
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notification Settings
-              </label>
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="volume-thresholds"
-                    checked={
-                      formData.systemInfo.notificationSettings.volumeThresholds
+              <div className="mt-6">
+                <h5 className="text-white font-medium mb-3">
+                  Priority Formula Weights
+                </h5>
+                <div className="grid grid-cols-3 gap-4">
+                  <Input
+                    label="Aging Weight"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={
+                      formData.allocationAndQA.allocationConfig.priorityFormula
+                        .agingWeight
                     }
                     onChange={(e) =>
                       handleInputChange(
-                        "systemInfo",
-                        "notificationSettings",
-                        e.target.checked,
-                        "volumeThresholds"
+                        "allocationAndQA",
+                        "allocationConfig",
+                        parseFloat(e.target.value) || 0.4,
+                        "priorityFormula",
+                        "agingWeight"
                       )
                     }
-                    className="mr-2"
+                    placeholder="0.4"
                   />
-                  <label
-                    htmlFor="volume-thresholds"
-                    className="text-sm text-gray-700"
-                  >
-                    Volume Threshold Notifications
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="quality-alerts"
-                    checked={
-                      formData.systemInfo.notificationSettings.qualityAlerts
+                  <Input
+                    label="Payer Weight"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={
+                      formData.allocationAndQA.allocationConfig.priorityFormula
+                        .payerWeight
                     }
                     onChange={(e) =>
                       handleInputChange(
-                        "systemInfo",
-                        "notificationSettings",
-                        e.target.checked,
-                        "qualityAlerts"
+                        "allocationAndQA",
+                        "allocationConfig",
+                        parseFloat(e.target.value) || 0.3,
+                        "priorityFormula",
+                        "payerWeight"
                       )
                     }
-                    className="mr-2"
+                    placeholder="0.3"
                   />
-                  <label
-                    htmlFor="quality-alerts"
-                    className="text-sm text-gray-700"
-                  >
-                    Quality Alerts
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="deadline-reminders"
-                    checked={
-                      formData.systemInfo.notificationSettings.deadlineReminders
+                  <Input
+                    label="Denial Weight"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={
+                      formData.allocationAndQA.allocationConfig.priorityFormula
+                        .denialWeight
                     }
                     onChange={(e) =>
                       handleInputChange(
-                        "systemInfo",
-                        "notificationSettings",
-                        e.target.checked,
-                        "deadlineReminders"
+                        "allocationAndQA",
+                        "allocationConfig",
+                        parseFloat(e.target.value) || 0.3,
+                        "priorityFormula",
+                        "denialWeight"
                       )
                     }
-                    className="mr-2"
+                    placeholder="0.3"
                   />
-                  <label
-                    htmlFor="deadline-reminders"
-                    className="text-sm text-gray-700"
-                  >
-                    Deadline Reminders
-                  </label>
                 </div>
               </div>
+
+              <div className="mt-6">
+                <h5 className="text-white font-medium mb-3">
+                  Floating Pool Configuration
+                </h5>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="floatingPoolEnabled"
+                      checked={
+                        formData.allocationAndQA.allocationConfig
+                          .floatingPoolConfig.enabled
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "allocationAndQA",
+                          "allocationConfig",
+                          e.target.checked,
+                          "floatingPoolConfig",
+                          "enabled"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="floatingPoolEnabled"
+                      className="text-white text-sm"
+                    >
+                      Enable Floating Pool
+                    </label>
+                  </div>
+
+                  {formData.allocationAndQA.allocationConfig.floatingPoolConfig
+                    .enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="Max Claims in Pool"
+                        type="number"
+                        min="1"
+                        value={
+                          formData.allocationAndQA.allocationConfig
+                            .floatingPoolConfig.maxClaimsInPool
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "allocationAndQA",
+                            "allocationConfig",
+                            parseInt(e.target.value) || 50,
+                            "floatingPoolConfig",
+                            "maxClaimsInPool"
+                          )
+                        }
+                        placeholder="50"
+                      />
+                      <Input
+                        label="Auto Reassign After (Hours)"
+                        type="number"
+                        min="1"
+                        value={
+                          formData.allocationAndQA.allocationConfig
+                            .floatingPoolConfig.autoReassignAfterHours
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "allocationAndQA",
+                            "allocationConfig",
+                            parseInt(e.target.value) || 4,
+                            "floatingPoolConfig",
+                            "autoReassignAfterHours"
+                          )
+                        }
+                        placeholder="4"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Award className="w-5 h-5 mr-2" />
+                Quality Assurance Configuration
+              </h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="qaRequired"
+                    checked={formData.allocationAndQA.qaConfig.qaRequired}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "allocationAndQA",
+                        "qaConfig",
+                        e.target.checked,
+                        "qaRequired"
+                      )
+                    }
+                    className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                  />
+                  <label htmlFor="qaRequired" className="text-white text-sm">
+                    QA Required
+                  </label>
+                </div>
+
+                {formData.allocationAndQA.qaConfig.qaRequired && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="QA Percentage *"
+                        type="number"
+                        min="5"
+                        max="100"
+                        value={formData.allocationAndQA.qaConfig.qaPercentage}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "allocationAndQA",
+                            "qaConfig",
+                            parseInt(e.target.value) || 10,
+                            "qaPercentage"
+                          )
+                        }
+                        error={errors["allocationAndQA.qaConfig.qaPercentage"]}
+                        placeholder="10"
+                      />
+
+                      <Input
+                        label="Passing Score (%) *"
+                        type="number"
+                        min="70"
+                        max="100"
+                        value={formData.allocationAndQA.qaConfig.passingScore}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "allocationAndQA",
+                            "qaConfig",
+                            parseInt(e.target.value) || 85,
+                            "passingScore"
+                          )
+                        }
+                        error={errors["allocationAndQA.qaConfig.passingScore"]}
+                        placeholder="85"
+                      />
+                    </div>
+
+                    <div className="mt-6">
+                      <h5 className="text-white font-medium mb-3">
+                        Error Categories & Weightages
+                      </h5>
+                      <div className="space-y-3">
+                        {formData.allocationAndQA.qaConfig.errorCategories.map(
+                          (category, index) => (
+                            <div
+                              key={index}
+                              className="grid grid-cols-2 gap-4 p-3 bg-gray-700/50 rounded-lg"
+                            >
+                              <div>
+                                <label className="text-sm text-gray-300">
+                                  Category
+                                </label>
+                                <span className="block text-white">
+                                  {category.category}
+                                </span>
+                              </div>
+                              <Input
+                                label="Weightage (%)"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={category.weightage}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "allocationAndQA",
+                                    "qaConfig",
+                                    parseInt(e.target.value) || 20,
+                                    "errorCategories",
+                                    index,
+                                    "weightage"
+                                  )
+                                }
+                                placeholder="20"
+                              />
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Notes Configuration
+              </h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="useStructuredNotes"
+                      checked={
+                        formData.allocationAndQA.notesConfig.useStructuredNotes
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "allocationAndQA",
+                          "notesConfig",
+                          e.target.checked,
+                          "useStructuredNotes"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="useStructuredNotes"
+                      className="text-white text-sm"
+                    >
+                      Use Structured Notes
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="notesMandatory"
+                      checked={
+                        formData.allocationAndQA.notesConfig.notesMandatory
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "allocationAndQA",
+                          "notesConfig",
+                          e.target.checked,
+                          "notesMandatory"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="notesMandatory"
+                      className="text-white text-sm"
+                    >
+                      Notes Mandatory
+                    </label>
+                  </div>
+                </div>
+
+                {formData.allocationAndQA.notesConfig.useStructuredNotes && (
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h5 className="text-white font-medium">
+                        Note Categories
+                      </h5>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addNoteCategory}
+                        className="text-blue-400 border-blue-400"
+                      >
+                        Add Category
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {formData.allocationAndQA.notesConfig.requiredNoteCategories.map(
+                        (category, index) => (
+                          <div
+                            key={index}
+                            className="p-4 bg-gray-700/50 rounded-lg"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
+                                label="Category Name"
+                                value={category.categoryName}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "allocationAndQA",
+                                    "notesConfig",
+                                    e.target.value,
+                                    "requiredNoteCategories",
+                                    index,
+                                    "categoryName"
+                                  )
+                                }
+                                placeholder="Enter category name"
+                              />
+
+                              <Select
+                                label="Field Type"
+                                value={category.fieldType}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "allocationAndQA",
+                                    "notesConfig",
+                                    e.target.value,
+                                    "requiredNoteCategories",
+                                    index,
+                                    "fieldType"
+                                  )
+                                }
+                                options={fieldTypeOptions.map((type) => ({
+                                  value: type,
+                                  label: type,
+                                }))}
+                              />
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`required-${index}`}
+                                    checked={category.isRequired}
+                                    onChange={(e) =>
+                                      handleInputChange(
+                                        "allocationAndQA",
+                                        "notesConfig",
+                                        e.target.checked,
+                                        "requiredNoteCategories",
+                                        index,
+                                        "isRequired"
+                                      )
+                                    }
+                                    className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={`required-${index}`}
+                                    className="text-white text-sm"
+                                  >
+                                    Required
+                                  </label>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeNoteCategory(index)}
+                                  className="text-red-400 hover:text-red-300"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+
+                            {(category.fieldType === "Dropdown" ||
+                              category.fieldType === "Multi-select") && (
+                              <div className="mt-4">
+                                <Input
+                                  label="Options (comma-separated)"
+                                  value={category.options.join(", ")}
+                                  onChange={(e) => {
+                                    const options = e.target.value
+                                      .split(",")
+                                      .map((opt) => opt.trim())
+                                      .filter((opt) => opt);
+                                    handleInputChange(
+                                      "allocationAndQA",
+                                      "notesConfig",
+                                      options,
+                                      "requiredNoteCategories",
+                                      index,
+                                      "options"
+                                    );
+                                  }}
+                                  placeholder="Option 1, Option 2, Option 3"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 7:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <div
+                className={`w-16 h-16 bg-gradient-to-br ${theme.secondary} rounded-full flex items-center justify-center mx-auto mb-4`}
+              >
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Timeline & System Configuration
+              </h3>
+              <p className="text-gray-400">
+                Final configuration and timeline setup
+              </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Document Upload
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => handleFileUpload(Array.from(e.target.files))}
-                  className="hidden"
-                  id="file-upload"
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Calendar className="w-5 h-5 mr-2" />
+                SOW Timeline
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Start Date *"
+                  type="date"
+                  value={formData.finalConfig.status.startDate}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "finalConfig",
+                      "status",
+                      e.target.value,
+                      "startDate"
+                    )
+                  }
+                  error={errors["finalConfig.status.startDate"]}
                 />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer text-blue-600 hover:text-blue-800"
-                >
-                  Click to upload files or drag and drop
-                </label>
-                <p className="text-sm text-gray-500 mt-2">
-                  PDF, DOC, DOCX, XLS, XLSX up to 10MB each
-                </p>
+
+                <Input
+                  label="End Date (Optional)"
+                  type="date"
+                  value={formData.finalConfig.status.endDate}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "finalConfig",
+                      "status",
+                      e.target.value,
+                      "endDate"
+                    )
+                  }
+                />
               </div>
+            </Card>
+
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Settings className="w-5 h-5 mr-2" />
+                System Configuration
+              </h4>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={formData.finalConfig.systemInfo.isActive}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "finalConfig",
+                          "systemInfo",
+                          e.target.checked,
+                          "isActive"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label htmlFor="isActive" className="text-white text-sm">
+                      SOW Active
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="autoAssignmentEnabled"
+                      checked={
+                        formData.finalConfig.systemInfo.autoAssignmentEnabled
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "finalConfig",
+                          "systemInfo",
+                          e.target.checked,
+                          "autoAssignmentEnabled"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="autoAssignmentEnabled"
+                      className="text-white text-sm"
+                    >
+                      Auto Assignment Enabled
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isTemplate"
+                      checked={formData.finalConfig.systemInfo.isTemplate}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "finalConfig",
+                          "systemInfo",
+                          e.target.checked,
+                          "isTemplate"
+                        )
+                      }
+                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                    />
+                    <label htmlFor="isTemplate" className="text-white text-sm">
+                      Save as Template
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-gray-800/50 border-gray-700">
+              <h4 className="text-white text-lg font-semibold mb-4 flex items-center">
+                <Upload className="w-5 h-5 mr-2" />
+                Document Upload
+              </h4>
+              <FileUpload
+                onUpload={handleFileUpload}
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                multiple={true}
+                maxSize={10 * 1024 * 1024} // 10MB
+                description="Upload SOW documents, contracts, or other relevant files"
+              />
+
               {uploadedFiles.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="font-medium text-gray-700 mb-2">
+                  <h5 className="text-white font-medium mb-2">
                     Uploaded Files:
-                  </h4>
+                  </h5>
                   <div className="space-y-2">
                     {uploadedFiles.map((file, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                        className="flex items-center justify-between p-2 bg-white/5 rounded-lg"
                       >
-                        <span className="text-sm text-gray-700">
-                          {file.name}
-                        </span>
-                        <span className="text-xs text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-4 h-4 text-blue-400" />
+                          <span className="text-white text-sm">
+                            {file.name}
+                          </span>
+                        </div>
+                        <Badge variant="secondary" size="sm">
                           {(file.size / 1024 / 1024).toFixed(1)}MB
-                        </span>
+                        </Badge>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
 
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-medium text-blue-900 mb-2">Summary</h3>
-              <div className="text-sm text-blue-800 space-y-1">
-                <p>
-                  <strong>SOW Title:</strong> {formData.basicInfo.sowTitle}
-                </p>
-                <p>
-                  <strong>Service Type:</strong>{" "}
-                  {formData.serviceDetails.serviceType}
-                </p>
-                <p>
-                  <strong>Expected Daily Volume:</strong>{" "}
-                  {formData.volumeForecasting.expectedDailyVolume}
-                </p>
-                <p>
-                  <strong>Estimated FTE:</strong>{" "}
-                  {formData.resourcePlanning.estimatedFTE}
-                </p>
-                <p>
-                  <strong>Base Rate:</strong> {formData.financialTerms.currency}{" "}
-                  {formData.financialTerms.baseRate}
-                </p>
+            <Card className="p-6 bg-blue-500/10 border-blue-500/30">
+              <h4 className="text-blue-300 text-lg font-semibold mb-4 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                SOW Summary
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">SOW Name:</span>
+                    <span className="text-white font-medium">
+                      {formData.basicInfo.sowName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Service Type:</span>
+                    <span className="text-white">
+                      {formData.serviceDetails.serviceType}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Contract Type:</span>
+                    <span className="text-white">
+                      {formData.contractDetails.contractType}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Billing Model:</span>
+                    <span className="text-white">
+                      {formData.contractDetails.billingModel}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Daily Volume:</span>
+                    <span className="text-white">
+                      {
+                        formData.volumeAndResources.volumeForecasting
+                          .expectedDailyVolume
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Planned Headcount:</span>
+                    <span className="text-white">
+                      {
+                        formData.volumeAndResources.resourcePlanning
+                          .plannedHeadcount
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Quality Target:</span>
+                    <span className="text-white">
+                      {formData.performanceTargets.qualityBenchmark}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">SLA Hours:</span>
+                    <span className="text-white">
+                      {formData.performanceTargets.slaConfig.slaHours}h
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Card>
           </div>
         );
 
@@ -1670,128 +1888,151 @@ const SOWIntake = () => {
   };
 
   const renderStepIndicator = () => {
+    const steps = [
+      { number: 1, title: "Basic Info", icon: Building2 },
+      { number: 2, title: "Service", icon: Settings },
+      { number: 3, title: "Contract", icon: DollarSign },
+      { number: 4, title: "Targets", icon: Target },
+      { number: 5, title: "Resources", icon: Users },
+      { number: 6, title: "QA Config", icon: Award },
+      { number: 7, title: "Timeline", icon: Shield },
+    ];
+
     return (
-      <div className="flex items-center justify-between mb-8">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          {steps.map((step, index) => (
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                step.id === currentStep
-                  ? "bg-blue-600 text-white"
-                  : step.id < currentStep
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-200 text-gray-600"
+              key={step.number}
+              className={`flex items-center ${
+                index < steps.length - 1 ? "flex-1" : ""
               }`}
             >
-              {step.id < currentStep ? "✓" : step.id}
-            </div>
-            {index < steps.length - 1 && (
               <div
-                className={`w-12 h-1 mx-2 ${
-                  step.id < currentStep ? "bg-green-600" : "bg-gray-200"
+                className={`flex items-center justify-center w-12 h-12 rounded-full border-2 ${
+                  currentStep >= step.number
+                    ? "border-blue-500 bg-blue-500 text-white"
+                    : "border-gray-600 text-gray-400"
                 }`}
-              />
-            )}
-          </div>
-        ))}
+              >
+                {currentStep > step.number ? (
+                  <CheckCircle className="w-6 h-6" />
+                ) : (
+                  <step.icon className="w-6 h-6" />
+                )}
+              </div>
+
+              {index < steps.length - 1 && (
+                <div
+                  className={`flex-1 h-0.5 mx-4 ${
+                    currentStep > step.number ? "bg-blue-500" : "bg-gray-600"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-between text-sm">
+          {steps.map((step) => (
+            <div key={step.number} className="text-center">
+              <div
+                className={`font-medium ${
+                  currentStep >= step.number ? "text-white" : "text-gray-400"
+                }`}
+              >
+                {step.title}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 p-6">
+      <Helmet>
+        <title>SOW Intake - GetMax</title>
+      </Helmet>
+
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/employee/sows/list")}
+              className="flex items-center space-x-2 text-gray-300 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to SOWs</span>
+            </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Create New SOW
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Set up a new Statement of Work for your client
+              <h1 className="text-3xl font-bold text-white">SOW Intake</h1>
+              <p className="text-gray-400 text-lg">
+                Step {currentStep} of {totalSteps}
               </p>
             </div>
-            <Button
-              onClick={() => navigate("/employee/sows/list")}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center"
-            >
-              ← Back to SOW List
-            </Button>
           </div>
+          <div className="text-right">
+            <div className="text-gray-400 text-sm">Complete</div>
+          </div>
+        </div>
 
-          <div className="mt-6">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Progress
-                </span>
-                <span className="text-sm text-gray-500">
-                  {Math.round(progress)}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          </div>
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <Progress value={progress} className="h-2" />
         </div>
 
         {/* Step Indicator */}
         {renderStepIndicator()}
 
-        {/* Form Content */}
-        <Card className={`${theme.card} p-8`}>{renderStepContent()}</Card>
+        {/* Main Content */}
+        <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm p-8">
+          {renderStepContent()}
+        </Card>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
+        {/* Navigation */}
+        <div className="flex items-center justify-between mt-8">
           <Button
+            variant="outline"
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className={`px-6 py-3 rounded-lg font-medium ${
-              currentStep === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-            }`}
+            className="flex items-center space-x-2 text-gray-300 border-gray-600 hover:border-gray-500"
           >
-            Previous
+            <ArrowLeft className="w-4 h-4" />
+            <span>Previous</span>
           </Button>
 
-          <div className="flex space-x-4">
-            {steps.map((step) => (
-              <Button
-                key={step.id}
-                onClick={() => setCurrentStep(step.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  step.id === currentStep
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                }`}
-              >
-                {step.id}
-              </Button>
-            ))}
-          </div>
+          <div className="flex space-x-3">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/employee/sows/list")}
+              className="text-gray-400 hover:text-white"
+            >
+              Save as Draft
+            </Button>
 
-          {currentStep < totalSteps ? (
-            <Button
-              onClick={handleNext}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-            >
-              Next
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
-            >
-              {loading ? "Creating..." : "Create SOW"}
-            </Button>
-          )}
+            {currentStep < totalSteps ? (
+              <Button
+                onClick={handleNext}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <span>Next</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+              >
+                <Save className="w-4 h-4" />
+                <span>{loading ? "Creating..." : "Create SOW"}</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

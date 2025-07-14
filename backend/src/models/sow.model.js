@@ -16,13 +16,13 @@ const sowSchema = new mongoose.Schema({
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company', // GetMax company creating this SOW
+        ref: 'Company',
         required: [true, 'Company reference is required'],
         index: true
     },
-    clientCompanyRef: {
+    clientRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company', // Client company (healthcare provider) - until we create separate Client model
+        ref: 'Client',
         required: [true, 'Client company reference is required'],
         index: true
     },

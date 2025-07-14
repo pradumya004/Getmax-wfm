@@ -261,14 +261,14 @@ const ClientList = () => {
       label: "Add Client",
       icon: Plus,
       variant: "primary",
-      onClick: () => navigate("/employee/clients/intake"),
+      onClick: () => navigate("/company/clients/intake"),
       className: "bg-blue-600 hover:bg-blue-700",
     },
     {
       label: "Bulk Upload",
       icon: Upload,
       variant: "outline",
-      onClick: () => navigate("/employee/clients/bulk-upload"),
+      onClick: () => navigate("/company/clients/bulk-upload"),
     },
   ];
 
@@ -367,7 +367,7 @@ const ClientList = () => {
   const handleRowClick = (client) => {
     console.log("Client clicked:", client.clientId);
 
-    navigate(`/employee/clients/details/${client.clientId}`);
+    navigate(`/company/clients/details/${client.clientId}`);
   };
 
   const handleRowSelect = (id) => {
@@ -473,7 +473,7 @@ const ClientList = () => {
 
             <Button
               variant="primary"
-              onClick={() => navigate("/employee/clients/intake")}
+              onClick={() => navigate("/company/clients/intake")}
               className="flex items-center space-x-1"
             >
               <Plus className="w-4 h-4" />

@@ -3,10 +3,10 @@
 import express from 'express';
 import companyRoutes from './company.route.js';
 import employeeRoutes from './employee.route.js';
-import adminRoutes from './admin.route.js';
 import masterAdminRoutes from './masterAdmin.route.js';
 import organizationRoutes from './organization.route.js';
 import clientRoutes from './client.route.js';
+import sowRoutes from './sow.route.js';
 
 const router = express.Router();
 
@@ -26,9 +26,9 @@ router.get('/', (req, res) => {
 
 router.use('/company', companyRoutes);
 router.use('/employees', employeeRoutes);
-router.use('/admin', adminRoutes);
 router.use('/master-admin', masterAdminRoutes);
 router.use('/org-data', organizationRoutes);
 router.use('/clients', clientRoutes);
+router.use('/sow', sowRoutes);
 
 export default router;

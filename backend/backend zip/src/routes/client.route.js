@@ -57,7 +57,7 @@ router.get(
 
 router.put(
   '/:id',
-  requirePermission('client', 'Update'),
+  requirePermission('client', 'Full'),
   updateClient
 );
 
