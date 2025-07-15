@@ -87,7 +87,13 @@ import ClientOnboarding from "./pages/client/ClientOnboarding.jsx";
 import ClientReports from "./pages/client/ClientReports.jsx";
 
 // Sow Pages
-import SowIntake from "./pages/sow/SowIntake.jsx";
+import SOWIntake from "./pages/sow/SowIntake.jsx";
+import SOWList from "./pages/sow/SOWList.jsx";
+import SOWEdit from "./pages/sow/SOWEdit.jsx";
+
+// Patient Pages
+import PatientIntake from "./pages/patient/PatientIntake.jsx";
+import PatientList from "./pages/patient/PatientList.jsx";
 
 // Public Pages
 import HomePage from "./pages/HomePage.jsx";
@@ -95,7 +101,6 @@ import ClaimIntake from "./pages/ClaimIntake.jsx";
 
 // Protected Route
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
-
 import { getAuthDebugInfo } from "./lib/auth.js";
 
 function App() {
@@ -216,48 +221,47 @@ function App() {
               element={<EditEmployee />}
             />
 
-            {/* 🎯 CLIENT MANAGEMENT SYSTEM - COMPLETE */}
-            <Route
-              path="clients"
-              element={<Navigate to="clients/dashboard" replace />}
-            />
-            <Route path="clients/dashboard" element={<ClientDashboard />} />
-            <Route path="clients/list" element={<ClientList />} />
-            <Route path="clients/intake" element={<ClientIntake />} />
-            <Route
-              path="clients/details/:clientId"
-              element={<ClientDetails />}
-            />
-            <Route path="clients/edit/:clientId" element={<ClientEdit />} />
-            <Route path="clients/bulk-upload" element={<ClientBulkUpload />} />
-            <Route path="clients/onboarding" element={<ClientOnboarding />} />
-            <Route
-              path="clients/onboarding/:clientId"
-              element={<ClientOnboarding />}
-            />
-            <Route path="clients/reports" element={<ClientReports />} />
+            {/* ORGANIZATIONAL MANAGEMENT */}
+            <Route path="org-data">
+              <Route path="overview" element={<OrganizationOverview />} />
+              <Route path="hierarchy" element={<OrgHierarchyView />} />
+              <Route path="roles" element={<RoleManagement />} />
+              <Route path="departments" element={<DepartmentManagement />} />
+              <Route path="designations" element={<DesignationManagement />} />
+              <Route
+                path="subdepartments"
+                element={<SubDepartmentManagement />}
+              />
+            </Route>
+
+            {/* CLIENT ROUTES */}
+            <Route path="clients">
+              <Route path="dashboard" element={<ClientDashboard />} />
+              <Route path="list" element={<ClientList />} />
+              <Route path="intake" element={<ClientIntake />} />
+              <Route path="details/:clientId" element={<ClientDetails />} />
+              <Route path="edit/:clientId" element={<ClientEdit />} />
+              <Route path="bulk-upload" element={<ClientBulkUpload />} />
+              <Route path="onboarding" element={<ClientOnboarding />} />
+              <Route
+                path="onboarding/:clientId"
+                element={<ClientOnboarding />}
+              />
+              <Route path="reports" element={<ClientReports />} />
+            </Route>
 
             {/* SOW ROUTES */}
+            <Route path="sows">
+              <Route path="create" element={<SOWIntake />} />
+              <Route path="list" element={<SOWList />} />
+              <Route path="edit/:sowId" element={<SOWEdit />} />
+            </Route>
 
-            {/* ORG MGMT */}
-            <Route
-              path="org-data/overview"
-              element={<OrganizationOverview />}
-            />
-            <Route path="org-data/hierarchy" element={<OrgHierarchyView />} />
-            <Route path="org-data/roles" element={<RoleManagement />} />
-            <Route
-              path="org-data/departments"
-              element={<DepartmentManagement />}
-            />
-            <Route
-              path="org-data/designations"
-              element={<DesignationManagement />}
-            />
-            <Route
-              path="org-data/subdepartments"
-              element={<SubDepartmentManagement />}
-            />
+            {/* PATIENT ROUTES */}
+            <Route path="patients">
+              <Route path="create" element={<PatientIntake />} />
+              <Route path="list" element={<PatientList />} />
+            </Route>
           </Route>
 
           {/* EMPLOYEE ROUTES */}
@@ -277,19 +281,6 @@ function App() {
             <Route path="profile/edit" element={<EditProfile />} />
             <Route path="profile/avatar" element={<UploadAvatar />} />
             <Route path="performance" element={<MyPerformance />} />
-          </Route>
-
-          {/* SOW ROUTES */}
-
-          <Route
-            path="/sows"
-            element={
-              <ProtectedRoute userType="company">
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="intake" element={<SowIntake />} />
           </Route>
 
           {/* 404 */}

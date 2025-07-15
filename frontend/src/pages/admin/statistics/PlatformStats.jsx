@@ -82,6 +82,8 @@ const PlatformStats = () => {
         fetchCompanies({ page: 1, limit: 100 }), // Get more companies for stats
         fetchEmployees({ page: 1, limit: 100 }), // Get more employees for stats
       ]);
+
+
     } catch (error) {
       console.error("❌ Error fetching stats:", error);
       toast.error("Failed to load some statistics");
@@ -134,12 +136,12 @@ const PlatformStats = () => {
   };
 
   // Extract data with safe fallbacks
-  const stats = platformStats?.overview || {};
-  const growth = platformStats?.growth || {};
-  const subscriptions = platformStats?.subscriptions || [];
-  const topCompanies = platformStats?.topCompanies || [];
-  const companies = companiesData?.companies || [];
-  const employees = employeesData?.employees || [];
+  const stats = platformStats?.data?.overview || {};
+  const growth = platformStats?.data?.growth || {};
+  const subscriptions = platformStats?.data?.subscriptions || [];
+  const topCompanies = platformStats?.data?.topCompanies || [];
+  const companies = companiesData?.data?.companies || [];
+  const employees = employeesData?.data?.employees || [];
 
   // Calculate additional metrics
   const subscriptionBreakdown = subscriptions.reduce((acc, sub) => {
@@ -269,7 +271,7 @@ const PlatformStats = () => {
                   Total Companies
                 </p>
                 <p className="text-3xl font-bold text-white mt-1">
-                  {stats.totalCompanies || 0}
+                  {formatNumber(stats.totalCompanies || 0)}
                 </p>
                 <div className="flex items-center mt-2">
                   <ArrowUpRight className="w-4 h-4 text-green-400 mr-1" />
@@ -301,7 +303,7 @@ const PlatformStats = () => {
                   Total Users
                 </p>
                 <p className="text-3xl font-bold text-white mt-1">
-                  {formatNumber(stats.totalEmployees)}
+                  {formatNumber(employees.length)}
                 </p>
                 <div className="flex items-center mt-2">
                   <ArrowUpRight className="w-4 h-4 text-green-400 mr-1" />

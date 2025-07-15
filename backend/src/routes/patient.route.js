@@ -8,7 +8,7 @@ import {
   updatePatient,
   deactivatePatient,
   bulkUploadPatients
-} from '../controllers/patient.controller.js';
+} from '../controllers/patient/patientController.controller.js';
 
 import {
   verifyEmployeeToken,
@@ -22,7 +22,7 @@ const router = express.Router();
 router.use(verifyEmployeeToken);
 
 // CRUD Routes
-router.post('/', requirePermission('patient', 'Create'), createPatient);
+router.post('/', createPatient);
 router.get('/', requirePermission('patient', 'View'), getAllPatients);
 router.get('/:id', requirePermission('patient', 'View'), getPatientById);
 router.put('/:id', requirePermission('patient', 'Update'), updatePatient);

@@ -73,7 +73,7 @@ const ClientDetails = () => {
   const { userType } = useAuth();
   const theme = getTheme(userType);
   const {
-    fetchClientById,
+    getClientById,
     removeClient,
     updateIntegrationConfig,
     updateSyncStatus,
@@ -98,10 +98,14 @@ const ClientDetails = () => {
   const loadClientDetails = async () => {
     try {
       setLoading(true);
-      const clientData = await fetchClientById(clientId);
-      console.log("Client data loaded:", clientData);
-      
-      setClient(clientData);
+      const clientObject = await getClientById(clientId);
+      console.log("Client data loaded:", clientObject);
+
+      const clientData = Array.isArray(clientObject)
+        ? clientObject[0]
+        : clientObject;
+
+      setClient(clientData.data);
       setError(null);
     } catch (err) {
       setError(err.message || "Failed to load client details");
@@ -116,7 +120,7 @@ const ClientDetails = () => {
     try {
       await removeClient(clientId);
       toast.success("Client deleted successfully");
-      navigate("/employee/clients/list");
+      navigate("/company/clients/list");
     } catch (error) {
       toast.error("Failed to delete client");
     } finally {
@@ -166,7 +170,7 @@ const ClientDetails = () => {
         <div className="flex justify-center space-x-3">
           <Button
             variant="outline"
-            onClick={() => navigate("/employee/clients/list")}
+            onClick={() => navigate("/company/clients/list")}
           >
             Back to Clients
           </Button>
@@ -188,7 +192,7 @@ const ClientDetails = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => navigate("/employee/clients/list")}
+              onClick={() => navigate("/company/clients/list")}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -217,7 +221,7 @@ const ClientDetails = () => {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate(`/employee/clients/edit/${clientId}`)}
+              onClick={() => navigate(`/company/clients/edit/${clientId}`)}
               className="flex items-center space-x-2"
             >
               <Edit className="w-4 h-4" />
@@ -517,7 +521,7 @@ const ClientDetails = () => {
                       variant="outline"
                       className="w-full justify-start"
                       onClick={() =>
-                        navigate(`/employee/clients/onboarding/${clientId}`)
+                        navigate(`/company/clients/onboarding/${clientId}`)
                       }
                     >
                       <CheckCircle className="w-4 h-4 mr-3" />

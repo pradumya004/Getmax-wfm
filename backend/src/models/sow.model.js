@@ -12,7 +12,7 @@ const sowSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -39,23 +39,12 @@ const sowSchema = new mongoose.Schema({
         trim: true,
         maxlength: [500, 'SOW description cannot exceed 500 characters']
     },
-    
+
     // ** SERVICE CONFIGURATION **
     serviceDetails: {
         serviceType: {
             type: String,
             required: [true, 'Service type is required'],
-            enum: [
-                'AR Calling',
-                'Medical Coding', 
-                'Prior Authorization',
-                'Eligibility Verification',
-                'Charge Entry',
-                'Payment Posting',
-                'Denial Management',
-                'Quality Assurance',
-                'Custom Service'
-            ],
             index: true
         },
         serviceSubType: {
@@ -65,9 +54,7 @@ const sowSchema = new mongoose.Schema({
         },
         scopeFormatId: {
             type: String,
-            enum: ['EMSMC', 'ClaimMD', 'Medisoft', 'Epic', 'Cerner', 'AllScripts', 'Other'],
-            required: [true, 'Scope format ID is required for claim processing'],
-            default: 'EMSMC'
+            required: true,
         }
     },
 
@@ -75,15 +62,11 @@ const sowSchema = new mongoose.Schema({
     contractDetails: {
         contractType: {
             type: String,
-            required: [true, 'Contract type is required'],
-            enum: ['End-to-End', 'Transactional', 'FTE', 'Hybrid'],
-            default: 'Transactional'
+            required: [true, 'Contract type is required']
         },
         billingModel: {
             type: String,
             required: [true, 'Billing model is required'],
-            enum: ['Per Transaction', 'Monthly Fixed', 'Hourly', 'Performance Based'],
-            default: 'Per Transaction'
         },
         ratePerTransaction: {
             type: Number,
@@ -97,8 +80,6 @@ const sowSchema = new mongoose.Schema({
         },
         currency: {
             type: String,
-            enum: ['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AED'],
-            default: 'USD'
         }
     },
 
@@ -120,7 +101,7 @@ const sowSchema = new mongoose.Schema({
         slaConfig: {
             slaHours: {
                 type: Number,
-                required: [true, 'SLA hours is required'],
+                // required: [true, 'SLA hours is required'],
                 min: [1, 'SLA cannot be less than 1 hour'],
                 max: [168, 'SLA cannot exceed 168 hours (1 week)'],
                 default: 48
@@ -128,7 +109,7 @@ const sowSchema = new mongoose.Schema({
             triggerEvent: {
                 type: String,
                 enum: ['Import Date', 'Assign Date', 'First Status Update'],
-                required: [true, 'SLA trigger event is required'],
+                // required: [true, 'SLA trigger event is required'],
                 default: 'Assign Date'
             },
             warningThresholdPercent: {
@@ -154,7 +135,7 @@ const sowSchema = new mongoose.Schema({
         },
         expectedMonthlyVolume: {
             type: Number,
-            default: function() {
+            default: function () {
                 return this.volumeForecasting?.expectedDailyVolume * 22 || 2200; // 22 working days
             }
         },
@@ -184,8 +165,8 @@ const sowSchema = new mongoose.Schema({
             skill: {
                 type: String,
                 enum: [
-                    "Medical Coding", "ICD-10", "CPT", "HCPCS", "Prior Auth", 
-                    "AR Calling", "Denial Management", "Payment Posting", 
+                    "Medical Coding", "ICD-10", "CPT", "HCPCS", "Prior Auth",
+                    "AR Calling", "Denial Management", "Payment Posting",
                     "Eligibility Verification", "Insurance Knowledge", "EMR Systems",
                     "Excel Advanced", "Data Entry", "Customer Service", "Healthcare RCM"
                 ]
@@ -322,7 +303,6 @@ const sowSchema = new mongoose.Schema({
     status: {
         sowStatus: {
             type: String,
-            enum: ['Draft', 'Active', 'On Hold', 'Completed', 'Cancelled'],
             default: 'Draft',
             index: true
         },
@@ -333,7 +313,7 @@ const sowSchema = new mongoose.Schema({
         endDate: {
             type: Date,
             validate: {
-                validator: function(v) {
+                validator: function (v) {
                     return !v || v > this.status.startDate;
                 },
                 message: 'End date must be after start date'
@@ -378,6 +358,11 @@ const sowSchema = new mongoose.Schema({
             min: [0, 'Revenue generated cannot be negative']
         }
     },
+
+    assignedEmployees: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee'
+    }],
 
     // ** SYSTEM INFO **
     systemInfo: {
@@ -427,26 +412,26 @@ sowSchema.index({ 'status.startDate': 1, 'status.endDate': 1 });
 sowSchema.index({ 'systemInfo.isActive': 1, 'systemInfo.autoAssignmentEnabled': 1 });
 
 // Compound index for assignment queries
-sowSchema.index({ 
-    companyRef: 1, 
-    'serviceDetails.serviceType': 1, 
+sowSchema.index({
+    companyRef: 1,
+    'serviceDetails.serviceType': 1,
     'status.sowStatus': 1,
     'systemInfo.isActive': 1
 });
 
 // ** VIRTUAL FIELDS **
-sowSchema.virtual('monthlyTargetVolume').get(function() {
+sowSchema.virtual('monthlyTargetVolume').get(function () {
     return this.volumeForecasting?.expectedDailyVolume * 22 || 0;
 });
 
-sowSchema.virtual('isExpiringSoon').get(function() {
+sowSchema.virtual('isExpiringSoon').get(function () {
     if (!this.status.endDate) return false;
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     return this.status.endDate <= thirtyDaysFromNow;
 });
 
-sowSchema.virtual('currentCapacityUtilization').get(function() {
+sowSchema.virtual('currentCapacityUtilization').get(function () {
     if (this.volumeForecasting?.expectedDailyVolume === 0) return 0;
     return Math.round((this.activityMetrics.totalClaimsAssigned / this.volumeForecasting.expectedDailyVolume) * 100);
 });
@@ -460,16 +445,16 @@ sowSchema.virtual('assignedEmployeesCount', {
 });
 
 // ** STATIC METHODS **
-sowSchema.statics.findActiveSOWsByCompany = function(companyRef) {
+sowSchema.statics.findActiveSOWsByCompany = function (companyRef) {
     return this.find({
         companyRef,
         'status.sowStatus': 'Active',
         'systemInfo.isActive': true
     }).populate('clientCompanyRef', 'companyName companyType')
-      .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
+        .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
 };
 
-sowSchema.statics.findSOWsByServiceType = function(companyRef, serviceType) {
+sowSchema.statics.findSOWsByServiceType = function (companyRef, serviceType) {
     return this.find({
         companyRef,
         'serviceDetails.serviceType': serviceType,
@@ -477,10 +462,10 @@ sowSchema.statics.findSOWsByServiceType = function(companyRef, serviceType) {
     });
 };
 
-sowSchema.statics.findSOWsNeedingAttention = function(companyRef) {
+sowSchema.statics.findSOWsNeedingAttention = function (companyRef) {
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    
+
     return this.find({
         companyRef,
         'systemInfo.isActive': true,
@@ -493,13 +478,13 @@ sowSchema.statics.findSOWsNeedingAttention = function(companyRef) {
 };
 
 // ** INSTANCE METHODS **
-sowSchema.methods.updateActivityMetrics = function(claimsData) {
+sowSchema.methods.updateActivityMetrics = function (claimsData) {
     if (claimsData.totalAssigned) this.activityMetrics.totalClaimsAssigned += claimsData.totalAssigned;
     if (claimsData.totalCompleted) this.activityMetrics.totalClaimsCompleted += claimsData.totalCompleted;
     if (claimsData.avgCompletionTime) this.activityMetrics.averageCompletionTimeHours = claimsData.avgCompletionTime;
     if (claimsData.slaCompliance) this.activityMetrics.currentSlaComplianceRate = claimsData.slaCompliance;
     if (claimsData.qualityScore) this.activityMetrics.currentQualityScoreAverage = claimsData.qualityScore;
-    
+
     // Calculate revenue based on billing model
     if (this.contractDetails.billingModel === 'Per Transaction' && claimsData.totalCompleted) {
         const revenue = claimsData.totalCompleted * this.contractDetails.ratePerTransaction;
@@ -507,48 +492,48 @@ sowSchema.methods.updateActivityMetrics = function(claimsData) {
     }
 };
 
-sowSchema.methods.canEmployeeBeAssigned = function(employee) {
+sowSchema.methods.canEmployeeBeAssigned = function (employee) {
     // Check if employee's role level meets requirement
     if (employee.roleRef.roleLevel < this.resourcePlanning.requiredRoleLevel) {
         return { canAssign: false, reason: 'Insufficient role level' };
     }
-    
+
     // Check if employee has required skills
     const empSkills = employee.skillsAndQualifications.technicalSkills.map(s => s.skill);
     const reqSkills = this.resourcePlanning.requiredSkills.map(s => s.skill);
     const hasRequiredSkills = reqSkills.every(skill => empSkills.includes(skill));
-    
+
     if (!hasRequiredSkills) {
         return { canAssign: false, reason: 'Missing required skills' };
     }
-    
+
     return { canAssign: true, reason: 'Eligible for assignment' };
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-sowSchema.pre('save', function(next) {
+sowSchema.pre('save', function (next) {
     // Auto-calculate monthly volume if not set
     if (this.volumeForecasting && !this.volumeForecasting.expectedMonthlyVolume) {
         this.volumeForecasting.expectedMonthlyVolume = this.volumeForecasting.expectedDailyVolume * 22;
     }
-    
+
     // Validate priority weights sum to 1
     const { agingWeight, payerWeight, denialWeight } = this.allocationConfig.priorityFormula;
     const totalWeight = agingWeight + payerWeight + denialWeight;
     if (Math.abs(totalWeight - 1) > 0.01) {
         return next(new Error('Priority weights must sum to 1.0'));
     }
-    
+
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-    
+
     next();
 });
 
 // ** POST-SAVE MIDDLEWARE **
-sowSchema.post('save', function(doc, next) {
+sowSchema.post('save', function (doc, next) {
     // Update company's SOW count or other aggregations if needed
     next();
 });

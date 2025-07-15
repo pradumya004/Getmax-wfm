@@ -56,14 +56,41 @@ export const getClientById = asyncHandler(async (req, res) => {
 // 4. Update Client Info
 export const updateClient = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const client = await Client.findOne({ clientId: id });
-  if (!client) throw new ApiError(404, 'Client not found');
+  const existingClient = await Client.findOne({ clientId: id });
+  if (!existingClient) throw new ApiError(404, 'Client not found');
 
-  Object.assign(client, req.body);
-  client.auditInfo.lastModifiedBy = req.employee._id;
-  await client.save();
+  const allowedFields = [
+    "clientInfo",
+    "contactInfo",
+    "addressInfo",
+    "integrationStrategy",
+    "dataProcessingConfig",
+    "serviceAgreements",
+    "financialInfo",
+    "status",
+    "performanceMetrics",
+    "systemInfo",
+  ];
 
-  res.status(200).json({ success: true, data: client });
+  allowedFields.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      existingClient[field] = req.body[field];
+    }
+  });
+
+  // Track modification metadata
+  existingClient.auditInfo.lastModifiedBy = req.employee?._id || null;
+  existingClient.auditInfo.lastModifiedAt = new Date();
+
+  await existingClient.save();
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      existingClient,
+      'Client updated successfully'
+    )
+  );
 });
 
 // 5. Deactivate Client (Soft Delete)

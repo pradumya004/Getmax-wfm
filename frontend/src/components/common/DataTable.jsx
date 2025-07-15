@@ -10,6 +10,7 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
+  Grid,
   Eye,
   Edit,
   Trash2,
@@ -60,6 +61,7 @@ export const DataTable = ({
   onRowClick = null,
   onRefresh = null,
   onExport = null,
+  onCardView = null,
 
   // Selection props
   selectedRows = [],
@@ -302,6 +304,18 @@ export const DataTable = ({
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Refresh</span>
+              </Button>
+            )}
+
+            {onCardView && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCardView}
+                className="flex items-center space-x-1"
+              >
+                <Grid className="w-4 h-4" />
+                <span>Card View</span>
               </Button>
             )}
 

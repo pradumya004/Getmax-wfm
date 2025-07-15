@@ -16,7 +16,11 @@ export const useSOWs = () => {
     setError(null);
     try {
       const response = await sowAPI.getAll(params);
-      const data = response?.data || response;
+      console.log("Response from fetchSOWs:", response);
+
+      const data =
+        response && response.data && response.data.data && response.data.data.data ? response.data.data.data : response.data.data;
+      console.log("SOWs data:", data);
       setSOWs(Array.isArray(data) ? data : []);
       return data;
     } catch (err) {
@@ -96,8 +100,9 @@ export const useSOWs = () => {
   // Delete SOW
   const removeSOW = async (id) => {
     try {
+      console.log("Removing SOW with ID:", id);
       await sowAPI.delete(id);
-      setSOWs((prev) => prev.filter((sow) => sow._id !== id));
+      setSOWs((prev) => prev.filter((sow) => sow.sowId !== id));
       toast.success("SOW deleted successfully!");
     } catch (err) {
       const errorMessage =
@@ -129,6 +134,26 @@ export const useSOWs = () => {
     }
   };
 
+  // Unassign employees from SOW
+  const unassignEmployees = async (sowId, employeeData) => {
+    try {
+      const response = await sowAPI.unassignEmployees(sowId, employeeData);
+      const updatedSOW = response?.data || response;
+
+      setSOWs((prev) =>
+        prev.map((sow) => (sow._id === sowId ? updatedSOW : sow))
+      );
+      toast.success("Employees unassigned successfully!");
+      return updatedSOW;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to unassign employees";
+      toast.error(errorMessage);
+      console.error("Unassign employees error:", err);
+      throw err;
+    }
+  };
+
   // Update SOW status
   const updateStatus = async (id, statusData) => {
     try {
@@ -145,6 +170,59 @@ export const useSOWs = () => {
         err.response?.data?.message || "Failed to update SOW status";
       toast.error(errorMessage);
       console.error("Update status error:", err);
+      throw err;
+    }
+  };
+
+  // Activate SOW
+  const activateSOW = async (id) => {
+    try {
+      const response = await sowAPI.activateSOW(id);
+      const updatedSOW = response?.data || response;
+
+      setSOWs((prev) => prev.map((sow) => (sow._id === id ? updatedSOW : sow)));
+      toast.success("SOW activated successfully!");
+      return updatedSOW;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to activate SOW";
+      toast.error(errorMessage);
+      console.error("Activate SOW error:", err);
+      throw err;
+    }
+  };
+
+  // Pause a SOW
+  const pauseSOW = async (id) => {
+    try {
+      const response = await sowAPI.pauseSOW(id);
+      const updatedSOW = response?.data || response;
+
+      setSOWs((prev) => prev.map((sow) => (sow._id === id ? updatedSOW : sow)));
+      toast.success("SOW paused successfully!");
+      return updatedSOW;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Failed to pause SOW";
+      toast.error(errorMessage);
+      console.error("Pause SOW error:", err);
+      throw err;
+    }
+  };
+
+  // Complete a SOW (uses dedicated API call)
+  const completeSOW = async (id) => {
+    try {
+      const response = await sowAPI.completeSOW(id);
+      const updatedSOW = response?.data || response;
+
+      setSOWs((prev) => prev.map((sow) => (sow._id === id ? updatedSOW : sow)));
+      toast.success("SOW completed successfully!");
+      return updatedSOW;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to complete SOW";
+      toast.error(errorMessage);
+      console.error("Complete SOW error:", err);
       throw err;
     }
   };
@@ -178,7 +256,23 @@ export const useSOWs = () => {
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || "Failed to fetch SOW metrics";
+      toast.error(errorMessage);
       console.error("Get SOW metrics error:", err);
+      return null;
+    }
+  };
+
+  // Get SOW performance report
+  const getPerformanceReport = async (id, dateRange) => {
+    try {
+      const response = await sowAPI.getPerformanceReport(id, dateRange);
+      const reportData = response?.data || response;
+      return reportData;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch performance report";
+      toast.error(errorMessage);
+      console.error("Get performance report error:", err);
       return null;
     }
   };
@@ -188,7 +282,7 @@ export const useSOWs = () => {
     try {
       setLoading(true);
       await sowAPI.bulkUpdate(ids, updateData);
-      // Refresh SOWs list
+      // Refresh SOWs list to reflect changes
       await fetchSOWs();
       toast.success(`${ids.length} SOW(s) updated successfully!`);
     } catch (err) {
@@ -202,6 +296,7 @@ export const useSOWs = () => {
     }
   };
 
+  // Bulk delete SOWs
   const bulkDeleteSOWs = async (ids) => {
     try {
       setLoading(true);
@@ -230,6 +325,20 @@ export const useSOWs = () => {
     }
   };
 
+  // Check for SOW conflicts
+  const checkConflicts = async (sowData) => {
+    try {
+      const response = await sowAPI.checkConflicts(sowData);
+      return response?.data || response;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to check SOW conflicts";
+      toast.error(errorMessage);
+      console.error("Check conflicts error:", err);
+      return { hasConflicts: false, conflicts: [] };
+    }
+  };
+
   // Templates
   const getTemplates = async () => {
     try {
@@ -244,6 +353,7 @@ export const useSOWs = () => {
     }
   };
 
+  // Create SOW from template
   const createFromTemplate = async (templateId, sowData) => {
     try {
       setLoading(true);
@@ -262,19 +372,6 @@ export const useSOWs = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Status-specific actions
-  const activateSOW = async (id) => {
-    return updateStatus(id, { newStatus: "Active" });
-  };
-
-  const pauseSOW = async (id) => {
-    return updateStatus(id, { newStatus: "On Hold" });
-  };
-
-  const completeSOW = async (id) => {
-    return updateStatus(id, { newStatus: "Completed" });
   };
 
   // Auto-fetch on mount
@@ -298,6 +395,7 @@ export const useSOWs = () => {
 
     // Employee Management
     assignEmployees,
+    unassignEmployees,
 
     // Status Management
     updateStatus,
@@ -308,8 +406,9 @@ export const useSOWs = () => {
     // Client Operations
     getClientSOWs,
 
-    // Analytics
+    // Analytics & Reporting
     getSOWMetrics,
+    getPerformanceReport,
 
     // Bulk Operations
     bulkUpdateSOWs,
@@ -317,6 +416,7 @@ export const useSOWs = () => {
 
     // Validation & Templates
     validateSOW,
+    checkConflicts,
     getTemplates,
     createFromTemplate,
 

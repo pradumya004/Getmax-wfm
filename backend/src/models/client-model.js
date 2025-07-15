@@ -38,18 +38,6 @@ const clientSchema = new mongoose.Schema({
         clientType: {
             type: String,
             required: [true, 'Client type is required'],
-            enum: [
-                'Healthcare Provider', 
-                'Billing Company', 
-                'Hospital System',
-                'Multi-Specialty Clinic',
-                'Individual Practice',
-                'DME Company',
-                'Laboratory',
-                'Dental Practice',
-                'Behavioral Health',
-                'Other'
-            ],
             index: true
         },
         clientSubType: {

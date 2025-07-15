@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import {
-  Users,
   Plus,
   Upload,
   Download,
@@ -14,21 +13,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  Calendar,
-  MoreHorizontal,
-  UserPlus,
-  Filter,
   Grid,
   List,
-  Settings,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  XCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/Button.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
-import { Modal } from "../../components/ui/Modal.jsx";
 import { DataTable } from "../../components/common/DataTable.jsx";
 import { ClientCard } from "../../components/client/ClientCard.jsx";
 import { ClientStatusBadge } from "../../components/client/ClientStatusBadge.jsx";
@@ -199,7 +188,7 @@ const ClientList = () => {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/clients/${client._id}/edit`);
+              navigate(`/company/clients/edit/${client.clientId}`);
             }}
             className="p-2 hover:bg-green-500/20"
           >
@@ -448,7 +437,7 @@ const ClientList = () => {
 
   if (viewMode === "cards") {
     return (
-      <div className="space-y-6">
+      <div className={`p-8 bg-${theme.background} min-h-screen`}>
         <Helmet>
           <title>Client List - LeadRepo</title>
         </Helmet>
@@ -483,13 +472,17 @@ const ClientList = () => {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
           {filteredClients.map((client) => (
             <ClientCard
               key={client._id}
               client={client}
-              onView={() => navigate(`/clients/${client._id}`)}
-              onEdit={() => navigate(`/clients/${client._id}/edit`)}
+              onView={() =>
+                navigate(`/company/clients/details/${client.clientId}`)
+              }
+              onEdit={() =>
+                navigate(`/company/clients/edit/${client.clientId}`)
+              }
               onDelete={() => handleDeleteClient(client)}
             />
           ))}
@@ -512,40 +505,10 @@ const ClientList = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`p-6 bg-${theme.background} min-h-screen`}>
       <Helmet>
         <title>Client List - LeadRepo</title>
       </Helmet>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Clients</h1>
-          <p className="text-gray-400">Manage your client relationships</p>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode("cards")}
-            className="flex items-center space-x-1"
-          >
-            <Grid className="w-4 h-4" />
-            <span>Card View</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportAll}
-            className="flex items-center space-x-1"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export All</span>
-          </Button>
-        </div>
-      </div>
 
       {/* DataTable */}
       <DataTable
@@ -569,6 +532,7 @@ const ClientList = () => {
         onRowClick={handleRowClick}
         onRefresh={refresh}
         onExport={handleExportAll}
+        onCardView={() => setViewMode("cards")}
         // Actions configuration
         actions={actions}
         bulkActions={bulkActions}

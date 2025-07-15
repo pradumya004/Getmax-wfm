@@ -418,7 +418,7 @@ const ClientIntake = () => {
 
       await addClient(finalData);
       toast.success("Client created successfully!");
-      navigate("/employee/clients/list");
+      navigate("/company/clients/list");
     } catch (error) {
       console.error(error);
       toast.error("Failed to create client. Please try again.");
@@ -1456,7 +1456,7 @@ const ClientIntake = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => navigate("/employee/clients/list")}
+              onClick={() => navigate("/company/clients/list")}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -1505,7 +1505,7 @@ const ClientIntake = () => {
           <div className="flex space-x-3">
             <Button
               variant="ghost"
-              onClick={() => navigate("/employee/clients/list")}
+              onClick={() => navigate("/company/clients/list")}
             >
               Save as Draft
             </Button>

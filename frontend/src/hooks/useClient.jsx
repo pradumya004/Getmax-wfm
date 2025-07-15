@@ -44,7 +44,7 @@ export const useClients = () => {
   );
 
   // Fetch client by ID
-  const { execute: getClientById } = useApi(clientAPI.getClientById);
+  const { execute: fetchClientById } = useApi(clientAPI.getClientById);
 
   const loadClients = async (params = {}) => {
     console.log("🔍 Fetching Clients...");
@@ -154,9 +154,9 @@ export const useClients = () => {
     return await checkSOWReadiness(id);
   };
 
-  const fetchClientById = async (id) => {
+  const getClientById = async (id) => {
     console.log("👁️ Fetching Client by ID:", id);
-    return await getClientById(id);
+    return await fetchClientById(id);
   };
 
   const fetchDecryptedCredentials = async (id) => {
@@ -189,7 +189,7 @@ export const useClients = () => {
     getPendingOnboardingClients,
     getAllActiveClients,
     validateSOWReadiness,
-    fetchClientById,
+    getClientById,
     fetchDecryptedCredentials,
 
     // Direct execute functions (for advanced usage)

@@ -5,24 +5,26 @@ import { SOW } from '../../models/sow.model.js';
 import { Client } from '../../models/client-model.js';
 import { Employee } from '../../models/employee.model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { ApiResponse } from '../../utils/ApiResponse.js';
 
 // 1. Create SOW
 export const createSOW = asyncHandler(async (req, res) => {
   const data = req.body;
+  console.log("Creating SOW with data:", data);
   const companyId = req.company._id;
   const employeeId = req.employee._id;
 
   const sowData = {
     ...req.body,
-    companyRef: req.company._id,
+    companyRef: companyId,
     auditInfo: {
-      createdBy: req.employee._id,
-      lastModifiedBy: req.employee._id
+      createdBy: employeeId,
+      lastModifiedBy: employeeId,
     }
   }
 
   // Validate client ownership
-  const client = await Client.findOne({ companyRef: company._id });
+  const client = await Client.findOne({ companyRef: companyId, _id: data.clientRef });
   if (!client) throw new ApiError(404, 'Client not found or unauthorized');
 
   const sow = await SOW.create(sowData);
@@ -77,6 +79,33 @@ export const updateSOW = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: sow });
 });
 
+// 5. Delete SOW
+export const deleteSOW = asyncHandler(async (req, res) => {
+  const { sowId } = req.params;
+  const companyId = req.company?._id;
+
+  if (!companyId) {
+    throw new ApiError(400, 'Company Authentication is required');
+  }
+  const sow = await SOW.findOneAndDelete({ sowId, companyRef: companyId });
+  if (!sow) throw new ApiError(404, 'SOW not found');
+
+  // Remove from client's activeSOWs if applicable
+  const client = await Client.findOne({ _id: sow.clientRef, companyRef: companyId });
+  if (client) {
+    client.serviceAgreements.activeSOWs = client.serviceAgreements.activeSOWs.filter(sowId => sowId.toString() !== sow._id.toString());
+    await client.save();
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { sowId: sow.sowId },
+      'SOW deleted successfully'
+    )
+  );
+});
+
 // 5. Assign Employees to SOW
 export const assignEmployeesToSOW = asyncHandler(async (req, res) => {
   const { employeeIds } = req.body;
@@ -90,11 +119,34 @@ export const assignEmployeesToSOW = asyncHandler(async (req, res) => {
     companyRef: req.company._id
   }).select('_id');
 
+  // Update each employee's sowAssignments[]
+  await Promise.all(validEmployees.map(async (emp) => {
+    const alreadyAssigned = emp.sowAssignments?.some(assign =>
+      assign.sowRef.toString() === sow._id.toString()
+    );
+
+    if (!alreadyAssigned) {
+      emp.sowAssignments.push({
+        sowRef: sow._id,
+        assignedDate: new Date(),
+        isActive: true
+      });
+    }
+
+    await emp.save();
+  }));
+
+  // Update SOW's assignedEmployees[]
   sow.assignedEmployees = validEmployees.map(emp => emp._id);
   sow.auditInfo.lastModifiedBy = req.employee._id;
 
   await sow.save();
-  res.status(200).json({ success: true, message: 'Employees assigned', data: sow.assignedEmployees });
+
+  res.status(200).json({
+    success: true,
+    message: 'SOW and Employees updated successfully',
+    assignedTo: sow.assignedEmployees
+  });
 });
 
 // 6. Change SOW Status (Lifecycle)

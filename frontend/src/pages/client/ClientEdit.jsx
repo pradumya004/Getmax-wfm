@@ -36,8 +36,18 @@ import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
 import { useClients } from "../../hooks/useClient.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
-import { validateForm } from "../../lib/validation.js";
 import { toast } from "react-hot-toast";
+import {
+  CLIENT_TYPES,
+  CLIENT_SUBTYPES,
+  STATUS_OPTIONS,
+  ONBOARDING_STATUS_OPTIONS,
+  WORKFLOW_TYPES,
+  EHR_SYSTEMS,
+  PAYMENT_TERMS,
+  CURRENCIES,
+  COUNTRIES,
+} from "../../pages/client/client.constants";
 
 const ClientEdit = () => {
   const { clientId } = useParams();
@@ -50,98 +60,77 @@ const ClientEdit = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    clientInfo: {
+      clientName: "",
+      legalName: "",
+      clientType: "",
+      clientSubType: "",
+      taxId: "",
+      npiNumber: "",
+      description: "",
+    },
+    status: {
+      clientStatus: "",
+      onboardingStatus: "",
+      onboardingProgress: 0,
+    },
+    contactInfo: {
+      primaryContact: {
+        name: "",
+        title: "",
+        email: "",
+        phone: "",
+      },
+      billingContact: {
+        name: "",
+        email: "",
+        phone: "",
+      },
+      technicalContact: {
+        name: "",
+        email: "",
+        phone: "",
+      },
+    },
+    addressInfo: {
+      businessAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "India",
+      },
+      billingAddress: {
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "India",
+        sameAsBusinessAddress: false,
+      },
+    },
+    integrationStrategy: {
+      workflowType: "",
+      ehrPmSystem: {
+        systemName: "",
+        systemVersion: "",
+      },
+      apiConfig: {
+        apiEndpoint: "",
+      },
+    },
+    financialInfo: {
+      billingCurrency: "INR",
+      paymentTerms: "",
+      creditLimit: "",
+      billingFrequency: "",
+      specialInstructions: "",
+    },
+  });
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("basic");
   const [hasChanges, setHasChanges] = useState(false);
-
-  // Form options
-  const clientTypeOptions = [
-    "Healthcare Provider",
-    "Billing Company",
-    "Hospital System",
-    "Multi-Specialty Clinic",
-    "Individual Practice",
-    "DME Company",
-    "Laboratory",
-    "Dental Practice",
-    "Behavioral Health",
-  ];
-
-  const clientSubTypeOptions = {
-    "Healthcare Provider": [
-      "Clinic",
-      "Hospital",
-      "Specialty Practice",
-      "Urgent Care",
-      "Other",
-    ],
-    "Billing Company": [
-      "Small Practice",
-      "Large Group",
-      "Hospital System",
-      "Specialty Focused",
-      "Other",
-    ],
-    "Hospital System": ["Regional", "National", "Academic", "Private", "Other"],
-    "Multi-Specialty Clinic": [
-      "Primary Care",
-      "Specialty Care",
-      "Mixed",
-      "Other",
-    ],
-    "Individual Practice": ["Solo", "Small Group", "Other"],
-    "DME Company": ["Equipment", "Supplies", "Both", "Other"],
-    Laboratory: ["Clinical", "Pathology", "Radiology", "Other"],
-    "Dental Practice": ["General", "Specialty", "Orthodontics", "Other"],
-    "Behavioral Health": ["Mental Health", "Substance Abuse", "Mixed", "Other"],
-  };
-
-  const statusOptions = [
-    { value: "Prospect", label: "Prospect" },
-    { value: "Active", label: "Active" },
-    { value: "Onboarding", label: "Onboarding" },
-    { value: "Inactive", label: "Inactive" },
-    { value: "Suspended", label: "Suspended" },
-  ];
-
-  const onboardingStatusOptions = [
-    { value: "Not Started", label: "Not Started" },
-    { value: "Documentation Pending", label: "Documentation Pending" },
-    { value: "Technical Setup", label: "Technical Setup" },
-    { value: "Testing Phase", label: "Testing Phase" },
-    { value: "Training Phase", label: "Training Phase" },
-    { value: "Go Live", label: "Go Live" },
-    { value: "Completed", label: "Completed" },
-  ];
-
-  const workflowTypeOptions = [
-    "API Integration",
-    "File-based Transfer",
-    "Manual Entry",
-    "Hybrid Approach",
-  ];
-
-  const ehrSystemOptions = [
-    "Epic",
-    "Cerner",
-    "Allscripts",
-    "eClinicalWorks",
-    "NextGen",
-    "AthenaHealth",
-    "Practice Fusion",
-    "Meditech",
-    "Other",
-  ];
-
-  const paymentTermsOptions = [
-    "Net 15",
-    "Net 30",
-    "Net 45",
-    "Net 60",
-    "Due on Receipt",
-    "Custom",
-  ];
 
   useEffect(() => {
     loadClientData();
@@ -150,7 +139,12 @@ const ClientEdit = () => {
   const loadClientData = async () => {
     try {
       setLoading(true);
-      const clientData = await getClientById(clientId);
+      const clientObject = await getClientById(clientId);
+      console.log("Loaded client object:", clientObject);
+
+      const clientData = clientObject.data;
+      console.log("Processed client data:", clientData);
+
       setClient(clientData);
       setFormData(clientData);
       setError(null);
@@ -268,8 +262,10 @@ const ClientEdit = () => {
       await editClient(clientId, formData);
       toast.success("Client updated successfully");
       setHasChanges(false);
-      navigate(`/employee/clients/details/${clientId}`);
+      navigate(`/company/clients/details/${clientId}`);
     } catch (error) {
+      console.error("Error updating client:", error);
+      setError(error.message || "Failed to update client");
       toast.error("Failed to update client");
     } finally {
       setSaving(false);
@@ -283,10 +279,10 @@ const ClientEdit = () => {
           "You have unsaved changes. Are you sure you want to cancel?"
         )
       ) {
-        navigate(`/employee/clients/details/${clientId}`);
+        navigate(`/company/clients/details/${clientId}`);
       }
     } else {
-      navigate(`/employee/clients/details/${clientId}`);
+      navigate(`/company/clients/details/${clientId}`);
     }
   };
 
@@ -311,7 +307,7 @@ const ClientEdit = () => {
         <div className="flex justify-center space-x-3">
           <Button
             variant="outline"
-            onClick={() => navigate("/employee/clients/list")}
+            onClick={() => navigate("/company/clients/list")}
           >
             Back to Clients
           </Button>
@@ -324,7 +320,7 @@ const ClientEdit = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br p-6">
       <Helmet>
-        <title>Edit {client.clientInfo?.clientName} - GetMax</title>
+        <title>{`Edit ${client.clientInfo?.clientName} - GetMax`}</title>
       </Helmet>
 
       <div className="relative max-w-6xl mx-auto flex flex-col min-h-screen">
@@ -377,8 +373,12 @@ const ClientEdit = () => {
           </div>
 
           {/* Form Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList>
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="contact">Contact</TabsTrigger>
               <TabsTrigger value="address">Address</TabsTrigger>
@@ -428,7 +428,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={clientTypeOptions.map((type) => ({
+                    options={CLIENT_TYPES.map((type) => ({
                       value: type,
                       label: type,
                     }))}
@@ -446,14 +446,7 @@ const ClientEdit = () => {
                       )
                     }
                     options={
-                      formData.clientInfo?.clientType
-                        ? clientSubTypeOptions[
-                            formData.clientInfo.clientType
-                          ]?.map((subType) => ({
-                            value: subType,
-                            label: subType,
-                          })) || []
-                        : []
+                      CLIENT_SUBTYPES[formData.clientInfo?.clientType] || []
                     }
                     disabled={!formData.clientInfo?.clientType}
                   />
@@ -513,7 +506,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={statusOptions}
+                    options={STATUS_OPTIONS}
                   />
 
                   <Select
@@ -526,7 +519,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={onboardingStatusOptions}
+                    options={ONBOARDING_STATUS_OPTIONS}
                   />
 
                   <Input
@@ -931,10 +924,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={workflowTypeOptions.map((type) => ({
-                      value: type,
-                      label: type,
-                    }))}
+                    options={WORKFLOW_TYPES}
                   />
 
                   <Select
@@ -951,10 +941,7 @@ const ClientEdit = () => {
                         "systemName"
                       )
                     }
-                    options={ehrSystemOptions.map((system) => ({
-                      value: system,
-                      label: system,
-                    }))}
+                    options={EHR_SYSTEMS}
                   />
 
                   <Input
@@ -1027,10 +1014,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={paymentTermsOptions.map((term) => ({
-                      value: term,
-                      label: term,
-                    }))}
+                    options={PAYMENT_TERMS}
                   />
 
                   <Input

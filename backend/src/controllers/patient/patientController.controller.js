@@ -1,24 +1,33 @@
 // backend/src/controllers/patient.controller.js
 
-import asyncHandler from 'express-async-handler';
-import { Patient } from '../models/patient-model.js';
-import { SOW } from '../models/sow-model.js';
-import { Client } from '../models/client-model.js';
-import { ApiError } from '../utils/ApiError.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
+import { Patient } from '../../models/patient-model.js';
+import { SOW } from '../../models/sow.model.js';
+import { Client } from '../../models/client-model.js';
+import { ApiError } from '../../utils/ApiError.js';
 import xlsx from 'xlsx';
 
 // 1. Create Single Patient
 export const createPatient = asyncHandler(async (req, res) => {
+  console.log("Creating patient with data:", req.body);
+
   const { clientRef, sowRef } = req.body;
 
-  const companyId = req.companyId;
+  const companyId = req.company._id;
 
   // Validate client and SOW
   const client = await Client.findOne({ _id: clientRef, companyRef: companyId });
+  console.log("Client:", client);
+
   if (!client) throw new ApiError(404, "Client not found or not authorized");
 
-  const sow = await SOW.findOne({ _id: sowRef, clientRef, companyRef: companyId });
-  if (!sow) throw new ApiError(404, "SOW not found or unauthorized");
+  const sow = await SOW.findOne({ _id: sowRef, clientRef: client._id });
+  console.log("SOW:", sow);
+  if (!sow) {
+    const clientSOWs = await SOW.find({ clientRef: client._id });
+    console.error("Available SOWs for this client:", clientSOWs.map(s => s._id.toString()));
+    throw new ApiError(404, "SOW not found or unauthorized");
+  }
 
   const patient = await Patient.create({
     ...req.body,

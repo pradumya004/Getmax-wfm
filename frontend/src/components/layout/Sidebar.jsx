@@ -128,14 +128,22 @@ const Sidebar = () => {
           {
             icon: BarChart3,
             label: "Analytics",
-            path: "/master-admin/analytics",
+            path: "/master-admin/stats",
             description: "Platform analytics",
           },
           {
             icon: Settings,
-            label: "Settings",
-            path: "/master-admin/settings",
+            label: "Security Center",
+            path: "/master-admin/security/settings",
             description: "Platform configuration",
+            submenu: [
+              {
+                icon: Users,
+                label: "Settings",
+                path: "/master-admin/security/settings",
+                description: "Manage platform settings",
+              },
+            ],
           },
         ];
 
@@ -282,25 +290,25 @@ const Sidebar = () => {
           {
             icon: FileCheck,
             label: "SOW Management",
-            path: "/company/sow",
+            path: "/company/sows",
             description: "Manage Statements of Work",
             submenu: [
               {
                 icon: BarChart3,
                 label: "SOW Dashboard",
-                path: "/company/sow/dashboard",
+                path: "/company/sows/dashboard",
                 description: "SOW overview & metrics",
               },
               {
                 icon: FileText,
                 label: "All SOWs",
-                path: "/company/sow/list",
+                path: "/company/sows/list",
                 description: "View all Statements of Work",
               },
               {
                 icon: Plus,
                 label: "Create SOW",
-                path: "/company/sow/create",
+                path: "/company/sows/create",
                 description: "Create new Statement of Work",
               },
               {
@@ -344,7 +352,7 @@ const Sidebar = () => {
               {
                 icon: UserPlus,
                 label: "Add Patient",
-                path: "/company/patients/add",
+                path: "/company/patients/create",
                 description: "Add new patient",
               },
               {

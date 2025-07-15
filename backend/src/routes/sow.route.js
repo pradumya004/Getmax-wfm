@@ -6,6 +6,7 @@ import {
   getAllSOWs,
   getSOWById,
   updateSOW,
+  deleteSOW,
   assignEmployeesToSOW,
   changeSOWStatus,
   getClientSOWs
@@ -25,6 +26,7 @@ router.post('/', requirePermission('sow', 'Create'), createSOW);
 router.get('/', requirePermission('sow', 'View'), getAllSOWs);
 router.get('/:id', requirePermission('sow', 'View'), getSOWById);
 router.put('/:id', requirePermission('sow', 'Update'), updateSOW);
+router.delete('/:sowId', requirePermission('sow', 'Delete'), deleteSOW);
 
 // Assign employees
 router.put('/:id/assign', requirePermission('sow', 'Update'), assignEmployeesToSOW);
