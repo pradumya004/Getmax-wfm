@@ -44,10 +44,7 @@ export const getAllClients = asyncHandler(async (req, res) => {
 // 3. Get Client by ID
 export const getClientById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const client = await Client.findOne({ clientId: id })
-    .populate('serviceAgreements.activeSOWs')
-    .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName')
-    .populate('auditInfo.lastModifiedBy', 'personalInfo.firstName personalInfo.lastName');
+  const client = await Client.findOne({ clientId: id });
 
   if (!client) throw new ApiError(404, 'Client not found');
   res.status(200).json({ success: true, data: client });
@@ -64,7 +61,6 @@ export const updateClient = asyncHandler(async (req, res) => {
     "contactInfo",
     "addressInfo",
     "integrationStrategy",
-    "dataProcessingConfig",
     "serviceAgreements",
     "financialInfo",
     "status",
@@ -117,18 +113,6 @@ export const updateIntegrationConfig = asyncHandler(async (req, res) => {
   await client.save();
 
   res.status(200).json({ success: true, data: client.integrationStrategy });
-});
-
-// 7. Update Data Processing Config
-export const updateProcessingConfig = asyncHandler(async (req, res) => {
-  const client = await Client.findById(req.params.id);
-  if (!client) throw new ApiError(404, 'Client not found');
-
-  client.dataProcessingConfig = req.body;
-  client.auditInfo.lastModifiedBy = req.employee._id;
-  await client.save();
-
-  res.status(200).json({ success: true, data: client.dataProcessingConfig });
 });
 
 // 8. Update Financial Info

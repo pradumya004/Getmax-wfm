@@ -8,7 +8,6 @@ import {
   updateClient,
   deactivateClient,
   updateIntegrationConfig,
-  updateProcessingConfig,
   updateFinancialInfo,
   getDecryptedCredentials,
   getClientsNeedingOnboarding,
@@ -74,12 +73,6 @@ router.put(
   '/:id/integration',
   requirePermission('client', 'Update'),
   updateIntegrationConfig
-);
-
-router.put(
-  '/:id/processing',
-  requirePermission('client', 'Update'),
-  updateProcessingConfig
 );
 
 router.put(

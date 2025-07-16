@@ -7,42 +7,20 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  Phone,
-  Mail,
-  MapPin,
   Building2,
   User,
   DollarSign,
-  Calendar,
-  Clock,
   Zap,
-  Shield,
   FileText,
   Settings,
-  MoreHorizontal,
   CheckCircle,
   AlertCircle,
-  TrendingUp,
   Activity,
-  Download,
-  Upload,
   RefreshCw,
-  Eye,
-  EyeOff,
   Copy,
-  ExternalLink,
-  Star,
-  Flag,
-  Archive,
   Send,
   Plus,
-  Link,
-  Globe,
-  Server,
-  Database,
   Key,
-  Lock,
-  Unlock,
 } from "lucide-react";
 import { Card } from "../../components/ui/Card.jsx";
 import { Button } from "../../components/ui/Button.jsx";
@@ -53,7 +31,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/Tabs.jsx";
-import { Modal } from "../../components/ui/Modal.jsx";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog.jsx";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
 import { ClientFinancialInfo } from "../../components/client/ClientFinancialInfo.jsx";
@@ -68,7 +45,7 @@ import { toast } from "react-hot-toast";
 
 const ClientDetails = () => {
   const { clientId } = useParams();
-  console.log("Client ID from route:", clientId);
+  // console.log("Client ID from route:", clientId);
   const navigate = useNavigate();
   const { userType } = useAuth();
   const theme = getTheme(userType);
@@ -122,6 +99,7 @@ const ClientDetails = () => {
       toast.success("Client deleted successfully");
       navigate("/company/clients/list");
     } catch (error) {
+      console.log("Error: ", error);
       toast.error("Failed to delete client");
     } finally {
       setIsDeleting(false);
@@ -136,6 +114,7 @@ const ClientDetails = () => {
       toast.success("Data synchronized successfully");
       await loadClientDetails();
     } catch (error) {
+      console.error("Sync error:", error);
       toast.error("Failed to sync data");
     } finally {
       setIsSyncing(false);

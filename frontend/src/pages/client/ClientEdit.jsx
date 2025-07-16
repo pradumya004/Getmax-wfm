@@ -7,19 +7,9 @@ import {
   ArrowLeft,
   Save,
   AlertCircle,
-  Building2,
   User,
-  Mail,
-  Phone,
-  MapPin,
   DollarSign,
-  Zap,
   Settings,
-  Shield,
-  FileText,
-  CheckCircle,
-  X,
-  RefreshCw,
 } from "lucide-react";
 import { Input } from "../../components/ui/Input.jsx";
 import { Select } from "../../components/ui/Select.jsx";
@@ -33,6 +23,8 @@ import {
   TabsTrigger,
 } from "../../components/ui/Tabs.jsx";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner.jsx";
+import { MultiSelectField } from "../../components/ui/MultiSelectField.jsx";
+import { Checkbox } from "./../../components/ui/Checkbox";
 import { useClients } from "../../hooks/useClient.jsx";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
@@ -47,6 +39,10 @@ import {
   PAYMENT_TERMS,
   CURRENCIES,
   COUNTRIES,
+  BILLING_FREQUENCY,
+  TIMEZONES,
+  WORKING_DAYS,
+  ALLOWED_FILE_FORMATS,
 } from "../../pages/client/client.constants";
 
 const ClientEdit = () => {
@@ -69,11 +65,6 @@ const ClientEdit = () => {
       taxId: "",
       npiNumber: "",
       description: "",
-    },
-    status: {
-      clientStatus: "",
-      onboardingStatus: "",
-      onboardingProgress: 0,
     },
     contactInfo: {
       primaryContact: {
@@ -111,21 +102,65 @@ const ClientEdit = () => {
       },
     },
     integrationStrategy: {
-      workflowType: "",
+      workflowType: "Manual Only",
       ehrPmSystem: {
         systemName: "",
         systemVersion: "",
+        vendorContact: { name: "", email: "", phone: "" },
       },
       apiConfig: {
-        apiEndpoint: "",
+        hasApiAccess: false,
+        apiBaseUrl: "",
+        apiVersion: "",
+        authMethod: "",
+        testEndpoint: "",
+        productionEndpoint: "",
+        rateLimitPerHour: 100,
+        syncStatus: "Not Configured",
+      },
+      sftpConfig: {
+        enabled: false,
+        host: "",
+        port: 22,
+        username: "",
+        inboundPath: "/inbound/",
+        outboundPath: "/outbound/",
+        fileFormat: "CSV",
+        syncFrequency: "Daily",
+      },
+      manualConfig: {
+        allowedFileFormats: ["Excel (.xlsx)"],
+        maxFileSize: 25,
+        templateRequired: false,
       },
     },
+    serviceAgreements: {
+      compliances: [],
+      activeSOWs: [],
+      totalSOWsCreated: 0,
+    },
     financialInfo: {
-      billingCurrency: "INR",
+      billingCurrency: "",
       paymentTerms: "",
       creditLimit: "",
-      billingFrequency: "",
-      specialInstructions: "",
+      outstandingBalance: 0,
+      totalRevenueGenerated: 0,
+      lastInvoiceDate: null,
+      nextInvoiceDate: null,
+    },
+    status: {
+      clientStatus: "Prospect",
+      onboardingStatus: "Not Started",
+      onboardingProgress: 0,
+    },
+    systemInfo: {
+      isActive: true,
+      timezone: "IST",
+      businessHours: {
+        start: { hour: 9, minute: 0 },
+        end: { hour: 17, minute: 0 },
+      },
+      workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     },
   });
   const [errors, setErrors] = useState({});
@@ -172,6 +207,8 @@ const ClientEdit = () => {
 
     setFormData(newFormData);
     setHasChanges(true);
+
+    console.log("Updating", section, field, subField, "to", value);
 
     // Clear error for this field
     const errorKey = subField
@@ -286,6 +323,8 @@ const ClientEdit = () => {
     }
   };
 
+  // console.log("Final Client: ", client);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -339,7 +378,7 @@ const ClientEdit = () => {
               <div>
                 <h1 className="text-3xl font-bold text-white">Edit Client</h1>
                 <p className={`text-${theme.textSecondary} text-lg`}>
-                  Update {client.clientInfo?.clientName}'s information
+                  {`Update ${client.clientInfo.clientName}'s information`}
                 </p>
               </div>
             </div>
@@ -445,9 +484,14 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={
-                      CLIENT_SUBTYPES[formData.clientInfo?.clientType] || []
-                    }
+                    options={CLIENT_SUBTYPES[
+                      CLIENT_TYPES.find(
+                        (type) => type === formData.clientInfo?.clientType
+                      )
+                    ].map((subType) => ({
+                      value: subType,
+                      label: subType,
+                    }))}
                     disabled={!formData.clientInfo?.clientType}
                   />
 
@@ -784,11 +828,7 @@ const ClientEdit = () => {
                         "country"
                       )
                     }
-                    options={[
-                      { value: "United States", label: "United States" },
-                      { value: "Canada", label: "Canada" },
-                      { value: "Other", label: "Other" },
-                    ]}
+                    options={COUNTRIES}
                   />
                 </div>
               </Card>
@@ -896,11 +936,7 @@ const ClientEdit = () => {
                           "country"
                         )
                       }
-                      options={[
-                        { value: "United States", label: "United States" },
-                        { value: "Canada", label: "Canada" },
-                        { value: "Other", label: "Other" },
-                      ]}
+                      options={COUNTRIES}
                     />
                   </div>
                 )}
@@ -913,68 +949,484 @@ const ClientEdit = () => {
                 <h3 className="text-white text-lg font-semibold mb-6">
                   Integration Settings
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Select
-                    label="Workflow Type"
-                    value={formData.integrationStrategy?.workflowType || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "integrationStrategy",
-                        "workflowType",
-                        e.target.value
-                      )
-                    }
-                    options={WORKFLOW_TYPES}
-                  />
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Select
+                      label="Workflow Type"
+                      value={formData.integrationStrategy?.workflowType || ""}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "workflowType",
+                          e.target.value
+                        )
+                      }
+                      options={WORKFLOW_TYPES.map((type) => ({
+                        value: type,
+                        label: type,
+                      }))}
+                    />
+                  </div>
 
-                  <Select
-                    label="EHR/PM System"
-                    value={
-                      formData.integrationStrategy?.ehrPmSystem?.systemName ||
-                      ""
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "integrationStrategy",
-                        "ehrPmSystem",
-                        e.target.value,
-                        "systemName"
-                      )
-                    }
-                    options={EHR_SYSTEMS}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <Select
+                      label="EHR/PM System"
+                      value={
+                        formData.integrationStrategy?.ehrPmSystem?.systemName ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "ehrPmSystem",
+                          e.target.value,
+                          "systemName"
+                        )
+                      }
+                      options={EHR_SYSTEMS.map((system) => ({
+                        value: system,
+                        label: system,
+                      }))}
+                    />
 
-                  <Input
-                    label="System Version"
-                    value={
-                      formData.integrationStrategy?.ehrPmSystem
-                        ?.systemVersion || ""
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "integrationStrategy",
-                        "ehrPmSystem",
-                        e.target.value,
-                        "systemVersion"
-                      )
-                    }
-                  />
+                    <Input
+                      label="System Version"
+                      value={
+                        formData.integrationStrategy?.ehrPmSystem
+                          ?.systemVersion || ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "ehrPmSystem",
+                          e.target.value,
+                          "systemVersion"
+                        )
+                      }
+                    />
+                  </div>
 
-                  <Input
-                    label="API Endpoint"
-                    value={
-                      formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "integrationStrategy",
-                        "apiConfig",
-                        e.target.value,
-                        "apiEndpoint"
-                      )
-                    }
-                    placeholder="https://api.example.com"
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                    <Input
+                      label="Vendor Contact"
+                      value={
+                        formData.integrationStrategy?.apiConfig?.apiEndpoint ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "ehrPmSystem",
+                          e.target.value,
+                          "vendorContact.name"
+                        )
+                      }
+                      placeholder="Vendor Name"
+                    />
+
+                    <Input
+                      label="Vendor Email"
+                      value={
+                        formData.integrationStrategy?.apiConfig?.apiEndpoint ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "ehrPmSystem",
+                          e.target.value,
+                          "vendorContact.email"
+                        )
+                      }
+                      placeholder="Vendor Email"
+                    />
+
+                    <Input
+                      label="Vendor Contact"
+                      value={
+                        formData.integrationStrategy?.apiConfig?.apiEndpoint ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "integrationStrategy",
+                          "ehrPmSystem",
+                          e.target.value,
+                          "vendorContact.phone"
+                        )
+                      }
+                      placeholder="Vendor Phone"
+                    />
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    {["Manual Only", "Hybrid Integration"].includes(
+                      formData.integrationStrategy?.workflowType
+                    ) && (
+                      <div className="mt-6 space-y-4">
+                        <h4 className="text-white font-semibold">
+                          Manual Configuration
+                        </h4>
+                        <p className={`text-${theme.textSecondary} text-sm`}>
+                          Accepts file uploads only. Specify supported formats
+                          and limits.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                          <MultiSelectField
+                            label={"Allowed File Formats"}
+                            options={ALLOWED_FILE_FORMATS}
+                            selected={
+                              formData.integrationStrategy?.manualConfig
+                                ?.allowedFileFormats || []
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "manualConfig",
+                                e,
+                                "allowedFileFormats"
+                              )
+                            }
+                          />
+                          <Input
+                            label="Max File Size (MB)"
+                            type="number"
+                            value={
+                              formData.integrationStrategy?.manualConfig
+                                ?.maxFileSize || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "manualConfig",
+                                parseInt(e.target.value),
+                                "maxFileSize"
+                              )
+                            }
+                          />
+
+                          <div className="mt-8 px-8">
+                            <Checkbox
+                              label="Require Template"
+                              checked={
+                                formData.integrationStrategy?.manualConfig
+                                  ?.templateRequired || false
+                              }
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "integrationStrategy",
+                                  "manualConfig",
+                                  e.target.checked,
+                                  "templateRequired"
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {["API Integration Only", "Hybrid Integration"].includes(
+                      formData.integrationStrategy?.workflowType
+                    ) && (
+                      <div className="mt-6 space-y-4">
+                        <h4 className="text-white font-semibold">
+                          API Configuration
+                        </h4>
+                        <p className={`text-${theme.textSecondary} text-sm`}>
+                          Configure API endpoint, authentication, and rate
+                          limits.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+                          <div className="mt-8 px-2">
+                            <Checkbox
+                              label="Enable API Access"
+                              checked={
+                                formData.integrationStrategy?.apiConfig
+                                  ?.hasApiAccess || false
+                              }
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "integrationStrategy",
+                                  "apiConfig",
+                                  e.target.checked,
+                                  "hasApiAccess"
+                                )
+                              }
+                            />
+                          </div>
+
+                          <Input
+                            label="API Base URL"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.apiBaseUrl || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "apiBaseUrl"
+                              )
+                            }
+                            placeholder="https://api.example.com"
+                          />
+
+                          <Input
+                            label="API Version"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.apiVersion || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "apiVersion"
+                              )
+                            }
+                            placeholder="v1"
+                          />
+
+                          <Input
+                            label="Authentication Method"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.authMethod || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "authMethod"
+                              )
+                            }
+                            placeholder="Bearer Token, OAuth2, etc."
+                          />
+
+                          <Input
+                            label="Test Endpoint"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.testEndpoint || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "testEndpoint"
+                              )
+                            }
+                            placeholder="https://api.example.com/test"
+                          />
+                          <Input
+                            label="Production Endpoint"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.productionEndpoint || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "productionEndpoint"
+                              )
+                            }
+                            placeholder="https://api.example.com/production"
+                          />
+
+                          <Input
+                            label="Rate Limit (requests/hour)"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.rateLimitPerHour || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "rateLimitPerHour"
+                              )
+                            }
+                            placeholder="1000"
+                          />
+
+                          <Input
+                            label="Sync Status"
+                            value={
+                              formData.integrationStrategy?.apiConfig
+                                ?.syncStatus || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "apiConfig",
+                                e.target.value,
+                                "syncStatus"
+                              )
+                            }
+                            placeholder="Not Configured"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {formData.integrationStrategy?.workflowType ===
+                      "SFTP Integration" && (
+                      <div className="mt-6 space-y-4">
+                        <h4 className="text-white font-semibold">
+                          SFTP Integration
+                        </h4>
+                        <p className={`text-${theme.textSecondary} text-sm`}>
+                          Configure SFTP server details for file transfers.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+                          <div className="mt-8 px-2">
+                            <Checkbox
+                              label="Enable SFTP Access"
+                              checked={
+                                formData.integrationStrategy?.sftpConfig
+                                  ?.enabled || false
+                              }
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "integrationStrategy",
+                                  "sftpConfig",
+                                  e.target.checked,
+                                  "enabled"
+                                )
+                              }
+                            />
+                          </div>
+
+                          <Input
+                            label="Host"
+                            value={
+                              formData.integrationStrategy?.sftpConfig?.host ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "host"
+                              )
+                            }
+                            placeholder="sftp.example.com"
+                          />
+
+                          <Input
+                            label="Port"
+                            value={
+                              formData.integrationStrategy?.sftpConfig?.port ||
+                              "22"
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "port"
+                              )
+                            }
+                            placeholder="22"
+                          />
+
+                          <Input
+                            label="Username"
+                            value={
+                              formData.integrationStrategy?.sftpConfig
+                                ?.username || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "username"
+                              )
+                            }
+                            placeholder="SFTP Username"
+                          />
+
+                          <Input
+                            label="Inbound Path"
+                            value={
+                              formData.integrationStrategy?.sftpConfig
+                                ?.inboundPath || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "inboundPath"
+                              )
+                            }
+                            placeholder="/inbound"
+                          />
+
+                          <Input
+                            label="Outbound Path"
+                            value={
+                              formData.integrationStrategy?.sftpConfig
+                                ?.outboundPath || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "outboundPath"
+                              )
+                            }
+                            placeholder="/outbound"
+                          />
+
+                          <Input
+                            label="File Format"
+                            value={
+                              formData.integrationStrategy?.sftpConfig
+                                ?.fileFormat || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "fileFormat"
+                              )
+                            }
+                            placeholder="CSV"
+                          />
+
+                          <Input
+                            label="Sync Frequency"
+                            value={
+                              formData.integrationStrategy?.sftpConfig
+                                ?.syncFrequency || ""
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "sftpConfig",
+                                e.target.value,
+                                "syncFrequency"
+                              )
+                            }
+                            placeholder="Not Configured"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Card>
             </TabsContent>
@@ -996,12 +1448,7 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={[
-                      { value: "USD", label: "USD - US Dollar" },
-                      { value: "CAD", label: "CAD - Canadian Dollar" },
-                      { value: "EUR", label: "EUR - Euro" },
-                      { value: "GBP", label: "GBP - British Pound" },
-                    ]}
+                    options={CURRENCIES}
                   />
 
                   <Select
@@ -1014,7 +1461,10 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={PAYMENT_TERMS}
+                    options={PAYMENT_TERMS.map((term) => ({
+                      value: term,
+                      label: term,
+                    }))}
                   />
 
                   <Input
@@ -1041,34 +1491,57 @@ const ClientEdit = () => {
                         e.target.value
                       )
                     }
-                    options={[
-                      { value: "Weekly", label: "Weekly" },
-                      { value: "Bi-weekly", label: "Bi-weekly" },
-                      { value: "Monthly", label: "Monthly" },
-                      { value: "Quarterly", label: "Quarterly" },
-                    ]}
+                    options={BILLING_FREQUENCY.map((freq) => ({
+                      value: freq,
+                      label: freq,
+                    }))}
                   />
-                </div>
 
-                <div className="mt-6">
-                  <Textarea
-                    label="Special Instructions"
-                    value={formData.financialInfo?.specialInstructions || ""}
+                  <Input
+                    label="Credit Limit"
+                    type="number"
+                    value={formData.financialInfo?.creditLimit || ""}
                     onChange={(e) =>
                       handleInputChange(
                         "financialInfo",
-                        "specialInstructions",
+                        "creditLimit",
                         e.target.value
                       )
                     }
-                    placeholder="Any special billing instructions or requirements..."
-                    rows={3}
+                    placeholder="0"
+                  />
+
+                  <Input
+                    label="Last Invoice Date"
+                    type="date"
+                    value={formData.financialInfo?.lastInvoiceDate || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "lastInvoiceDate",
+                        e.target.value
+                      )
+                    }
+                  />
+
+                  <Input
+                    label="Next Invoice Date"
+                    type="date"
+                    value={formData.financialInfo?.nextInvoiceDate || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "financialInfo",
+                        "nextInvoiceDate",
+                        e.target.value
+                      )
+                    }
                   />
                 </div>
               </Card>
             </TabsContent>
           </Tabs>
         </div>
+
         {/* Fixed Save Bar */}
         {hasChanges && (
           <div

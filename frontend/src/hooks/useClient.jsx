@@ -21,7 +21,6 @@ export const useClients = () => {
 
   // Config Updaters
   const { execute: updateIntegration } = useApi(clientAPI.updateIntegration);
-  const { execute: updateProcessing } = useApi(clientAPI.updateProcessing);
   const { execute: updateFinancial } = useApi(clientAPI.updateFinancial);
   const { execute: updateSyncStatus } = useApi(clientAPI.updateSyncStatus);
 
@@ -92,15 +91,6 @@ export const useClients = () => {
   const updateClientIntegration = async (id, integrationData) => {
     console.log("🔧 Updating Integration:", id, integrationData);
     const res = await updateIntegration(id, integrationData);
-    if (res) {
-      await loadClients(); // Refresh the list
-    }
-    return res;
-  };
-
-  const updateClientProcessing = async (id, processingData) => {
-    console.log("⚙️ Updating Processing:", id, processingData);
-    const res = await updateProcessing(id, processingData);
     if (res) {
       await loadClients(); // Refresh the list
     }
@@ -181,7 +171,6 @@ export const useClients = () => {
     removeClient,
     uploadBulkClients,
     updateClientIntegration,
-    updateClientProcessing,
     updateClientFinancial,
     updateClientSyncStatus,
     updateClientAgreements,
@@ -200,7 +189,6 @@ export const useClients = () => {
       deleteClient,
       bulkUploadClients,
       updateIntegration,
-      updateProcessing,
       updateFinancial,
       updateSyncStatus,
       updateAgreements,

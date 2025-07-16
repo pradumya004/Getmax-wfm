@@ -13,7 +13,7 @@ const clientSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -64,6 +64,10 @@ const clientSchema = new mongoose.Schema({
             //     },
             //     message: 'NPI must be 10 digits'
             // }
+        },
+        description: {
+            type: String,
+            trim: true,
         }
     },
 
@@ -75,17 +79,13 @@ const clientSchema = new mongoose.Schema({
                 required: [true, 'Primary contact name is required'],
                 trim: true
             },
-            title: {
-                type: String,
-                trim: true
-            },
             email: {
                 type: String,
                 required: [true, 'Primary contact email is required'],
                 trim: true,
                 lowercase: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
                     },
                     message: 'Invalid email format'
@@ -95,7 +95,7 @@ const clientSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\+?[\d\s\-\(\)]{10,15}$/.test(v);
                     },
                     message: 'Invalid phone number format'
@@ -109,7 +109,7 @@ const clientSchema = new mongoose.Schema({
                 trim: true,
                 lowercase: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
                     },
                     message: 'Invalid email format'
@@ -124,7 +124,7 @@ const clientSchema = new mongoose.Schema({
                 trim: true,
                 lowercase: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
                     },
                     message: 'Invalid email format'
@@ -159,8 +159,7 @@ const clientSchema = new mongoose.Schema({
             country: {
                 type: String,
                 trim: true,
-                default: 'United States',
-                enum: ['United States', 'Canada', 'India', 'United Kingdom', 'Other']
+                default: 'India'
             }
         },
         billingAddress: {
@@ -184,7 +183,7 @@ const clientSchema = new mongoose.Schema({
             default: 'Manual Only',
             index: true
         },
-        
+
         // ** EHR/PM SYSTEM DETAILS **
         ehrPmSystem: {
             systemName: {
@@ -242,7 +241,6 @@ const clientSchema = new mongoose.Schema({
             lastFailedSync: Date,
             syncStatus: {
                 type: String,
-                enum: ['Not Configured', 'Testing', 'Active', 'Failed', 'Suspended'],
                 default: 'Not Configured'
             }
         },
@@ -282,131 +280,39 @@ const clientSchema = new mongoose.Schema({
                 trim: true,
                 default: '/outbound/'
             },
-            fileFormat: {
+            fileFormat: [{
                 type: String,
-                enum: ['CSV', 'Excel', 'HL7', 'X12', 'JSON', 'XML'],
-                default: 'CSV'
-            },
+                default: 'Excel (.xlsx)'
+            }],
             syncFrequency: {
                 type: String,
-                enum: ['Real-time', 'Hourly', 'Daily', 'Weekly', 'Manual'],
                 default: 'Daily'
             }
         },
 
         // ** MANUAL UPLOAD CONFIGURATION **
         manualConfig: {
-            allowedFileFormats: [{
-                type: String,
-                enum: ['CSV', 'Excel (.xlsx)', 'Excel (.xls)', 'Text (.txt)'],
-                default: 'Excel (.xlsx)'
-            }],
+            allowedFileFormats: {
+                type: [String],
+                default: []
+            },
             maxFileSize: {
                 type: Number, // in MB
-                min: [1, 'Max file size must be at least 1MB'],
-                max: [100, 'Max file size cannot exceed 100MB'],
-                default: 25
             },
             templateRequired: {
                 type: Boolean,
                 default: true
             },
-            customFieldMapping: {
-                type: Map,
-                of: String // Maps client fields to BET fields
-            }
-        }
-    },
-
-    // ** DATA FORMAT & PROCESSING **
-    dataProcessingConfig: {
-        claimDataFormat: {
-            type: String,
-            enum: ['Standard BET', 'ClaimMD Format', 'EMSMC Format', 'Custom Mapping'],
-            required: [true, 'Claim data format is required'],
-            default: 'Standard BET'
-        },
-        
-        // Field mapping for different formats
-        fieldMapping: {
-            claimIdField: {
-                type: String,
-                default: 'claim_id'
-            },
-            patientNameField: {
-                type: String,
-                default: 'patient_name'
-            },
-            dosField: {
-                type: String,
-                default: 'date_of_service'
-            },
-            payerField: {
-                type: String,
-                default: 'payer_name'
-            },
-            cptField: {
-                type: String,
-                default: 'cpt_codes'
-            },
-            chargesField: {
-                type: String,
-                default: 'billed_amount'
-            },
-            customFields: {
-                type: Map,
-                of: String
-            }
-        },
-
-        // Data validation rules
-        validationRules: {
-            requirePatientInfo: {
-                type: Boolean,
-                default: true
-            },
-            requireInsuranceInfo: {
-                type: Boolean,
-                default: true
-            },
-            allowDuplicateClaims: {
-                type: Boolean,
-                default: false
-            },
-            autoCorrectData: {
-                type: Boolean,
-                default: true
-            }
-        },
-
-        // Processing preferences
-        processingPreferences: {
-            batchSize: {
-                type: Number,
-                min: [10, 'Batch size must be at least 10'],
-                max: [1000, 'Batch size cannot exceed 1000'],
-                default: 100
-            },
-            processingPriority: {
-                type: String,
-                enum: ['Low', 'Normal', 'High', 'Critical'],
-                default: 'Normal'
-            },
-            notifyOnCompletion: {
-                type: Boolean,
-                default: true
-            },
-            errorHandling: {
-                type: String,
-                enum: ['Stop on Error', 'Skip and Continue', 'Manual Review'],
-                default: 'Skip and Continue'
-            }
         }
     },
 
     // ** SERVICE AGREEMENTS & SOWS **
     serviceAgreements: {
-        masterServiceAgreement: {
+        serviceType: [{
+            type: String,
+        }],
+        compliances: [{
+            type: String,
             signed: {
                 type: Boolean,
                 default: false
@@ -414,16 +320,7 @@ const clientSchema = new mongoose.Schema({
             signedDate: Date,
             expiryDate: Date,
             documentPath: String
-        },
-        hipaaBAA: {
-            signed: {
-                type: Boolean,
-                default: false
-            },
-            signedDate: Date,
-            expiryDate: Date,
-            documentPath: String
-        },
+        }],
         activeSOWs: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'SOW'
@@ -438,12 +335,10 @@ const clientSchema = new mongoose.Schema({
     financialInfo: {
         billingCurrency: {
             type: String,
-            enum: ['USD', 'INR', 'EUR', 'GBP', 'CAD', 'AED'],
-            default: 'USD'
+            default: 'INR'
         },
         paymentTerms: {
             type: String,
-            enum: ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on Receipt'],
             default: 'Net 30'
         },
         creditLimit: {
@@ -460,6 +355,10 @@ const clientSchema = new mongoose.Schema({
             default: 0,
             min: [0, 'Total revenue cannot be negative']
         },
+        invoiceFormat: {
+            type: String,
+            default: 'PDF'
+        },
         lastInvoiceDate: Date,
         nextInvoiceDate: Date
     },
@@ -468,28 +367,11 @@ const clientSchema = new mongoose.Schema({
     status: {
         clientStatus: {
             type: String,
-            enum: [
-                'Prospect', 
-                'Active', 
-                'On Hold', 
-                'Inactive', 
-                'Terminated',
-                'Under Review'
-            ],
             default: 'Prospect',
             index: true
         },
         onboardingStatus: {
             type: String,
-            enum: [
-                'Not Started',
-                'Documentation Pending',
-                'Technical Setup',
-                'Testing Phase', 
-                'Training Phase',
-                'Go Live',
-                'Completed'
-            ],
             default: 'Not Started'
         },
         onboardingProgress: {
@@ -501,11 +383,6 @@ const clientSchema = new mongoose.Schema({
         lastActivityDate: {
             type: Date,
             default: Date.now
-        },
-        riskLevel: {
-            type: String,
-            enum: ['Low', 'Medium', 'High', 'Critical'],
-            default: 'Low'
         }
     },
 
@@ -550,12 +427,7 @@ const clientSchema = new mongoose.Schema({
         },
         timezone: {
             type: String,
-            enum: [
-                'EST', 'CST', 'MST', 'PST', 'GMT', 'IST',
-                'America/New_York', 'America/Chicago', 'America/Denver', 
-                'America/Los_Angeles', 'UTC', 'Asia/Kolkata'
-            ],
-            default: 'EST'
+            default: 'IST'
         },
         businessHours: {
             start: {
@@ -568,14 +440,13 @@ const clientSchema = new mongoose.Schema({
             },
             workingDays: [{
                 type: String,
-                enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
                 default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
             }]
         },
         dataRetentionPeriod: {
             type: Number, // in days
-            min: [30, 'Data retention period must be at least 30 days'],
-            default: 2555 // 7 years for healthcare compliance
+            min: [1, 'Data retention period must be at least 1 month'],
+            default: 12
         }
     },
 
@@ -616,8 +487,8 @@ clientSchema.index({ 'integrationStrategy.ehrPmSystem.systemName': 1 });
 clientSchema.index({ 'status.onboardingStatus': 1 });
 
 // Compound indexes for complex queries
-clientSchema.index({ 
-    companyRef: 1, 
+clientSchema.index({
+    companyRef: 1,
     'status.clientStatus': 1,
     'systemInfo.isActive': 1
 });
@@ -636,7 +507,7 @@ clientSchema.virtual('totalActiveSOWs', {
     match: { 'status.sowStatus': 'Active', 'systemInfo.isActive': true }
 });
 
-clientSchema.virtual('isIntegrationReady').get(function() {
+clientSchema.virtual('isIntegrationReady').get(function () {
     if (this.integrationStrategy.workflowType === 'Manual Only') return true;
     if (this.integrationStrategy.workflowType === 'API Integration Only') {
         return this.integrationStrategy.apiConfig.syncStatus === 'Active';
@@ -647,22 +518,22 @@ clientSchema.virtual('isIntegrationReady').get(function() {
     return false;
 });
 
-clientSchema.virtual('revenueThisMonth').get(function() {
+clientSchema.virtual('revenueThisMonth').get(function () {
     // This would be calculated from actual invoice data
     return this.financialInfo.totalRevenueGenerated || 0;
 });
 
 // ** STATIC METHODS **
-clientSchema.statics.findActiveClients = function(companyRef) {
+clientSchema.statics.findActiveClients = function (companyRef) {
     return this.find({
         companyRef,
         'status.clientStatus': 'Active',
         'systemInfo.isActive': true
     }).populate('serviceAgreements.activeSOWs', 'sowName serviceDetails.serviceType')
-      .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
+        .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
 };
 
-clientSchema.statics.findClientsByIntegrationType = function(companyRef, integrationType) {
+clientSchema.statics.findClientsByIntegrationType = function (companyRef, integrationType) {
     return this.find({
         companyRef,
         'integrationStrategy.workflowType': integrationType,
@@ -670,17 +541,17 @@ clientSchema.statics.findClientsByIntegrationType = function(companyRef, integra
     });
 };
 
-clientSchema.statics.findClientsNeedingOnboarding = function(companyRef) {
+clientSchema.statics.findClientsNeedingOnboarding = function (companyRef) {
     return this.find({
         companyRef,
-        'status.onboardingStatus': { 
-            $nin: ['Completed'] 
+        'status.onboardingStatus': {
+            $nin: ['Completed']
         },
         'systemInfo.isActive': true
     });
 };
 
-clientSchema.statics.findClientsByEHRSystem = function(companyRef, ehrSystem) {
+clientSchema.statics.findClientsByEHRSystem = function (companyRef, ehrSystem) {
     return this.find({
         companyRef,
         'integrationStrategy.ehrPmSystem.systemName': ehrSystem,
@@ -689,21 +560,21 @@ clientSchema.statics.findClientsByEHRSystem = function(companyRef, ehrSystem) {
 };
 
 // ** INSTANCE METHODS **
-clientSchema.methods.updatePerformanceMetrics = function(newMetrics) {
+clientSchema.methods.updatePerformanceMetrics = function (newMetrics) {
     if (newMetrics.claimsProcessed) this.performanceMetrics.averageClaimsPerMonth = newMetrics.claimsProcessed;
     if (newMetrics.processingTime) this.performanceMetrics.averageProcessingTime = newMetrics.processingTime;
     if (newMetrics.qualityScore) this.performanceMetrics.qualityScoreAverage = newMetrics.qualityScore;
     if (newMetrics.slaCompliance) this.performanceMetrics.slaComplianceRate = newMetrics.slaCompliance;
     if (newMetrics.satisfactionScore) this.performanceMetrics.clientSatisfactionScore = newMetrics.satisfactionScore;
-    
+
     this.status.lastActivityDate = new Date();
 };
 
-clientSchema.methods.canStartSOW = function() {
+clientSchema.methods.canStartSOW = function () {
     const hasSignedMSA = this.serviceAgreements.masterServiceAgreement.signed;
     const hasSignedBAA = this.serviceAgreements.hipaaBAA.signed;
     const isOnboarded = this.status.onboardingStatus === 'Completed';
-    
+
     return {
         canStart: hasSignedMSA && hasSignedBAA && isOnboarded,
         missingRequirements: {
@@ -714,29 +585,29 @@ clientSchema.methods.canStartSOW = function() {
     };
 };
 
-clientSchema.methods.encryptCredentials = function(credentials) {
+clientSchema.methods.encryptCredentials = function (credentials) {
     const algorithm = 'aes-256-gcm';
     const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
     const iv = crypto.randomBytes(16);
-    
+
     const cipher = crypto.createCipher(algorithm, secretKey);
     let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     return encrypted;
 };
 
-clientSchema.methods.decryptCredentials = function() {
+clientSchema.methods.decryptCredentials = function () {
     if (!this.integrationStrategy.apiConfig.encryptedCredentials) return null;
-    
+
     try {
         const algorithm = 'aes-256-gcm';
         const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
-        
+
         const decipher = crypto.createDecipher(algorithm, secretKey);
         let decrypted = decipher.update(this.integrationStrategy.apiConfig.encryptedCredentials, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
-        
+
         return JSON.parse(decrypted);
     } catch (error) {
         console.error('Failed to decrypt credentials:', error);
@@ -745,7 +616,7 @@ clientSchema.methods.decryptCredentials = function() {
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-clientSchema.pre('save', function(next) {
+clientSchema.pre('save', function (next) {
     // Auto-set billing address if same as business address
     if (this.addressInfo.billingAddress.sameAsBusinessAddress) {
         this.addressInfo.billingAddress = {
@@ -753,12 +624,12 @@ clientSchema.pre('save', function(next) {
             sameAsBusinessAddress: true
         };
     }
-    
+
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-    
+
     // Update onboarding progress based on status
     const statusProgressMap = {
         'Not Started': 0,
@@ -769,16 +640,16 @@ clientSchema.pre('save', function(next) {
         'Go Live': 90,
         'Completed': 100
     };
-    
+
     if (this.status.onboardingStatus && statusProgressMap[this.status.onboardingStatus]) {
         this.status.onboardingProgress = statusProgressMap[this.status.onboardingStatus];
     }
-    
+
     next();
 });
 
 // ** POST-SAVE MIDDLEWARE **
-clientSchema.post('save', function(doc, next) {
+clientSchema.post('save', function (doc, next) {
     // Could trigger webhooks, notifications, etc.
     next();
 });

@@ -17,7 +17,7 @@ export const Checkbox = ({
 
   const handleChange = (e) => {
     if (onChange) {
-      onChange(e.target.checked);
+      onChange(e);
     }
   };
 

@@ -4,6 +4,7 @@ import React from "react";
 import { getTheme } from "../../lib/theme.js";
 
 export const Input = ({
+  disabled = false,
   label,
   error,
   theme = "company",
@@ -19,9 +20,11 @@ export const Input = ({
           {label}
         </label>
       )}
+
       <input
+        disabled={disabled}
         className={`
-          w-full px-3 py-2 rounded-lg
+          w-full px-3 py-1 rounded-lg
           bg-slate-800/50 border border-slate-600/50
           text-white placeholder-gray-400
           focus:outline-none focus:ring-2 focus:ring-opacity-50

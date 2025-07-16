@@ -7,9 +7,66 @@ export const Select = ({
   label,
   error,
   options = [],
+  value,
+  placeholder = "Select an option",
   className = "",
+  disabled = false,
   ...props
 }) => {
+  // Normalize options to ensure consistent format
+  const normalizedOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) {
+      console.warn("Select component: options should be an array");
+      return [];
+    }
+
+    return options.map((option, index) => {
+      // Handle both string arrays and object arrays
+      if (typeof option === "string") {
+        return { value: option, label: option };
+      }
+
+      // Handle object format
+      if (typeof option === "object" && option !== null) {
+        return {
+          value: option.value ?? option.label ?? `option_${index}`,
+          label: option.label ?? option.value ?? `Option ${index + 1}`,
+        };
+      }
+
+      // Fallback for invalid options
+      console.warn(
+        `Select component: Invalid option at index ${index}:`,
+        option
+      );
+      return { value: `option_${index}`, label: `Option ${index + 1}` };
+    });
+  }, [options]);
+
+  // Ensure unique keys by adding index if values are duplicate
+  const uniqueOptions = React.useMemo(() => {
+    const valueMap = new Map();
+
+    return normalizedOptions.map((option, index) => {
+      const originalValue = option.value;
+      let uniqueValue = originalValue;
+
+      // Check for duplicate values and make them unique
+      if (valueMap.has(originalValue)) {
+        uniqueValue = `${originalValue}_${index}`;
+      }
+
+      valueMap.set(originalValue, true);
+
+      return {
+        ...option,
+        value: uniqueValue,
+        originalValue: originalValue,
+        key: `${originalValue}_${index}`, // Unique key for React
+      };
+    });
+  }, [normalizedOptions]);
+
   return (
     <div className="space-y-2">
       {label && (
@@ -17,27 +74,42 @@ export const Select = ({
           {label}
         </label>
       )}
+
       <div className="relative">
         <select
+          value={value || ""}
+          disabled={disabled}
           className={`
-            w-full px-2 py-1 rounded-lg appearance-none
+            w-full px-3 py-2 rounded-lg appearance-none
             bg-slate-800/50 border border-slate-600/50
-            text-white focus:outline-none overflow-hidden focus:ring-2 focus:ring-red-500
-            ${error ? "border-red-500" : ""}
+            text-white focus:outline-none focus:ring-2 focus:ring-blue-500
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${error ? "border-red-500 focus:ring-red-500" : ""}
             ${className}
           `}
           {...props}
         >
-          {/* <option value="">{placeholder}</option> */}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+
+          {uniqueOptions.map((option) => (
+            <option
+              key={option.key}
+              value={option.originalValue}
+              className="bg-slate-800 text-white"
+            >
               {option.label}
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute overflow-visible right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+
+        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      {error && <p className="text-sm text-red-400 mt-1">{error}</p>}
     </div>
   );
 };

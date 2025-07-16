@@ -17,10 +17,7 @@ export const clientAPI = {
     // ============= CONFIGURATION UPDATES =============
     // Update integration configuration
     updateIntegration: (id, data) => apiCall('put', `/clients/${id}/integration`, data),
-
-    // Update processing configuration
-    updateProcessing: (id, data) => apiCall('put', `/clients/${id}/processing`, data),
-
+    
     // Update financial information
     updateFinancial: (id, data) => apiCall('put', `/clients/${id}/financial`, data),
 

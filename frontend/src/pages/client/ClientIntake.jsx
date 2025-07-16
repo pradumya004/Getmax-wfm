@@ -25,15 +25,38 @@ import { Select } from "../../components/ui/Select.jsx";
 import { Button } from "../../components/ui/Button.jsx";
 import { Card } from "../../components/ui/Card.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
+import { Checkbox } from "../../components/ui/Checkbox.jsx";
+import { MultiSelectField } from "../../components/ui/MultiSelectField.jsx";
 import { Textarea } from "../../components/ui/Textarea.jsx";
 import { FileUpload } from "../../components/ui/FileUpload.jsx";
 import { Progress } from "../../components/ui/Progress.jsx";
 import { getTheme } from "../../lib/theme.js";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useClients } from "../../hooks/useClient.jsx";
-import { validateForm } from "../../lib/validation.js";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  CLIENT_TYPES,
+  CLIENT_SUBTYPES,
+  STATUS_OPTIONS,
+  ONBOARDING_STATUS_OPTIONS,
+  WORKFLOW_TYPES,
+  EHR_SYSTEMS,
+  PAYMENT_TERMS,
+  CURRENCIES,
+  COUNTRIES,
+  BILLING_FREQUENCY,
+  TIMEZONES,
+  WORKING_DAYS,
+  ALLOWED_FILE_FORMATS,
+  AUTH_METHODS,
+  SERVICE_TYPES,
+  COMPLIANCE_REQUIREMENTS,
+  INVOICE_FORMATS,
+  SYNC_FREQUENCIES,
+  FILE_PROCESSING_STATUSES,
+  INTEGRATION_STATUSES,
+} from "../../pages/client/client.constants";
 
 const ClientIntake = () => {
   const { userType } = useAuth();
@@ -65,22 +88,18 @@ const ClientIntake = () => {
     contactInfo: {
       primaryContact: {
         name: "",
-        title: "",
         email: "",
         phone: "",
-        department: "",
       },
       billingContact: {
         name: "",
         email: "",
         phone: "",
-        department: "",
       },
       technicalContact: {
         name: "",
         email: "",
         phone: "",
-        department: "",
       },
     },
 
@@ -91,14 +110,14 @@ const ClientIntake = () => {
         city: "",
         state: "",
         zipCode: "",
-        country: "United States",
+        country: "India",
       },
       billingAddress: {
         street: "",
         city: "",
         state: "",
         zipCode: "",
-        country: "United States",
+        country: "India",
         sameAsBusinessAddress: true,
       },
     },
@@ -109,150 +128,90 @@ const ClientIntake = () => {
       ehrPmSystem: {
         systemName: "",
         systemVersion: "",
-        vendorContact: {
-          name: "",
-          email: "",
-          phone: "",
-        },
+        vendorContact: { name: "", email: "", phone: "" },
       },
       apiConfig: {
-        requiresApiAccess: false,
-        apiEndpoint: "",
+        hasApiAccess: false,
+        apiBaseUrl: "",
+        apiVersion: "",
         authMethod: "",
+        testEndpoint: "",
+        productionEndpoint: "",
+        rateLimitPerHour: 100,
+        syncStatus: "",
+      },
+      sftpConfig: {
+        enabled: false,
+        host: "",
+        port: 22,
+        username: "",
+        inboundPath: "",
+        outboundPath: "",
+        fileFormat: [],
+        syncFrequency: "",
+      },
+      manualConfig: {
+        allowedFileFormats: [],
+        maxFileSize: 25,
+        templateRequired: false,
       },
     },
 
     // Step 5: Financial Information
     financialInfo: {
-      billingCurrency: "USD",
-      paymentTerms: "Net 30",
+      billingCurrency: "",
+      paymentTerms: "",
       creditLimit: "",
-      billingFrequency: "Monthly",
-      invoiceFormat: "PDF",
-      specialInstructions: "",
+      billingFrequency: "",
+      invoiceFormat: "",
     },
 
     // Step 6: Service Configuration
-    serviceConfig: {
-      serviceType: "",
-      expectedVolume: "",
-      startDate: "",
-      specialRequirements: "",
-      complianceRequirements: [],
+    serviceAgreements: {
+      serviceType: [],
+      compliances: [],
+    },
+    status: {
+      clientStatus: "",
+      onboardingStatus: "",
+    },
+    systemInfo: {
+      isActive: true,
+      timezone: "IST",
+      businessHours: {
+        start: "09:00",
+        end: "17:00",
+        workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      },
+      dataRetentionPeriod: 12,
     },
   });
 
-  const clientTypeOptions = [
-    "Healthcare Provider",
-    "Billing Company",
-    "Hospital System",
-    "Multi-Specialty Clinic",
-    "Individual Practice",
-    "DME Company",
-    "Laboratory",
-    "Dental Practice",
-    "Behavioral Health",
-  ];
-
-  const clientSubTypeOptions = {
-    "Healthcare Provider": [
-      "Clinic",
-      "Hospital",
-      "Specialty Practice",
-      "Urgent Care",
-      "Other",
-    ],
-    "Billing Company": [
-      "Small Practice",
-      "Large Group",
-      "Hospital System",
-      "Specialty Focused",
-      "Other",
-    ],
-    "Hospital System": ["Regional", "National", "Academic", "Private", "Other"],
-    "Multi-Specialty Clinic": [
-      "Primary Care",
-      "Specialty Care",
-      "Mixed",
-      "Other",
-    ],
-    "Individual Practice": ["Solo", "Small Group", "Other"],
-    "DME Company": ["Equipment", "Supplies", "Both", "Other"],
-    Laboratory: ["Clinical", "Pathology", "Radiology", "Other"],
-    "Dental Practice": ["General", "Specialty", "Orthodontics", "Other"],
-    "Behavioral Health": ["Mental Health", "Substance Abuse", "Mixed", "Other"],
-  };
-
-  const workflowTypeOptions = [
-    "API Integration",
-    "File-based Transfer",
-    "Manual Entry",
-    "Hybrid Approach",
-  ];
-
-  const ehrSystemOptions = [
-    "Epic",
-    "Cerner",
-    "Allscripts",
-    "eClinicalWorks",
-    "NextGen",
-    "AthenaHealth",
-    "Practice Fusion",
-    "Meditech",
-    "Other",
-  ];
-
-  const authMethodOptions = [
-    "OAuth 2.0",
-    "API Key",
-    "Basic Authentication",
-    "Token-based",
-    "Certificate-based",
-  ];
-
-  const paymentTermsOptions = [
-    "Net 15",
-    "Net 30",
-    "Net 45",
-    "Net 60",
-    "Due on Receipt",
-    "Custom",
-  ];
-
-  const serviceTypeOptions = [
-    "Revenue Cycle Management",
-    "Medical Coding",
-    "Claims Processing",
-    "Denial Management",
-    "Patient Collections",
-    "Credentialing",
-    "Consulting",
-    "Full Service",
-  ];
-
-  const complianceOptions = [
-    "HIPAA",
-    "SOX",
-    "HITECH",
-    "PCI DSS",
-    "ISO 27001",
-    "SOC 2",
-    "Other",
-  ];
-
   const handleInputChange = (section, field, value, subField = null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: subField
-          ? {
-              ...prev[section][field],
-              [subField]: value,
-            }
-          : value,
-      },
-    }));
+    console.log("handleInputChange:", { section, field, value, subField }); // Debug log
+
+    setFormData((prev) => {
+      const newData = { ...prev };
+
+      // Ensure section exists
+      if (!newData[section]) {
+        newData[section] = {};
+      }
+
+      if (subField) {
+        // Handle nested updates
+        if (!newData[section][field]) {
+          newData[section][field] = {};
+        }
+        newData[section][field][subField] = value;
+      } else {
+        // Handle direct updates
+        newData[section][field] = value;
+      }
+
+      console.log("Updated formData:", newData); // Debug log
+      return newData;
+    });
 
     // Clear error for this field
     const errorKey = subField
@@ -277,7 +236,6 @@ const ClientIntake = () => {
           required: true,
           message: "Client type is required",
         },
-        "clientInfo.legalName": { required: false },
       },
       2: {
         "contactInfo.primaryContact.name": {
@@ -328,43 +286,72 @@ const ClientIntake = () => {
           message: "Payment terms are required",
         },
       },
-      6: {
-        "serviceConfig.serviceType": {
-          required: true,
-          message: "Service type is required",
-        },
-        "serviceConfig.expectedVolume": {
-          required: true,
-          message: "Expected volume is required",
-        },
-        "serviceConfig.startDate": {
-          required: true,
-          message: "Start date is required",
-        },
-      },
     };
 
     const currentValidations = stepValidations[currentStep];
     const newErrors = {};
 
-    Object.entries(currentValidations).forEach(([fieldPath, validation]) => {
-      const value = getNestedValue(formData, fieldPath);
+    if (currentValidations) {
+      Object.entries(currentValidations).forEach(([fieldPath, validation]) => {
+        const value = getNestedValue(formData, fieldPath);
 
-      if (validation.required && (!value || value.trim() === "")) {
-        newErrors[fieldPath] = validation.message;
+        if (validation.required && (!value || value.toString().trim() === "")) {
+          newErrors[fieldPath] = validation.message;
+        }
+
+        if (validation.type === "email" && value && !isValidEmail(value)) {
+          newErrors[fieldPath] = "Please enter a valid email address";
+        }
+      });
+    }
+
+    // Enhanced file format validation for Manual workflows
+    if (
+      currentStep === 4 &&
+      formData.integrationStrategy?.workflowType === "Manual Only"
+    ) {
+      const formats =
+        formData.integrationStrategy?.manualConfig?.allowedFileFormats;
+
+      if (!formats || !Array.isArray(formats) || formats.length === 0) {
+        newErrors["integrationStrategy.manualConfig.allowedFileFormats"] =
+          "Please select at least one file format";
       }
+    }
 
-      if (validation.type === "email" && value && !isValidEmail(value)) {
-        newErrors[fieldPath] = "Please enter a valid email address";
+    // Validate API configuration if API workflow is selected
+    if (
+      currentStep === 4 &&
+      ["API Integration Only", "Hybrid Integration"].includes(
+        formData.integrationStrategy?.workflowType
+      )
+    ) {
+      if (formData.integrationStrategy?.apiConfig?.hasApiAccess) {
+        if (!formData.integrationStrategy?.apiConfig?.apiBaseUrl) {
+          newErrors["integrationStrategy.apiConfig.apiBaseUrl"] =
+            "API Base URL is required";
+        }
+        if (!formData.integrationStrategy?.apiConfig?.authMethod) {
+          newErrors["integrationStrategy.apiConfig.authMethod"] =
+            "Authentication method is required";
+        }
       }
-    });
+    }
 
+    console.log("Validation errors:", newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const getNestedValue = (obj, path) => {
-    return path.split(".").reduce((current, key) => current?.[key], obj);
+    try {
+      return path.split(".").reduce((current, key) => {
+        return current && current[key] !== undefined ? current[key] : null;
+      }, obj);
+    } catch (error) {
+      console.warn(`Failed to get nested value for path: ${path}`, error);
+      return null;
+    }
   };
 
   const isValidEmail = (email) => {
@@ -373,8 +360,15 @@ const ClientIntake = () => {
   };
 
   const handleNext = () => {
+    console.log("Current step:", currentStep);
+    console.log("Form data before validation:", formData);
+    console.log("Current errors:", errors);
+
     if (validateCurrentStep()) {
+      console.log("Validation passed, moving to next step");
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    } else {
+      console.log("Validation failed, staying on current step");
     }
   };
 
@@ -384,53 +378,42 @@ const ClientIntake = () => {
 
   const handleSubmit = async () => {
     if (!validateCurrentStep()) return;
-
     setLoading(true);
-    try {
-      // Prepare final data
-      const finalData = {
-        ...formData,
-        status: {
-          clientStatus: "Prospect",
-          onboardingStatus: "Not Started",
-          onboardingProgress: 0,
-          riskLevel: "Low",
-          lastActivityDate: new Date(),
-        },
-        systemInfo: {
-          isActive: true,
-          timezone: "EST",
-          businessHours: {
-            start: "09:00",
-            end: "17:00",
-            workingDays: [
-              "Monday",
-              "Tuesday",
-              "Wednesday",
-              "Thursday",
-              "Friday",
-            ],
-          },
-          dataRetentionPeriod: 2555,
-        },
-        files: uploadedFiles,
-      };
 
-      await addClient(finalData);
+    try {
+      console.log("Submitting form data:", formData);
+      await addClient(formData);
+
+      // Use toast for success message
       toast.success("Client created successfully!");
-      navigate("/company/clients/list");
+
+      // Navigate back or show success message
+      if (typeof navigate === "function") {
+        navigate("/company/clients/list");
+      } else {
+        console.log("Navigation not available, client created successfully");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Form submission error:", error);
       toast.error("Failed to create client. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFileUpload = (files) => {
-    setUploadedFiles((prev) => [...prev, ...files]);
-    toast.success(`${files.length} file(s) uploaded successfully`);
-  };
+  // const handleFileUpload = (files) => {
+  //   if (files && files.length > 0) {
+  //     const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024); // 10MB limit
+  //     setUploadedFiles((prev) => [...prev, ...validFiles]);
+  //     toast.success(`${validFiles.length} file(s) uploaded successfully`);
+
+  //     if (validFiles.length < files.length) {
+  //       toast.error(
+  //         `${files.length - validFiles.length} file(s) exceeded size limit`
+  //       );
+  //     }
+  //   }
+  // };
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -478,16 +461,17 @@ const ClientIntake = () => {
                 onChange={(e) =>
                   handleInputChange("clientInfo", "clientType", e.target.value)
                 }
-                options={clientTypeOptions.map((type) => ({
+                options={CLIENT_TYPES.map((type) => ({
                   value: type,
                   label: type,
                 }))}
                 error={errors["clientInfo.clientType"]}
+                placeholder="Select client type"
               />
 
               <Select
                 label="Client Sub-Type"
-                value={formData.clientInfo.clientSubType}
+                value={formData.clientInfo?.clientSubType}
                 onChange={(e) =>
                   handleInputChange(
                     "clientInfo",
@@ -496,14 +480,16 @@ const ClientIntake = () => {
                   )
                 }
                 options={
-                  formData.clientInfo.clientType
-                    ? clientSubTypeOptions[formData.clientInfo.clientType]?.map(
-                        (subType) => ({ value: subType, label: subType })
-                      ) || []
-                    : []
+                  CLIENT_SUBTYPES[formData.clientInfo?.clientType]?.map(
+                    (subType) => ({
+                      value: subType,
+                      label: subType,
+                    })
+                  ) || []
                 }
                 error={errors["clientInfo.clientSubType"]}
                 disabled={!formData.clientInfo.clientType}
+                placeholder="Select client sub-type"
               />
 
               <Input
@@ -575,18 +561,6 @@ const ClientIntake = () => {
                     )
                   }
                   error={errors["contactInfo.primaryContact.name"]}
-                />
-                <Input
-                  label="Title"
-                  value={formData.contactInfo.primaryContact.title}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "contactInfo",
-                      "primaryContact",
-                      e.target.value,
-                      "title"
-                    )
-                  }
                 />
                 <Input
                   label="Email *"
@@ -802,12 +776,11 @@ const ClientIntake = () => {
                       "country"
                     )
                   }
-                  options={[
-                    { value: "United States", label: "United States" },
-                    { value: "Canada", label: "Canada" },
-                    { value: "India", label: "India" },
-                    { value: "Other", label: "Other" },
-                  ]}
+                  options={COUNTRIES.map((country) => ({
+                    value: country.value || country,
+                    label: country.label || country,
+                  }))}
+                  placeholder="Select country"
                 />
               </div>
             </Card>
@@ -903,11 +876,7 @@ const ClientIntake = () => {
                         "country"
                       )
                     }
-                    options={[
-                      { value: "United States", label: "United States" },
-                      { value: "Canada", label: "Canada" },
-                      { value: "Other", label: "Other" },
-                    ]}
+                    options={COUNTRIES}
                   />
                 </div>
               )}
@@ -939,7 +908,7 @@ const ClientIntake = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
                   label="Workflow Type *"
-                  value={formData.integrationStrategy.workflowType}
+                  value={formData.integrationStrategy?.workflowType}
                   onChange={(e) =>
                     handleInputChange(
                       "integrationStrategy",
@@ -947,11 +916,12 @@ const ClientIntake = () => {
                       e.target.value
                     )
                   }
-                  options={workflowTypeOptions.map((type) => ({
+                  options={WORKFLOW_TYPES.map((type) => ({
                     value: type,
                     label: type,
                   }))}
                   error={errors["integrationStrategy.workflowType"]}
+                  placeholder="Select workflow type"
                 />
               </div>
             </Card>
@@ -963,7 +933,9 @@ const ClientIntake = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
                   label="EHR/PM System"
-                  value={formData.integrationStrategy.ehrPmSystem.systemName}
+                  value={
+                    formData.integrationStrategy?.ehrPmSystem?.systemName || ""
+                  }
                   onChange={(e) =>
                     handleInputChange(
                       "integrationStrategy",
@@ -972,14 +944,18 @@ const ClientIntake = () => {
                       "systemName"
                     )
                   }
-                  options={ehrSystemOptions.map((system) => ({
+                  options={EHR_SYSTEMS.map((system) => ({
                     value: system,
                     label: system,
                   }))}
+                  placeholder="Select EHR/PM System"
                 />
                 <Input
                   label="System Version"
-                  value={formData.integrationStrategy.ehrPmSystem.systemVersion}
+                  value={
+                    formData.integrationStrategy?.ehrPmSystem?.systemVersion ||
+                    ""
+                  }
                   onChange={(e) =>
                     handleInputChange(
                       "integrationStrategy",
@@ -989,10 +965,12 @@ const ClientIntake = () => {
                     )
                   }
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                 <Input
-                  label="Vendor Contact Name"
+                  label="Vendor Contact"
                   value={
-                    formData.integrationStrategy.ehrPmSystem.vendorContact.name
+                    formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
                   }
                   onChange={(e) =>
                     handleInputChange(
@@ -1002,12 +980,13 @@ const ClientIntake = () => {
                       "vendorContact.name"
                     )
                   }
+                  placeholder="Vendor Name"
                 />
+
                 <Input
-                  label="Vendor Contact Email"
-                  type="email"
+                  label="Vendor Email"
                   value={
-                    formData.integrationStrategy.ehrPmSystem.vendorContact.email
+                    formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
                   }
                   onChange={(e) =>
                     handleInputChange(
@@ -1017,65 +996,409 @@ const ClientIntake = () => {
                       "vendorContact.email"
                     )
                   }
+                  placeholder="Vendor Email"
+                />
+
+                <Input
+                  label="Vendor Contact"
+                  value={
+                    formData.integrationStrategy?.apiConfig?.apiEndpoint || ""
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      "integrationStrategy",
+                      "ehrPmSystem",
+                      e.target.value,
+                      "vendorContact.phone"
+                    )
+                  }
+                  placeholder="Vendor Phone"
                 />
               </div>
             </Card>
 
             <Card className={`${theme.card} p-6`}>
-              <h4 className="text-white text-lg font-semibold mb-4">
-                API Configuration
-              </h4>
-              <div className="space-y-4">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={
-                      formData.integrationStrategy.apiConfig.requiresApiAccess
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        "integrationStrategy",
-                        "apiConfig",
-                        e.target.checked,
-                        "requiresApiAccess"
-                      )
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-white">Requires API Access</span>
-                </label>
+              <div className="mt-6 space-y-4">
+                {["Manual Only", "Hybrid Integration"].includes(
+                  formData.integrationStrategy?.workflowType
+                ) && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-white font-semibold">
+                      Manual Configuration
+                    </h4>
+                    <p className="text-gray-400 text-sm">
+                      Accepts file uploads only. Specify supported formats and
+                      limits.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                      <MultiSelectField
+                        label="Allowed File Formats *"
+                        options={ALLOWED_FILE_FORMATS.map((f) => ({
+                          value: f,
+                          label: f.toUpperCase(),
+                        }))}
+                        selected={
+                          formData.integrationStrategy?.manualConfig
+                            ?.allowedFileFormats || []
+                        }
+                        onChange={(selectedFormats) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "manualConfig",
+                            selectedFormats,
+                            "allowedFileFormats"
+                          )
+                        }
+                        error={
+                          errors[
+                            "integrationStrategy.manualConfig.allowedFileFormats"
+                          ]
+                        }
+                      />
 
-                {formData.integrationStrategy.apiConfig.requiresApiAccess && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="API Endpoint"
-                      value={formData.integrationStrategy.apiConfig.apiEndpoint}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "integrationStrategy",
-                          "apiConfig",
-                          e.target.value,
-                          "apiEndpoint"
-                        )
-                      }
-                      placeholder="https://api.example.com"
-                    />
-                    <Select
-                      label="Authentication Method"
-                      value={formData.integrationStrategy.apiConfig.authMethod}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "integrationStrategy",
-                          "apiConfig",
-                          e.target.value,
-                          "authMethod"
-                        )
-                      }
-                      options={authMethodOptions.map((method) => ({
-                        value: method,
-                        label: method,
-                      }))}
-                    />
+                      <Input
+                        label="Max File Size (MB)"
+                        type="number"
+                        value={
+                          formData.integrationStrategy?.manualConfig
+                            ?.maxFileSize || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "manualConfig",
+                            parseInt(e.target.value) || 25,
+                            "maxFileSize"
+                          )
+                        }
+                      />
+
+                      <div className="mt-8 px-8">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={
+                              formData.integrationStrategy?.manualConfig
+                                ?.templateRequired || false
+                            }
+                            onChange={(e) =>
+                              handleInputChange(
+                                "integrationStrategy",
+                                "manualConfig",
+                                e.target.checked,
+                                "templateRequired"
+                              )
+                            }
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-white text-sm">
+                            Require Template
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {["API Integration Only", "Hybrid Integration"].includes(
+                  formData.integrationStrategy?.workflowType
+                ) && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-white font-semibold">
+                      API Configuration
+                    </h4>
+                    <p className={`text-${theme.textSecondary} text-sm`}>
+                      Configure API endpoint, authentication, and rate limits.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+                      <div className="mt-8 px-2">
+                        <Checkbox
+                          label="Enable API Access"
+                          checked={
+                            formData.integrationStrategy?.apiConfig
+                              ?.hasApiAccess || false
+                          }
+                          onChange={(e) =>
+                            handleInputChange(
+                              "integrationStrategy",
+                              "apiConfig",
+                              e.target.checked,
+                              "hasApiAccess"
+                            )
+                          }
+                        />
+                      </div>
+
+                      <Input
+                        label="API Base URL"
+                        value={
+                          formData.integrationStrategy?.apiConfig?.apiBaseUrl ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "apiBaseUrl"
+                          )
+                        }
+                        placeholder="https://api.example.com"
+                      />
+
+                      <Input
+                        label="API Version"
+                        value={
+                          formData.integrationStrategy?.apiConfig?.apiVersion ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "apiVersion"
+                          )
+                        }
+                        placeholder="v1"
+                      />
+
+                      <Select
+                        label="Authentication Method"
+                        value={
+                          formData.integrationStrategy?.apiConfig?.authMethod ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "authMethod"
+                          )
+                        }
+                        options={AUTH_METHODS.map((method) => ({
+                          value: method,
+                          label: method,
+                        }))}
+                        placeholder="Select authentication method"
+                      />
+
+                      <Input
+                        label="Test Endpoint"
+                        value={
+                          formData.integrationStrategy?.apiConfig
+                            ?.testEndpoint || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "testEndpoint"
+                          )
+                        }
+                        placeholder="https://api.example.com/test"
+                      />
+                      <Input
+                        label="Production Endpoint"
+                        value={
+                          formData.integrationStrategy?.apiConfig
+                            ?.productionEndpoint || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "productionEndpoint"
+                          )
+                        }
+                        placeholder="https://api.example.com/production"
+                      />
+
+                      <Input
+                        label="Rate Limit (requests/hour)"
+                        value={
+                          formData.integrationStrategy?.apiConfig
+                            ?.rateLimitPerHour || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "rateLimitPerHour"
+                          )
+                        }
+                        placeholder="1000"
+                      />
+
+                      <Input
+                        label="Sync Status"
+                        value={
+                          formData.integrationStrategy?.apiConfig?.syncStatus ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "apiConfig",
+                            e.target.value,
+                            "syncStatus"
+                          )
+                        }
+                        placeholder="Not Configured"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.integrationStrategy?.workflowType ===
+                  "SFTP Integration" && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-white font-semibold">
+                      SFTP Integration
+                    </h4>
+                    <p className={`text-${theme.textSecondary} text-sm`}>
+                      Configure SFTP server details for file transfers.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+                      <div className="mt-8 px-2">
+                        <Checkbox
+                          label="Enable SFTP Access"
+                          checked={
+                            formData.integrationStrategy?.sftpConfig?.enabled ||
+                            false
+                          }
+                          onChange={(e) =>
+                            handleInputChange(
+                              "integrationStrategy",
+                              "sftpConfig",
+                              e.target.checked,
+                              "enabled"
+                            )
+                          }
+                        />
+                      </div>
+
+                      <Input
+                        label="Host"
+                        value={
+                          formData.integrationStrategy?.sftpConfig?.host || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "host"
+                          )
+                        }
+                        placeholder="sftp.example.com"
+                      />
+
+                      <Input
+                        label="Port"
+                        value={
+                          formData.integrationStrategy?.sftpConfig?.port || "22"
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "port"
+                          )
+                        }
+                        placeholder="22"
+                      />
+
+                      <Input
+                        label="Username"
+                        value={
+                          formData.integrationStrategy?.sftpConfig?.username ||
+                          ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "username"
+                          )
+                        }
+                        placeholder="SFTP Username"
+                      />
+
+                      <Input
+                        label="Inbound Path"
+                        value={
+                          formData.integrationStrategy?.sftpConfig
+                            ?.inboundPath || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "inboundPath"
+                          )
+                        }
+                        placeholder="/inbound"
+                      />
+
+                      <Input
+                        label="Outbound Path"
+                        value={
+                          formData.integrationStrategy?.sftpConfig
+                            ?.outboundPath || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "outboundPath"
+                          )
+                        }
+                        placeholder="/outbound"
+                      />
+
+                      <Input
+                        label="File Format"
+                        value={
+                          formData.integrationStrategy?.sftpConfig
+                            ?.fileFormat || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "fileFormat"
+                          )
+                        }
+                        placeholder="CSV"
+                      />
+
+                      <Input
+                        label="Sync Frequency"
+                        value={
+                          formData.integrationStrategy?.sftpConfig
+                            ?.syncFrequency || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "integrationStrategy",
+                            "sftpConfig",
+                            e.target.value,
+                            "syncFrequency"
+                          )
+                        }
+                        placeholder="Not Configured"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -1115,13 +1438,12 @@ const ClientIntake = () => {
                       e.target.value
                     )
                   }
-                  options={[
-                    { value: "USD", label: "USD - US Dollar" },
-                    { value: "CAD", label: "CAD - Canadian Dollar" },
-                    { value: "EUR", label: "EUR - Euro" },
-                    { value: "GBP", label: "GBP - British Pound" },
-                  ]}
+                  options={CURRENCIES.map((currency) => ({
+                    value: currency,
+                    label: currency,
+                  }))}
                   error={errors["financialInfo.billingCurrency"]}
+                  placeholder="Select currency"
                 />
                 <Select
                   label="Payment Terms *"
@@ -1133,11 +1455,12 @@ const ClientIntake = () => {
                       e.target.value
                     )
                   }
-                  options={paymentTermsOptions.map((term) => ({
+                  options={PAYMENT_TERMS.map((term) => ({
                     value: term,
                     label: term,
                   }))}
                   error={errors["financialInfo.paymentTerms"]}
+                  placeholder="Select payment terms"
                 />
                 <Input
                   label="Credit Limit"
@@ -1162,21 +1485,8 @@ const ClientIntake = () => {
                       e.target.value
                     )
                   }
-                  options={[
-                    { value: "Weekly", label: "Weekly" },
-                    { value: "Bi-weekly", label: "Bi-weekly" },
-                    { value: "Monthly", label: "Monthly" },
-                    { value: "Quarterly", label: "Quarterly" },
-                  ]}
+                  options={BILLING_FREQUENCY}
                 />
-              </div>
-            </Card>
-
-            <Card className={`${theme.card} p-6`}>
-              <h4 className="text-white text-lg font-semibold mb-4">
-                Invoice Settings
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Select
                   label="Invoice Format"
                   value={formData.financialInfo.invoiceFormat}
@@ -1187,27 +1497,11 @@ const ClientIntake = () => {
                       e.target.value
                     )
                   }
-                  options={[
-                    { value: "PDF", label: "PDF" },
-                    { value: "Excel", label: "Excel" },
-                    { value: "CSV", label: "CSV" },
-                    { value: "XML", label: "XML" },
-                  ]}
-                />
-              </div>
-              <div className="mt-4">
-                <Textarea
-                  label="Special Instructions"
-                  value={formData.financialInfo.specialInstructions}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "financialInfo",
-                      "specialInstructions",
-                      e.target.value
-                    )
-                  }
-                  placeholder="Any special billing instructions or requirements..."
-                  rows={3}
+                  options={INVOICE_FORMATS.map((format) => ({
+                    value: format,
+                    label: format,
+                  }))}
+                  placeholder="Select invoice format"
                 />
               </div>
             </Card>
@@ -1236,139 +1530,158 @@ const ClientIntake = () => {
                 Service Details
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  label="Service Type *"
-                  value={formData.serviceConfig.serviceType}
+                <MultiSelectField
+                  label="Service Types *"
+                  selected={formData.serviceAgreements.serviceType || []}
                   onChange={(e) =>
-                    handleInputChange(
-                      "serviceConfig",
-                      "serviceType",
-                      e.target.value
-                    )
+                    handleInputChange("serviceAgreements", "serviceType", e)
                   }
-                  options={serviceTypeOptions.map((type) => ({
-                    value: type,
-                    label: type,
+                  options={SERVICE_TYPES.map((service) => ({
+                    value: service,
+                    label: service,
                   }))}
-                  error={errors["serviceConfig.serviceType"]}
+                  error={errors["serviceAgreements.serviceType"]}
+                  // placeholder="Select services"
                 />
-                <Input
-                  label="Expected Volume *"
-                  value={formData.serviceConfig.expectedVolume}
+                <MultiSelectField
+                  label="Compliances *"
+                  selected={formData.serviceAgreements.compliances || []}
                   onChange={(e) =>
-                    handleInputChange(
-                      "serviceConfig",
-                      "expectedVolume",
-                      e.target.value
-                    )
+                    handleInputChange("serviceAgreements", "compliances", e)
                   }
-                  error={errors["serviceConfig.expectedVolume"]}
-                  placeholder="e.g., 1000 claims/month"
-                />
-                <Input
-                  label="Preferred Start Date *"
-                  type="date"
-                  value={formData.serviceConfig.startDate}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "serviceConfig",
-                      "startDate",
-                      e.target.value
-                    )
-                  }
-                  error={errors["serviceConfig.startDate"]}
+                  options={COMPLIANCE_REQUIREMENTS.map((compliance) => ({
+                    value: compliance,
+                    label: compliance,
+                  }))}
+                  error={errors["serviceAgreements.compliances"]}
                 />
               </div>
             </Card>
 
             <Card className={`${theme.card} p-6`}>
               <h4 className="text-white text-lg font-semibold mb-4">
-                Compliance Requirements
+                Client Status
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {complianceOptions.map((option) => (
-                  <label key={option} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.serviceConfig.complianceRequirements.includes(
-                        option
-                      )}
-                      onChange={(e) => {
-                        const current =
-                          formData.serviceConfig.complianceRequirements;
-                        const updated = e.target.checked
-                          ? [...current, option]
-                          : current.filter((item) => item !== option);
-                        handleInputChange(
-                          "serviceConfig",
-                          "complianceRequirements",
-                          updated
-                        );
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-white text-sm">{option}</span>
-                  </label>
-                ))}
-              </div>
-            </Card>
-
-            <Card className={`${theme.card} p-6`}>
-              <h4 className="text-white text-lg font-semibold mb-4">
-                Special Requirements
-              </h4>
-              <Textarea
-                label="Additional Requirements"
-                value={formData.serviceConfig.specialRequirements}
+              <Select
+                label="Client Status *"
+                value={formData.status.clientStatus}
+                onChange={(e) =>
+                  handleInputChange("status", "clientStatus", e.target.value)
+                }
+                options={STATUS_OPTIONS.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
+                error={errors["status.clientStatus"]}
+                placeholder="Select client status"
+              />
+              <Select
+                label="Onboarding Status *"
+                value={formData.status.onboardingStatus}
                 onChange={(e) =>
                   handleInputChange(
-                    "serviceConfig",
-                    "specialRequirements",
+                    "status",
+                    "onboardingStatus",
                     e.target.value
                   )
                 }
-                placeholder="Any special requirements, custom workflows, or specific needs..."
-                rows={4}
+                options={ONBOARDING_STATUS_OPTIONS.map((status) => ({
+                  value: status,
+                  label: status,
+                }))}
+                error={errors["status.onboardingStatus"]}
+                placeholder="Select onboarding status"
               />
             </Card>
 
             <Card className={`${theme.card} p-6`}>
               <h4 className="text-white text-lg font-semibold mb-4">
-                Document Upload
+                System Information
               </h4>
-              <FileUpload
-                onUpload={handleFileUpload}
-                accept=".pdf,.doc,.docx,.xls,.xlsx"
-                multiple={true}
-                maxSize={10 * 1024 * 1024} // 10MB
-                description="Upload contracts, agreements, or other relevant documents"
+              <Checkbox
+                label="Enable Client Portal"
+                checked={formData.systemInfo.isActive || false}
+                onChange={(e) =>
+                  handleInputChange("systemInfo", "isActive", e.target.checked)
+                }
+                error={errors["systemInfo.isActive"]}
+              />
+              <Select
+                label="Timezone *"
+                value={formData.systemInfo.timezone}
+                onChange={(e) =>
+                  handleInputChange("systemInfo", "timezone", e.target.value)
+                }
+                options={TIMEZONES}
+                error={errors["systemInfo.timezone"]}
+                placeholder="Select timezone"
               />
 
-              {uploadedFiles.length > 0 && (
-                <div className="mt-4">
-                  <h5 className="text-white font-medium mb-2">
-                    Uploaded Files:
-                  </h5>
-                  <div className="space-y-2">
-                    {uploadedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-white/5 rounded-lg"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-4 h-4 text-blue-400" />
-                          <span className="text-white text-sm">
-                            {file.name}
-                          </span>
-                        </div>
-                        <Badge variant="secondary" size="sm">
-                          {(file.size / 1024 / 1024).toFixed(1)}MB
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <h4 className="span text-white text-lg font-semibold mb-4">
+                Business Hours
+              </h4>
+              <Input
+                label="Start Time"
+                type="time"
+                value={formData.systemInfo.businessHours.start}
+                onChange={(e) =>
+                  handleInputChange(
+                    "systemInfo",
+                    "businessHours",
+                    e.target.value,
+                    "start"
+                  )
+                }
+                error={errors["systemInfo.businessHours.start"]}
+                placeholder="09:00"
+              />
+              <Input
+                label="End Time"
+                type="time"
+                value={formData.systemInfo.businessHours.endTime}
+                onChange={(e) =>
+                  handleInputChange(
+                    "systemInfo",
+                    "businessHours",
+                    e.target.value,
+                    "endTime"
+                  )
+                }
+                error={errors["systemInfo.businessHours.endTime"]}
+                placeholder="17:00"
+              />
+              <MultiSelectField
+                label="Working Days *"
+                selected={formData.systemInfo.businessHours.workingDays || []}
+                onChange={(e) =>
+                  handleInputChange(
+                    "systemInfo",
+                    "businessHours",
+                    e,
+                    "workingDays"
+                  )
+                }
+                options={WORKING_DAYS.map((day) => ({
+                  value: day,
+                  label: day,
+                }))}
+                error={errors["systemInfo.businessHours.workingDays"]}
+                // placeholder="Select services"
+              />
+              <Input
+                label="Data Retention Period (months)"
+                type="number"
+                value={formData.systemInfo.dataRetentionPeriod}
+                onChange={(e) =>
+                  handleInputChange(
+                    "systemInfo",
+                    "dataRetentionPeriod",
+                    e.target.value
+                  )
+                }
+                error={errors["systemInfo.dataRetentionPeriod"]}
+                placeholder="12"
+              />
             </Card>
           </div>
         );
