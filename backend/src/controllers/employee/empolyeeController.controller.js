@@ -25,20 +25,57 @@ const generateEmployeePassword = (firstName) => {
 // Add employee by company - admin
 const addEmployee = asyncHandler(async (req, res) => {
     const {
-        firstName,
-        lastName,
-        middleName,
-        primaryEmail,
-        primaryPhone,
+        personalInfo,
+        contactInfo,
+        employmentInfo,
+        reportingStructure,
         roleRef,
         departmentRef,
         subdepartmentRef,
         designationRef,
-        dateOfJoining,
-        workLocation,
-        directManager,
+        compensation,
+        workSchedule,
+        performanceTargets,
+        skillsAndQualifications,
+        status,
+        systemInfo,
         rampPercentage
     } = req.body;
+
+    const {
+        firstName,
+        lastName,
+        middleName,
+        displayName,
+        dateOfBirth,
+        gender,
+        bloodGroup
+    } = personalInfo || {};
+
+    const {
+        primaryEmail,
+        personalEmail,
+        primaryPhone,
+        alternatePhone,
+        emergencyContact
+    } = contactInfo || {};
+
+    const {
+        dateOfJoining,
+        employeeCode,
+        employmentType,
+        workLocation,
+        shiftType
+    } = employmentInfo || {};
+
+    const {
+        directManager,
+        teamLead
+    } = reportingStructure || {};
+
+
+    console.log("Adding employee with data:", req.body);
+
 
     // Get company from authenticated token
     const companyId = req.company?._id;
@@ -53,15 +90,15 @@ const addEmployee = asyncHandler(async (req, res) => {
     }
 
     // Required field validation
-    if (!(firstName && lastName && primaryEmail && roleRef && departmentRef && designationRef)) {
-        throw new ApiError(400, "Missing required fields: firstName, lastName, primaryEmail, roleRef, departmentRef, designationRef");
-    }
+    // if (!(firstName && lastName && primaryEmail && roleRef && departmentRef && designationRef)) {
+    //     throw new ApiError(400, "Missing required fields: firstName, lastName, primaryEmail, roleRef, departmentRef, designationRef");
+    // }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(primaryEmail)) {
-        throw new ApiError(400, "Invalid email format");
-    }
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (!emailRegex.test(primaryEmail)) {
+    //     throw new ApiError(400, "Invalid email format");
+    // }
 
     // Validate role, department, designation wrt company
     const [role, department, designation] = await Promise.all([
@@ -82,23 +119,23 @@ const addEmployee = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Designation not found in this company");
     }
 
-    let subdepartment = null;
-    if (subdepartmentRef) {
-        subdepartment = await SubDepartment.findOne({
-            _id: subdepartmentRef,
-            companyRef: companyId,
-            departmentRef: departmentRef
-        });
+    // let subdepartment = null;
+    // if (subdepartmentRef) {
+    //     subdepartment = await SubDepartment.findOne({
+    //         _id: subdepartmentRef,
+    //         companyRef: companyId,
+    //         departmentRef: departmentRef
+    //     });
 
-        if (!subdepartment) {
-            throw new ApiError(404, "Subdepartment not found in this department");
-        }
-    }
+    //     if (!subdepartment) {
+    //         throw new ApiError(404, "Subdepartment not found in this department");
+    //     }
+    // }
 
     // Check if employee already exists in this company
     const existingEmployee = await Employee.findOne({
         companyRef: companyId,
-        "contactInfo.primaryEmail": primaryEmail.toLowerCase().trim()
+        "contactInfo.primaryEmail": primaryEmail
     });
 
     if (existingEmployee) {
@@ -113,33 +150,49 @@ const addEmployee = asyncHandler(async (req, res) => {
         companyRef: companyId,
         roleRef,
         departmentRef,
-        subdepartmentRef,
+        // subdepartmentRef: subdepartment?._id,
         designationRef,
         personalInfo: {
-            firstName: firstName.trim(),
-            middleName: middleName?.trim(),
-            lastName: lastName.trim()
+            firstName,
+            lastName,
+            middleName,
+            displayName,
+            dateOfBirth,
+            gender,
+            bloodGroup
         },
         contactInfo: {
-            primaryEmail: primaryEmail.toLowerCase().trim(),
-            primaryPhone: primaryPhone?.trim(),
+            primaryEmail,
+            personalEmail: personalEmail || primaryEmail,
+            primaryPhone,
+            alternatePhone: alternatePhone || primaryPhone,
+            emergencyContact
         },
         employmentInfo: {
-            dateOfJoining: dateOfJoining || new Date(),
-            workLocation: workLocation || "Office"
+            employeeCode,
+            dateOfJoining,
+            employmentType,
+            workLocation,
+            shiftType
         },
+        compensation,
+        workSchedule,
+        performanceTargets,
+        skillsAndQualifications,
+        status,
         reportingStructure: {
-            directManager
+            directManager,
+            teamLead
         },
-        // rampPercentage: rampPercentage || 100,
-        systemInfo: {
-            isActive: true,
-            emailVerified: false
-        },
+        rampPercentage,
+        systemInfo,
         auditInfo: {
             createdBy: req.company?._id || req.employee?._id,
         }
     });
+
+    console.log("📦 Final employee payload:", JSON.stringify(newEmployee, null, 2));
+
 
     // Hash permanent password
     await newEmployee.hashPassword(permanentEmployeePassword);
@@ -172,8 +225,7 @@ const addEmployee = asyncHandler(async (req, res) => {
                 employeeId: newEmployee.employeeId,
                 email: primaryEmail,
                 name: `${firstName} ${lastName}`,
-                status: "active",
-                token
+                status: "active"
             },
             "Employee added successfully. Welcome email sent."
         )
@@ -243,56 +295,56 @@ const loginEmployee = asyncHandler(async (req, res) => {
     await employee.save();
 
 
-// Generate tokens
+    // Generate tokens
     const employeeToken = generateEmployeeToken({
-    employeeId: employee._id,
-    companyId: employee.companyRef._id,
-    role: employee.roleRef,
-    email: employee.contactInfo.primaryEmail,
+        employeeId: employee._id,
+        companyId: employee.companyRef._id,
+        role: employee.roleRef,
+        email: employee.contactInfo.primaryEmail,
     });
 
     const companyToken = generateCompanyToken(employee.companyRef._id);
 
     const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax",
-    maxAge: 12 * 60 * 60 * 1000, // 12 hours for employees
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax",
+        maxAge: 12 * 60 * 60 * 1000, // 12 hours for employees
     };
 
     // Set both cookies
     res
-    .cookie("employeeToken", employeeToken, cookieOptions)
-    .cookie("companyToken", companyToken, {
-        ...cookieOptions,
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for companyToken
-    });
+        .cookie("employeeToken", employeeToken, cookieOptions)
+        .cookie("companyToken", companyToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days for companyToken
+        });
 
     // Send response
     return res.status(200).json(
-    new ApiResponse(200, {
-        employee: {
-        employeeId: employee.employeeId,
-        name: employee.fullName,
-        email: employee.contactInfo.primaryEmail,
-        companyName: company.companyName,
-        role: employee.roleRef.roleName,
-        department: employee.departmentRef.departmentName,
-        designation: employee.designationRef.designationName,
-        isFromOffice,
-        avatar: employee.avatarUrl,
-        permissions: employee.roleRef.permissions,
-        dataAccess: employee.roleRef.dataAccess,
-        loginTime: new Date(),
-        currentLevel: employee.gamification.experience.currentLevel,
-        totalXP: employee.gamification.experience.totalXP,
-        profileCompletion: employee.systemInfo.profileCompletionPercentage,
+        new ApiResponse(200, {
+            employee: {
+                employeeId: employee.employeeId,
+                name: employee.fullName,
+                email: employee.contactInfo.primaryEmail,
+                companyName: company.companyName,
+                role: employee.roleRef.roleName,
+                department: employee.departmentRef.departmentName,
+                designation: employee.designationRef.designationName,
+                isFromOffice,
+                avatar: employee.avatarUrl,
+                permissions: employee.roleRef.permissions,
+                dataAccess: employee.roleRef.dataAccess,
+                loginTime: new Date(),
+                currentLevel: employee.gamification.experience.currentLevel,
+                totalXP: employee.gamification.experience.totalXP,
+                profileCompletion: employee.systemInfo.profileCompletionPercentage,
+            },
+            employeeToken, // Optional: for frontend debugging
+            companyToken,
         },
-        employeeToken, // Optional: for frontend debugging
-        companyToken,
-    },
-        "Login successful"
-    )
+            "Login successful"
+        )
     );
 
 });

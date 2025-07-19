@@ -6,21 +6,57 @@ import { Client } from '../../models/client-model.js';
 import { Employee } from '../../models/employee.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import mongoose from 'mongoose';
 
 // 1. Create SOW
 export const createSOW = asyncHandler(async (req, res) => {
   const data = req.body;
   console.log("Creating SOW with data:", data);
+  const { clientRef, sowName, status, ...rest } = req.body;
   const companyId = req.company._id;
   const employeeId = req.employee._id;
 
-  const sowData = {
-    ...req.body,
-    companyRef: companyId,
-    auditInfo: {
-      createdBy: employeeId,
-      lastModifiedBy: employeeId,
+  if (!clientRef || !sowName) {
+    throw new ApiError(400, "Client reference and SOW Name are required.");
+  }
+
+  // --- Transaction Recommended ---
+  // For creating/updating multiple models, a transaction is best practice.
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // 1. Validate client ownership
+    const client = await Client.findOne({ companyRef: companyId, _id: clientRef }).session(session);
+    if (!client) throw new ApiError(404, 'Client not found or Unauthorized');
+
+    // 2. Create SOW
+    const sowData = {
+      ...req.body,
+      companyRef: companyId,
+      auditInfo: {
+        createdBy: employeeId,
+        lastModifiedBy: employeeId,
+      }
     }
+
+    const sow = await SOW.create(sowData, { session });
+
+    // 3. Optionally push into client's activeSOWs[]
+    client.serviceAgreements.activeSOWs.push(sow._id);
+    await client.save({ session });
+
+    await session.commitTransaction();
+
+    session.endSession();
+
+    res.status(201).json(new ApiResponse(201, sow, 'SOW created successfully'));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  } finally {
+    session.endSession();
   }
 
   // Validate client ownership
@@ -40,15 +76,16 @@ export const createSOW = asyncHandler(async (req, res) => {
 export const getAllSOWs = asyncHandler(async (req, res) => {
   const filter = { companyRef: req.company._id };
 
-  if (req.query.status) filter.status = req.query.status;
-  if (req.query.clientId) filter.clientRef = req.query.clientId;
+  if (req.query.sowStatus) filter['status.sowStatus'] = req.query.sowStatus; // Corrected field
+  if (req.query.clientRef) filter.clientRef = req.query.clientRef;
 
   const sows = await SOW.find(filter)
     .populate('clientRef', 'clientInfo.clientName')
-    .populate('assignedEmployees', 'personalInfo.firstName personalInfo.lastName designationRef')
-    .sort({ createdAt: -1 });
+    .populate('assignedEmployees', 'personalInfo.firstName personalInfo.lastName')
+    .sort({ createdAt: -1 })
+    .lean();
 
-  res.status(200).json({ success: true, data: sows });
+  res.status(200).json(new ApiResponse(200, sows, 'SOWs fetched successfully'));
 });
 
 // 3. Get SOW by ID
@@ -57,26 +94,27 @@ export const getSOWById = asyncHandler(async (req, res) => {
     _id: req.params.id,
     companyRef: req.company._id
   }).populate([
-    { path: 'clientRef', select: 'clientInfo contactInfo' },
-    { path: 'assignedEmployees', select: 'personalInfo designationRef' },
-    { path: 'auditInfo.createdBy', select: 'personalInfo' },
-    { path: 'auditInfo.lastModifiedBy', select: 'personalInfo' }
+    { path: 'clientRef', select: 'clientInfo.clientName' },
+    { path: 'assignedEmployees', select: 'personalInfo.firstName personalInfo.lastName' },
+    { path: 'auditInfo.createdBy', select: 'personalInfo.firstName' },
+    { path: 'auditInfo.lastModifiedBy', select: 'personalInfo.firstName' }
   ]);
 
   if (!sow) throw new ApiError(404, 'SOW not found');
-  res.status(200).json({ success: true, data: sow });
+  res.status(200).json(new ApiResponse(200, sow, 'SOW fetched successfully'));
 });
 
 // 4. Update SOW
 export const updateSOW = asyncHandler(async (req, res) => {
+  const { companyRef, clientRef, auditInfo, ...updateData } = req.body;
   const sow = await SOW.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!sow) throw new ApiError(404, 'SOW not found');
 
-  Object.assign(sow, req.body);
+  Object.assign(sow, updateData);
   sow.auditInfo.lastModifiedBy = req.employee._id;
 
-  await sow.save();
-  res.status(200).json({ success: true, data: sow });
+  const updatedSow = await sow.save();
+  res.status(200).json(new ApiResponse(200, updatedSow, "SOW updated successfully."));
 });
 
 // 5. Delete SOW
@@ -109,60 +147,54 @@ export const deleteSOW = asyncHandler(async (req, res) => {
 // 5. Assign Employees to SOW
 export const assignEmployeesToSOW = asyncHandler(async (req, res) => {
   const { employeeIds } = req.body;
+  const { id: sowId } = req.params;
+  const companyId = req.company._id;
 
-  const sow = await SOW.findOne({ _id: req.params.id, companyRef: req.company._id });
+  if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+    throw new ApiError(400, "employeeIds must be a non-empty array.");
+  }
+
+  const sow = await SOW.findOne({ _id: sowId, companyRef: companyId }).select('_id');
   if (!sow) throw new ApiError(404, 'SOW not found');
 
-  // Validate employees
-  const validEmployees = await Employee.find({
-    _id: { $in: employeeIds },
-    companyRef: req.company._id
-  }).select('_id');
-
-  // Update each employee's sowAssignments[]
-  await Promise.all(validEmployees.map(async (emp) => {
-    const alreadyAssigned = emp.sowAssignments?.some(assign =>
-      assign.sowRef.toString() === sow._id.toString()
-    );
-
-    if (!alreadyAssigned) {
-      emp.sowAssignments.push({
-        sowRef: sow._id,
-        assignedDate: new Date(),
-        isActive: true
-      });
+  // --- This operation should also be transactional ---
+  // Update many employees at once for efficiency.
+  // Add the SOW to the sowAssignments array if it doesn't already exist.
+  const result = await Employee.updateMany(
+    {
+      _id: { $in: employeeIds },
+      companyRef: companyId,
+      'sowAssignments.sowRef': { $ne: sow._id } // Only update if not already assigned
+    },
+    {
+      $push: {
+        sowAssignments: {
+          sowRef: sow._id,
+          assignedDate: new Date(),
+          isActive: true
+        }
+      }
     }
+  );
 
-    await emp.save();
-  }));
-
-  // Update SOW's assignedEmployees[]
-  sow.assignedEmployees = validEmployees.map(emp => emp._id);
-  sow.auditInfo.lastModifiedBy = req.employee._id;
-
-  await sow.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'SOW and Employees updated successfully',
-    assignedTo: sow.assignedEmployees
-  });
+  res.status(200).json(new ApiResponse(200, { matched: result.matchedCount, modified: result.modifiedCount }, `${result.modifiedCount} employees assigned successfully.`));
 });
 
 // 6. Change SOW Status (Lifecycle)
 export const changeSOWStatus = asyncHandler(async (req, res) => {
   const { newStatus } = req.body;
-  const allowed = ['Draft', 'Active', 'Paused', 'Completed', 'Terminated'];
-  if (!allowed.includes(newStatus)) throw new ApiError(400, 'Invalid SOW status');
-
   const sow = await SOW.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!sow) throw new ApiError(404, 'SOW not found');
 
-  sow.status = newStatus;
+  // The enum in the model already provides validation, but this is an extra layer.
+  const allowed = ['Draft', 'Active', 'Paused', 'Completed', 'Terminated'];
+  if (!allowed.includes(newStatus)) throw new ApiError(400, 'Invalid SOW status');
+
+  sow.status.sowStatus = newStatus; // Correctly target the nested field
   sow.auditInfo.lastModifiedBy = req.employee._id;
   await sow.save();
 
-  res.status(200).json({ success: true, message: `SOW marked as ${newStatus}` });
+  res.status(200).json(new ApiResponse(200, { newStatus }, `SOW status changed to ${newStatus}`));
 });
 
 // 7. Get SOWs for a specific client

@@ -33,7 +33,10 @@ export const useEmployees = () => {
   }, []);
 
   const addEmployee = async (employeeData) => {
+    console.log("Adding Employee At useEmployee:", employeeData);
     const result = await add(employeeData);
+    console.log("Added Employee At useEmployee:", result);
+    
     if (result) await loadEmployees();
     return result;
   };

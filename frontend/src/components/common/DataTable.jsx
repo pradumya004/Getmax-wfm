@@ -88,7 +88,9 @@ export const DataTable = ({
   customError = null,
 }) => {
   const { userType } = useAuth();
-  const theme = getTheme(propTheme || userType);
+  const theme = getTheme(userType) || propTheme;
+  console.log("Theme In DataTable:", theme);
+  
 
   // Local state
   const [searchTerm, setSearchTerm] = useState("");

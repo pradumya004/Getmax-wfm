@@ -95,6 +95,10 @@ import SOWEdit from "./pages/sow/SOWEdit.jsx";
 import PatientIntake from "./pages/patient/PatientIntake.jsx";
 import PatientList from "./pages/patient/PatientList.jsx";
 
+// Payer Pages
+// import PayerIntake from "./pages/payer/PayerIntake.jsx";
+import PayerList from "./pages/payer/PayerList.jsx";
+
 // Public Pages
 import HomePage from "./pages/HomePage.jsx";
 import ClaimIntake from "./pages/ClaimIntake.jsx";
@@ -261,6 +265,12 @@ function App() {
             <Route path="patients">
               <Route path="create" element={<PatientIntake />} />
               <Route path="list" element={<PatientList />} />
+            </Route>
+
+            {/* PAYER ROUTES */}
+            <Route path="payers">
+              {/* <Route path="create" element={<PayerIntake />} /> */}
+              <Route path="list" element={<PayerList />} />
             </Route>
           </Route>
 

@@ -65,7 +65,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
-import { getLoginUrl } from "../../lib/auth.js";
+import { getLoginUrl, getStoredToken } from "../../lib/auth.js";
+import { Button } from "../ui/Button.jsx";
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -74,6 +77,7 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
+  const {companyToken, employeeToken} = getStoredToken();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -84,6 +88,17 @@ const Sidebar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSync = async () => {
+    try {
+      const res = await axios.get("http://localhost:8000/api/payers/sync/claimmd", {
+        headers: { Authorization: `Bearer ${employeeToken}` }
+      });
+      toast.success(res.data.message || "Payers synced successfully");
+    } catch (err) {
+      toast.error("Sync failed: " + (err.response?.data?.message || err.message));
+    }
+  };
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
@@ -836,6 +851,12 @@ const Sidebar = () => {
           ))}
         </nav>
 
+        <div>
+            <Button onClick={handleSync} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              🔁 Sync Payers from Claim.MD
+            </Button>
+        </div>
+
         {/* User Info */}
         <div className="p-4 border-t border-white/10 relative overflow-visible z-20">
           <div className="flex items-center space-x-3 cursor-pointer relative z-10">
@@ -881,6 +902,8 @@ const Sidebar = () => {
               />
             </button>
           </div>
+
+          
 
           {/* User Menu */}
           {showUserMenu && (

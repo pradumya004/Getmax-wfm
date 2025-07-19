@@ -8,6 +8,7 @@ import organizationRoutes from './organization.route.js';
 import clientRoutes from './client.route.js';
 import sowRoutes from './sow.route.js';
 import patientRoutes from './patient.route.js';
+import payerRoutes from './payer.route.js';
 
 const router = express.Router();
 
@@ -32,5 +33,6 @@ router.use('/org-data', organizationRoutes);
 router.use('/clients', clientRoutes);
 router.use('/sows', sowRoutes);
 router.use('/patients', patientRoutes);
+router.use('/payers', payerRoutes);
 
 export default router;

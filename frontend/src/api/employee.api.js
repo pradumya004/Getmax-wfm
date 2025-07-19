@@ -4,7 +4,7 @@ import { apiCall } from './apiClient.js';
 
 export const employeeAPI = {
     // Employee Management (Company Admin)
-    addEmployee: (data) => apiCall('post', '/employees', data),
+    addEmployee: (data) => apiCall('post', '/employees/addEmployee', data),
     bulkUpload: (formData) => apiCall('post', '/employees/bulk', formData),
     getCompanyEmployees: ({ limit, page }) => apiCall('get', '/employees', { params: { limit, page } }),
     getEmployeeDetails: (employeeId) => apiCall('get', `/employees/${employeeId}`),

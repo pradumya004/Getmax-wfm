@@ -1760,7 +1760,7 @@ const ClientIntake = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br p-6">
       <Helmet>
-        <title>Client Intake - GetMax</title>
+        <title>{`Client Intake - GetMax`}</title>
       </Helmet>
 
       <div className="max-w-4xl mx-auto">

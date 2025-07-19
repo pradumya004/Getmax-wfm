@@ -14,13 +14,12 @@ export const Card = ({
   ...props
 }) => {
   const { userType } = useAuth();
-  const raw = customTheme || userType;
-  const theme = getTheme(raw);
+  const theme = getTheme(userType) || customTheme;
   // console.log("Theme:", theme);
   
   if (!theme) {
     throw new Error(
-      `Unknown theme key "${raw}". Please pass a valid theme or userType.`
+      `Unknown theme key "${theme}". Please pass a valid theme or userType.`
     );
   }
 

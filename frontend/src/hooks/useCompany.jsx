@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { companyAPI } from "../api/company.api.js";
+import { employeeAPI } from "../api/employee.api.js";
 import { useAuth } from "./useAuth.jsx";
 import { useApi } from "./useApi.jsx";
 import { toast } from "react-hot-toast";
@@ -20,7 +21,9 @@ export const useCompanyPortal = () => {
 
     setLoading(true);
     try {
-      const data = await companyPortalAPI.getDashboardData();
+      const data = await companyAPI.getOrgData();
+      console.log("Hello Data", data);
+      
       setDashboardData(data);
     } catch (err) {
       setError(err.message);
@@ -36,7 +39,7 @@ export const useCompanyPortal = () => {
       if (!user) return;
 
       try {
-        const response = await companyPortalAPI.getEmployees(params);
+        const response = await companyAPI.getEmployees(params);
         setEmployees(response.data || []);
         return response;
       } catch (err) {
@@ -50,7 +53,7 @@ export const useCompanyPortal = () => {
   const addEmployee = useCallback(
     async (employeeData) => {
       try {
-        const response = await companyPortalAPI.addEmployee(employeeData);
+        const response = await employeeAPI.addEmployee(employeeData);
         if (response.success) {
           await loadEmployees(); // Refresh employee list
           toast.success("Employee added successfully");
@@ -67,7 +70,7 @@ export const useCompanyPortal = () => {
   const updateEmployee = useCallback(
     async (employeeId, data) => {
       try {
-        const response = await companyPortalAPI.updateEmployee(
+        const response = await companyAPI.updateEmployee(
           employeeId,
           data
         );
@@ -87,7 +90,7 @@ export const useCompanyPortal = () => {
   const deleteEmployee = useCallback(
     async (employeeId) => {
       try {
-        const response = await companyPortalAPI.deleteEmployee(employeeId);
+        const response = await companyAPI.deleteEmployee(employeeId);
         if (response.success) {
           await loadEmployees(); // Refresh employee list
           toast.success("Employee deleted successfully");
@@ -105,7 +108,7 @@ export const useCompanyPortal = () => {
   const bulkUploadEmployees = useCallback(
     async (file) => {
       try {
-        const response = await companyPortalAPI.bulkUploadEmployees(file);
+        const response = await companyAPI.bulkUploadEmployees(file);
         if (response.success) {
           await loadEmployees(); // Refresh employee list
           toast.success(
@@ -131,7 +134,7 @@ export const useCompanyPortal = () => {
     if (!user) return;
 
     try {
-      const response = await companyPortalAPI.getNotifications();
+      const response = await companyAPI.getNotifications();
       setNotifications(response.data || []);
     } catch (err) {
       console.error("Failed to load notifications:", err);
@@ -140,7 +143,7 @@ export const useCompanyPortal = () => {
 
   const markNotificationAsRead = useCallback(async (notificationId) => {
     try {
-      await companyPortalAPI.markNotificationAsRead(notificationId);
+      await companyAPI.markNotificationAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((notif) =>
           notif._id === notificationId ? { ...notif, read: true } : notif
@@ -154,7 +157,7 @@ export const useCompanyPortal = () => {
   // Search and filter
   const searchEmployees = useCallback(async (query) => {
     try {
-      const response = await companyPortalAPI.searchEmployees(query);
+      const response = await companyAPI.searchEmployees(query);
       return response.data || [];
     } catch (err) {
       toast.error("Search failed");
@@ -165,7 +168,7 @@ export const useCompanyPortal = () => {
   // Reports and exports
   const generateEmployeeReport = useCallback(async (params) => {
     try {
-      const response = await companyPortalAPI.generateEmployeeReport(params);
+      const response = await companyAPI.generateEmployeeReport(params);
       toast.success("Report generated successfully");
       return response;
     } catch (err) {
@@ -176,7 +179,7 @@ export const useCompanyPortal = () => {
 
   const exportEmployees = useCallback(async (format = "csv", filters = {}) => {
     try {
-      const response = await companyPortalAPI.exportEmployees(format, filters);
+      const response = await companyAPI.exportEmployees(format, filters);
       toast.success("Export completed successfully");
       return response;
     } catch (err) {

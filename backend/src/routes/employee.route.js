@@ -49,7 +49,7 @@ router.post('/me/avatar', verifyEmployeeToken, uploadAvatarMiddleware, uploadEmp
 
 // ============= COMPANY ADMIN ROUTES =============
 // Employee Management (requires company token)
-router.post('/', verifyCompanyToken, addEmployee);
+router.post('/addEmployee', verifyCompanyToken, addEmployee);
 router.post('/bulk', verifyCompanyToken, uploadBulkMiddleware, cleanupMiddleware, bulkUploadEmployees);
 
 // Employee CRUD Operations

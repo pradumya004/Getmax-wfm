@@ -50,11 +50,11 @@ const DashboardLayout = () => {
         </div>
 
         {/* Main content area */}
-        <div className="flex-1 flex flex-col relative">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
 
           {/* Main content with content glass and lower z-index */}
-          <main className="flex-1 p-2 lg:p-4 overflow-y-auto relative z-10">
+          <main className="flex-1 p-2 lg:p-4 overflow-x-auto overflow-y-auto scrollbar-hide relative z-10">
             <div className="relative z-10">
               <div className="absolute inset-0 p-2 z-[-1]">
                 <div
