@@ -1,9 +1,9 @@
-// backend/src/models/slaTracking.model.js
+// backend/src/models/sla.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-const slaTrackingSchema = new mongoose.Schema({
+const slaSchema = new mongoose.Schema({
     slaId: {
         type: String,
         unique: true,
@@ -993,4 +993,4 @@ slaTrackingSchema.pre('save', function(next) {
     next();
 });
 
-export const SLATracking = mongoose.model('SLATracking', slaTrackingSchema, 'slatracking');
+export const SLA = mongoose.model('SLA', slaTrackingSchema, 'slas');
