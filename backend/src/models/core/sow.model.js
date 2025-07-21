@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 import { SERVICE_TYPES, BILLING_MODELS, CURRENCIES } from '../../constants.js';
 
 // RCM Metrics Schema 
@@ -641,7 +642,7 @@ const sowSchema = new mongoose.Schema({
     sowId: {
         type: String,
         unique: true,
-        default: () => `SOW-${uuidv4().substring(0, 8).toUpperCase()}`,
+        // default: () => `SOW-${uuidv4().substring(0, 8).toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
@@ -1239,6 +1240,12 @@ sowSchema.methods.calculateBenchmarkComparison = function () {
 
     return comparison;
 };
+
+sowSchema.plugin(scopedIdPlugin, {
+    idField: 'sowId',
+    prefix: 'SOW',
+    companyRefPath: 'companyRef'
+});
 
 //  PRE-SAVE MIDDLEWARE (PRESERVED + NEW)
 sowSchema.pre('save', function (next) {

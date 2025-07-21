@@ -3,6 +3,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 import { SPECIALTY_TYPES } from '../../constants.js';
 
 // Eligibility History Schema 
@@ -217,7 +218,7 @@ const patientSchema = new mongoose.Schema({
     patientId: {
         type: String,
         unique: true,
-        default: () => `PAT-${uuidv4().substring(0, 10).toUpperCase()}`,
+        // default: () => `PAT-${uuidv4().substring(0, 10).toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
@@ -1152,6 +1153,25 @@ patientSchema.methods.getActiveAuthorizationFor = function (serviceType, cptCode
             (cptCode && auth.serviceDetails?.cptCodes?.includes(cptCode)))
     );
 };
+
+// PLUGINS
+patientSchema.plugin(scopedIdPlugin, {
+    idField: 'patientId',
+    prefix: 'PAT',
+    companyRefPath: 'companyRef'
+});
+
+authorizationHistorySchema.plugin(scopedIdPlugin, {
+    idField: 'authorizationId',
+    prefix: 'AUTH',
+    companyRefPath: 'companyRef'
+});
+
+eligibilityHistorySchema.plugin(scopedIdPlugin, {
+    idField: 'verificationId',
+    prefix: 'ELG',
+    companyRefPath: 'companyRef'
+});
 
 // PRE-SAVE MIDDLEWARE
 patientSchema.pre('save', function (next) {

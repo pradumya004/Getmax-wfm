@@ -3,6 +3,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 
 // EDI Mappings Schema 
 const ediMappingsSchema = new mongoose.Schema({
@@ -382,7 +383,7 @@ const payerSchema = new mongoose.Schema({
     payerId: {
         type: String,
         unique: true,
-        default: () => `PAY-${uuidv4().substring(0, 8).toUpperCase()}`,
+        // default: () => `PAY-${uuidv4().substring(0, 8).toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
@@ -1350,6 +1351,13 @@ payerSchema.methods.addEdiMapping = function (clearinghouseName, mappingData) {
         return newMapping;
     }
 };
+
+// PLUGINS
+payerSchema.plugin(scopedIdPlugin, {
+    idField: 'payerId',
+    prefix: 'PAY',
+    companyRefPath: 'companyRef'
+});
 
 // EXISTING PRE-SAVE MIDDLEWARE (PRESERVED + NEW)
 payerSchema.pre('save', function (next) {

@@ -1,27 +1,28 @@
-// backend/src/models/notifications.model.js
+// backend/src/models/system/notifications.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import plugin from '../../plugins/scopedIdPlugin.js';
 
 const notificationsSchema = new mongoose.Schema({
     notificationId: {
         type: String,
         unique: true,
-        default: () => `NOTIF-${uuidv4().substring(0, 10).toUpperCase()}`,
+        // default: () => `NOTIF-${uuidv4().toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
     },
-    
-    // ** MAIN RELATIONSHIPS **
+
+    // MAIN RELATIONSHIPS
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company', // GetMax company
+        ref: 'Company',
         required: [true, 'Company reference is required'],
         index: true
     },
 
-    // ** NOTIFICATION CATEGORIZATION **
+    // NOTIFICATION CATEGORIZATION
     notificationInfo: {
         notificationType: {
             type: String,
@@ -47,7 +48,106 @@ const notificationsSchema = new mongoose.Schema({
                 // Business Intelligence
                 'Trend Alert', 'Anomaly Detected', 'Target Missed', 'Goal Achieved',
                 // Announcements & General
-                'Announcement', 'News Update', 'Holiday Notice', 'General Info'
+                'Announcement', 'News Update', 'Holiday Notice', 'General Info',
+
+                // 🆕 RCM-Specific Notification Types
+                // Claims Processing Notifications
+                'Claim Received', 'Claim Processing Started', 'Claim Submitted', 'Claim Accepted',
+                'Claim Rejected', 'Claim On Hold', 'Claim Cancelled', 'Claim Resubmitted',
+                'Clean Claim Alert', 'Dirty Claim Alert', 'Claim Batch Ready', 'Claim Batch Submitted',
+                'Claim Status Update', 'Claim Assignment', 'Claim Reassignment', 'Claim Deadline',
+
+                // EDI Processing Notifications
+                'EDI File Received', 'EDI File Processed', 'EDI File Error', 'EDI File Rejected',
+                'EDI Batch Started', 'EDI Batch Completed', 'EDI Batch Failed', 'EDI Transmission Error',
+                'ERA Received', 'ERA Processed', 'ERA Error', '835 Processing Complete',
+                '837 Submitted', '837 Acknowledged', '837 Rejected', 'EDI Validation Failed',
+
+                // Clearinghouse Notifications
+                'CH Connection Error', 'CH Response Received', 'CH Status Update', 'CH Maintenance',
+                'CH Configuration Changed', 'CH Credentials Expired', 'CH API Limit Reached',
+                'CH File Upload Success', 'CH File Upload Failed', 'CH Acknowledgment Received',
+
+                // QA & Review Notifications
+                'QA Review Required', 'QA Review Assigned', 'QA Review Completed', 'QA Review Escalated',
+                'QA Score Below Threshold', 'QA Calibration Required', 'QA Rebuttal Required',
+                'QA Manager Review', 'QA Training Required', 'QA Certification Due',
+                'QA Audit Started', 'QA Audit Completed', 'QA Improvement Plan',
+
+                // Denial Management Notifications
+                'Denial Received', 'Denial Analysis Required', 'Denial Appeal Needed', 'Denial Resolved',
+                'Denial Pattern Alert', 'Denial Rate High', 'Denial Deadline Approaching',
+                'Appeal Submitted', 'Appeal Response Received', 'Appeal Won', 'Appeal Lost',
+                'Secondary Denial', 'Denial Trend Alert', 'Denial Training Required',
+
+                // Prior Authorization Notifications
+                'Auth Required', 'Auth Requested', 'Auth Approved', 'Auth Denied', 'Auth Expired',
+                'Auth Pending', 'Auth Extension Needed', 'Auth Documents Required',
+                'Auth Follow-up Required', 'Auth Retroactive Needed',
+
+                // Eligibility & Verification Notifications
+                'Eligibility Verified', 'Eligibility Failed', 'Eligibility Expired', 'Eligibility Pending',
+                'Insurance Verification Required', 'Coverage Verification Failed', 'Benefits Updated',
+                'Copay Information Updated', 'Deductible Information Updated',
+
+                // Payment Processing Notifications
+                'Payment Received', 'Payment Posted', 'Payment Denied', 'Payment Partial',
+                'Payment Reversal', 'Payment Adjustment', 'Payment Reconciliation',
+                'Check Received', 'EFT Received', 'Overpayment Detected', 'Underpayment Detected',
+                'Payment Posting Error', 'Zero Payment', 'Payment Variance',
+
+                // Collections & AR Notifications
+                'Account Past Due', 'Collection Letter Sent', 'Collection Call Required',
+                'Patient Statement Sent', 'Collection Agency Assignment', 'Payment Plan Setup',
+                'Account Write-off', 'Account Transferred', 'Collection Follow-up',
+                'AR Aging Alert', 'Bad Debt Alert', 'Collection Success',
+
+                // Patient Communication Notifications
+                'Patient Portal Message', 'Patient Appointment Reminder', 'Patient Payment Due',
+                'Patient Registration Incomplete', 'Patient Information Updated',
+                'Patient Complaint Received', 'Patient Satisfaction Survey',
+                'Patient Follow-up Required', 'Patient No-show Alert',
+
+                // Financial & Revenue Notifications
+                'Revenue Target Met', 'Revenue Target Missed', 'Cash Flow Alert',
+                'Month End Processing', 'Financial Report Ready', 'Budget Variance',
+                'Contract Renewal Due', 'Rate Change Notification', 'Payer Contract Update',
+
+                // Workflow & Process Notifications
+                'Workflow Started', 'Workflow Completed', 'Workflow Stalled', 'Workflow Error',
+                'Stage Transition', 'Approval Required', 'Document Required', 'Information Required',
+                'Process Timeout', 'Manual Intervention Required', 'Workflow Optimized',
+
+                // Performance & Gamification Notifications
+                'Target Achieved', 'Target Missed', 'Streak Broken', 'Streak Milestone',
+                'Achievement Unlocked', 'Badge Earned', 'Level Up', 'Leaderboard Update',
+                'Competition Started', 'Competition Ended', 'Performance Review Due',
+                'Recognition Earned', 'Bonus Earned', 'Certification Achieved',
+
+                // SLA & Compliance Notifications
+                'SLA Violation', 'SLA Warning', 'SLA Escalation', 'SLA Recovery',
+                'Compliance Audit Required', 'HIPAA Violation', 'Audit Trail Alert',
+                'Policy Violation', 'Training Compliance Due', 'Certification Expired',
+
+                // Integration & System Notifications
+                'EHR Sync Error', 'PM System Error', 'Data Sync Failed', 'API Rate Limit',
+                'External System Down', 'Database Backup Complete', 'System Performance Alert',
+                'Security Breach Alert', 'Login Failure Alert', 'Session Timeout',
+
+                // Management & Reporting Notifications
+                'Daily Report Ready', 'Weekly Summary', 'Monthly Dashboard Update',
+                'KPI Alert', 'Executive Summary', 'Department Performance Report',
+                'Client Scorecard', 'Employee Performance Alert', 'Trend Analysis Ready',
+
+                // Emergency & Critical Notifications
+                'Emergency Escalation', 'Critical System Failure', 'Data Loss Alert',
+                'Security Incident', 'Compliance Emergency', 'Revenue Critical Alert',
+                'Patient Safety Alert', 'Regulatory Alert', 'Disaster Recovery',
+
+                // Automation & Job Notifications
+                'Scheduled Job Started', 'Scheduled Job Completed', 'Scheduled Job Failed',
+                'Batch Process Started', 'Batch Process Completed', 'Data Migration Complete',
+                'Report Generation Started', 'Report Generation Complete', 'Backup Complete'
             ],
             required: [true, 'Notification type is required'],
             index: true
@@ -55,7 +155,7 @@ const notificationsSchema = new mongoose.Schema({
         notificationCategory: {
             type: String,
             enum: [
-                'Critical', 'Warning', 'Info', 'Success', 'Error', 
+                'Critical', 'Warning', 'Info', 'Success', 'Error',
                 'Reminder', 'Update', 'Alert', 'Report', 'Announcement'
             ],
             required: [true, 'Notification category is required'],
@@ -73,15 +173,20 @@ const notificationsSchema = new mongoose.Schema({
             enum: ['Info', 'Warning', 'Error', 'Critical', 'Fatal'],
             default: 'Info'
         },
-        
+
         // Source tracking
         sourceModule: {
             type: String,
             enum: [
-                'SLA_Tracking', 'ClaimTasks', 'QA_Audit', 'FloatingPool', 
+                'SLA_Tracking', 'ClaimTasks', 'QA_Audit', 'FloatingPool',
                 'Employee', 'Client', 'SOW', 'Payer', 'Patient', 'Notes',
                 'Company', 'Role', 'Department', 'Performance', 'System',
-                'API', 'Scheduler', 'Reports', 'Dashboard', 'Integration'
+                'API', 'Scheduler', 'Reports', 'Dashboard', 'Integration',
+                // 🆕 RCM-Specific Source Modules
+                'Claims_Processing', 'EDI_Engine', 'Clearinghouse', 'QA_System',
+                'Denial_Management', 'Prior_Auth', 'Eligibility', 'Payment_Processing',
+                'Collections', 'Patient_Portal', 'Financial_System', 'Workflow_Engine',
+                'Gamification', 'Compliance', 'Automation', 'Analytics'
             ],
             required: [true, 'Source module is required'],
             index: true
@@ -94,12 +199,17 @@ const notificationsSchema = new mongoose.Schema({
             type: String,
             trim: true // Action that triggered notification (e.g., 'SLA_BREACH', 'TASK_ASSIGNED')
         },
-        
+
         // Related entities for context
         relatedEntities: [{
             entityType: {
                 type: String,
-                enum: ['Claim', 'Employee', 'Client', 'SOW', 'Patient', 'Payer', 'QA', 'SLA', 'Note', 'Other'],
+                enum: [
+                    'Claim', 'Employee', 'Client', 'SOW', 'Patient', 'Payer', 'QA', 'SLA', 'Note', 'Other',
+                    // 🆕 RCM-Specific Entity Types
+                    'ClaimBatch', 'EDIFile', 'ERA', 'Denial', 'Authorization', 'Payment',
+                    'Collection', 'Eligibility', 'Workflow', 'Achievement', 'Performance'
+                ],
                 required: true
             },
             entityId: {
@@ -111,10 +221,28 @@ const notificationsSchema = new mongoose.Schema({
                 type: String,
                 enum: ['Primary', 'Secondary', 'Related', 'Reference']
             }
-        }]
+        }],
+
+        // 🆕 RCM-Specific Context Information
+        rcmContext: {
+            claimId: String,
+            patientId: String,
+            payerId: String,
+            batchId: String,
+            workflowStage: String,
+            slaType: String,
+            qaCategory: String,
+            denialReason: String,
+            authorizationNumber: String,
+            checkNumber: String,
+            amount: Number,
+            serviceDate: Date,
+            processingDate: Date,
+            dueDate: Date
+        }
     },
 
-    // ** NOTIFICATION CONTENT **
+    // NOTIFICATION CONTENT
     content: {
         title: {
             type: String,
@@ -129,11 +257,6 @@ const notificationsSchema = new mongoose.Schema({
             trim: true,
             maxlength: [1000, 'Message cannot exceed 1000 characters']
         },
-        shortMessage: {
-            type: String,
-            trim: true,
-            maxlength: [100, 'Short message cannot exceed 100 characters']
-        },
         actionUrl: {
             type: String,
             trim: true // URL to navigate when notification is clicked
@@ -143,7 +266,7 @@ const notificationsSchema = new mongoose.Schema({
             url: String,
             action: String // Frontend action to trigger
         },
-        
+
         // Rich content support
         htmlContent: {
             type: String,
@@ -155,7 +278,7 @@ const notificationsSchema = new mongoose.Schema({
             fileUrl: String,
             fileSize: Number
         }],
-        
+
         // Template information
         templateId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -167,7 +290,7 @@ const notificationsSchema = new mongoose.Schema({
         }
     },
 
-    // ** RECIPIENTS & TARGETING **
+    // RECIPIENTS & TARGETING
     recipients: {
         // Primary recipient
         primaryRecipient: {
@@ -183,7 +306,7 @@ const notificationsSchema = new mongoose.Schema({
             recipientEmail: String,
             recipientName: String
         },
-        
+
         // Additional recipients
         additionalRecipients: [{
             recipientType: {
@@ -202,7 +325,7 @@ const notificationsSchema = new mongoose.Schema({
                 default: 'To'
             }
         }],
-        
+
         // Group targeting
         targetGroups: [{
             groupType: {
@@ -214,119 +337,131 @@ const notificationsSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId
             },
             groupName: String,
-            filterCriteria: {
-                type: Map,
-                of: String // Additional filtering within group
-            }
-        }],
-        
-        // Broadcasting options
-        isBroadcast: {
-            type: Boolean,
-            default: false
-        },
-        broadcastScope: {
-            type: String,
-            enum: ['Company Wide', 'Department', 'Role', 'SOW', 'Client', 'Custom'],
-            default: 'Company Wide'
-        }
+            memberCount: Number
+        }]
     },
 
-    // ** DELIVERY CHANNELS & METHODS **
+    // DELIVERY CONFIGURATION
     delivery: {
-        // Channel configuration
         deliveryChannels: [{
             channel: {
                 type: String,
-                enum: [
-                    'In-App', 'Email', 'SMS', 'Push', 'Slack', 'Teams', 
-                    'Webhook', 'WhatsApp', 'Phone Call', 'Portal'
-                ],
+                enum: ['In-App', 'Email', 'SMS', 'Push', 'Webhook', 'Slack', 'Teams'],
                 required: true
             },
-            isEnabled: {
+            enabled: {
                 type: Boolean,
                 default: true
             },
             priority: {
                 type: Number,
-                min: [1, 'Priority must be at least 1'],
-                max: [10, 'Priority cannot exceed 10'],
+                min: 1,
+                max: 10,
                 default: 5
             },
-            deliveryStatus: {
-                type: String,
-                enum: ['Pending', 'Sent', 'Delivered', 'Failed', 'Bounced', 'Opened', 'Clicked'],
-                default: 'Pending',
-                index: true
-            },
-            attemptCount: {
+            retryCount: {
                 type: Number,
-                default: 0,
-                min: [0, 'Attempt count cannot be negative']
+                default: 0
             },
             lastAttempt: Date,
-            deliveredAt: Date,
-            failureReason: String,
-            externalMessageId: String, // ID from external service (email provider, SMS, etc.)
-            
-            // Channel-specific settings
-            channelSettings: {
-                type: Map,
-                of: mongoose.Schema.Types.Mixed // Flexible settings per channel
-            }
+            deliveryStatus: {
+                type: String,
+                enum: ['Pending', 'Sent', 'Delivered', 'Failed', 'Bounced'],
+                default: 'Pending'
+            },
+            errorMessage: String
         }],
-        
-        // Scheduling
+
         scheduledFor: {
             type: Date,
-            index: true
+            default: Date.now
         },
-        deliverImmediately: {
+        deliveredAt: Date,
+        readAt: Date,
+
+        // Delivery preferences
+        respectUserPreferences: {
             type: Boolean,
             default: true
         },
-        retryPolicy: {
-            maxRetries: {
-                type: Number,
-                default: 3,
-                min: [0, 'Max retries cannot be negative']
-            },
-            retryInterval: {
-                type: Number, // in minutes
-                default: 5
-            },
-            backoffMultiplier: {
-                type: Number,
-                default: 2,
-                min: [1, 'Backoff multiplier must be at least 1']
-            }
-        },
-        
-        // Delivery tracking
-        totalRecipients: {
-            type: Number,
-            default: 0
-        },
-        successfulDeliveries: {
-            type: Number,
-            default: 0
-        },
-        failedDeliveries: {
-            type: Number,
-            default: 0
-        },
-        deliveryRate: {
-            type: Number,
-            min: [0, 'Delivery rate cannot be negative'],
-            max: [100, 'Delivery rate cannot exceed 100%'],
-            default: 0
+        bypassQuietHours: {
+            type: Boolean,
+            default: false
         }
     },
 
-    // ** USER INTERACTION & ENGAGEMENT **
+    // ** STATUS & LIFECYCLE **
+    status: {
+        notificationStatus: {
+            type: String,
+            enum: [
+                'Draft', 'Scheduled', 'Sending', 'Delivered', 'Read',
+                'Failed', 'Cancelled', 'Expired', 'Archived'
+            ],
+            default: 'Scheduled'
+        },
+        isActive: {
+            type: Boolean,
+            default: true,
+            index: true
+        },
+        isVisible: {
+            type: Boolean,
+            default: true,
+            index: true
+        },
+        isUrgent: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        expiresAt: Date,
+
+        // Processing information
+        processingStarted: Date,
+        processingCompleted: Date,
+        processingErrors: [String]
+    },
+
+    // ** ESCALATION MANAGEMENT **
+    escalation: {
+        isEscalationEnabled: {
+            type: Boolean,
+            default: false
+        },
+        escalationTime: {
+            type: Number, // Minutes after creation
+            default: 60
+        },
+        escalationLevels: [{
+            level: Number,
+            recipientRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
+            escalationTime: Number, // Minutes from previous level
+            isTriggered: {
+                type: Boolean,
+                default: false
+            },
+            triggeredAt: Date
+        }],
+        isEscalated: {
+            type: Boolean,
+            default: false
+        },
+        escalatedAt: Date,
+        escalatedTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        escalationReason: String,
+        lastEscalationDate: Date
+    },
+
+    // ** USER INTERACTION TRACKING **
     interaction: {
-        // Read status per user
+        // Read tracking
         readStatus: [{
             userId: {
                 type: mongoose.Schema.Types.ObjectId,
@@ -337,32 +472,10 @@ const notificationsSchema = new mongoose.Schema({
                 type: Date,
                 default: Date.now
             },
-            readMethod: {
-                type: String,
-                enum: ['In-App', 'Email', 'SMS', 'Push', 'Other'],
-                default: 'In-App'
-            }
+            device: String,
+            ipAddress: String
         }],
-        
-        // Acknowledgment tracking
-        requiresAcknowledgment: {
-            type: Boolean,
-            default: false
-        },
-        acknowledgments: [{
-            userId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee',
-                required: true
-            },
-            acknowledgedAt: {
-                type: Date,
-                default: Date.now
-            },
-            acknowledgmentMethod: String,
-            notes: String
-        }],
-        
+
         // Action tracking
         actionsTaken: [{
             userId: {
@@ -371,290 +484,44 @@ const notificationsSchema = new mongoose.Schema({
             },
             action: {
                 type: String,
-                enum: ['Clicked', 'Dismissed', 'Archived', 'Escalated', 'Responded', 'Custom'],
-                required: true
+                enum: ['Read', 'Clicked', 'Dismissed', 'Acted', 'Forwarded', 'Replied']
             },
             actionData: {
                 type: Map,
                 of: String
             },
-            actionAt: {
+            timestamp: {
                 type: Date,
                 default: Date.now
             }
         }],
-        
-        // Engagement metrics
-        clickThroughRate: {
-            type: Number,
-            min: [0, 'Click through rate cannot be negative'],
-            max: [100, 'Click through rate cannot exceed 100%'],
-            default: 0
-        },
-        responseRate: {
-            type: Number,
-            min: [0, 'Response rate cannot be negative'],
-            max: [100, 'Response rate cannot exceed 100%'],
-            default: 0
-        }
-    },
 
-    // ** ESCALATION & FOLLOW-UP **
-    escalation: {
-        isEscalationEnabled: {
-            type: Boolean,
-            default: false
-        },
-        escalationLevel: {
-            type: Number,
-            min: [1, 'Escalation level must be at least 1'],
-            max: [5, 'Escalation level cannot exceed 5'],
-            default: 1
-        },
-        escalationTrigger: {
-            type: String,
-            enum: ['Time Based', 'No Response', 'No Acknowledgment', 'Manual', 'System Event'],
-            default: 'Time Based'
-        },
-        escalationTime: {
-            type: Number, // in minutes
-            default: 60
-        },
-        escalationPath: [{
-            level: {
-                type: Number,
-                required: true
-            },
-            escalateTo: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee',
-                required: true
-            },
-            escalationMethod: {
-                type: String,
-                enum: ['Same Channels', 'Email Only', 'Phone + Email', 'All Channels'],
-                default: 'Email Only'
-            },
-            waitTime: {
-                type: Number, // minutes to wait before next escalation
-                default: 30
-            }
-        }],
-        
-        currentEscalationLevel: {
-            type: Number,
-            default: 0
-        },
-        lastEscalationDate: Date,
-        isEscalated: {
-            type: Boolean,
-            default: false,
-            index: true
-        }
-    },
-
-    // ** BUSINESS RULES & AUTOMATION **
-    businessRules: {
-        autoArchiveAfterDays: {
-            type: Number,
-            default: 30,
-            min: [1, 'Auto archive must be at least 1 day']
-        },
-        suppressDuplicates: {
-            type: Boolean,
-            default: true
-        },
-        duplicateWindowMinutes: {
-            type: Number,
-            default: 60 // Don't send same notification within 60 minutes
-        },
-        
-        // User preferences override
-        respectUserPreferences: {
-            type: Boolean,
-            default: true
-        },
-        allowUserOptOut: {
-            type: Boolean,
-            default: true
-        },
-        
-        // Quiet hours
-        respectQuietHours: {
-            type: Boolean,
-            default: true
-        },
-        quietHoursStart: {
-            type: String,
-            default: '22:00'
-        },
-        quietHoursEnd: {
-            type: String,
-            default: '08:00'
-        },
-        
-        // Frequency limits
-        maxNotificationsPerHour: {
-            type: Number,
-            default: 10
-        },
-        maxNotificationsPerDay: {
-            type: Number,
-            default: 50
-        }
-    },
-
-    // ** STATUS & LIFECYCLE **
-    status: {
-        notificationStatus: {
-            type: String,
-            enum: [
-                'Draft', 'Scheduled', 'Sending', 'Sent', 'Delivered', 
-                'Failed', 'Cancelled', 'Archived', 'Expired'
-            ],
-            required: [true, 'Notification status is required'],
-            default: 'Draft',
-            index: true
-        },
-        isActive: {
-            type: Boolean,
-            default: true,
-            index: true
-        },
-        isVisible: {
-            type: Boolean,
-            default: true
-        },
-        expiryDate: {
-            type: Date,
-            index: true
-        },
-        archivedDate: Date,
-        
-        // Lifecycle tracking
-        statusHistory: [{
-            status: {
-                type: String,
-                required: true
-            },
-            changedAt: {
-                type: Date,
-                default: Date.now
-            },
-            changedBy: {
+        // Feedback and responses
+        userResponses: [{
+            userId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Employee'
             },
-            reason: String,
-            systemGenerated: {
-                type: Boolean,
-                default: false
+            responseType: {
+                type: String,
+                enum: ['Acknowledgment', 'Action Taken', 'Need Help', 'Escalate', 'Dismiss']
+            },
+            responseText: String,
+            timestamp: {
+                type: Date,
+                default: Date.now
             }
-        }]
-    },
-
-    // ** ANALYTICS & REPORTING **
-    analytics: {
-        impressions: {
-            type: Number,
-            default: 0
-        },
-        clicks: {
-            type: Number,
-            default: 0
-        },
-        responses: {
-            type: Number,
-            default: 0
-        },
-        shares: {
-            type: Number,
-            default: 0
-        },
-        
-        // Performance metrics
-        deliveryTime: {
-            type: Number, // milliseconds from creation to delivery
-            default: 0
-        },
-        responseTime: {
-            type: Number, // milliseconds from delivery to first response
-            default: 0
-        },
-        
-        // Segmentation data
-        audienceSegment: String,
-        campaignId: String,
-        conversionTracking: {
-            type: Map,
-            of: String
-        }
-    },
-
-    // ** SYSTEM INFO **
-    systemInfo: {
-        isSystemGenerated: {
-            type: Boolean,
-            default: true,
-            index: true
-        },
-        generatedBy: {
-            type: String,
-            enum: ['System', 'User', 'API', 'Scheduler', 'Webhook', 'Integration'],
-            default: 'System'
-        },
-        batchId: {
-            type: String,
-            trim: true,
-            index: true // For bulk notifications
-        },
-        
-        // Processing info
-        processedAt: Date,
-        processingDuration: Number, // milliseconds
-        
-        // Error tracking
-        errorCount: {
-            type: Number,
-            default: 0
-        },
-        lastError: String,
-        lastErrorAt: Date,
-        
-        // Versioning
-        version: {
-            type: String,
-            default: '1.0'
-        },
-        
-        // External references
-        externalReferences: [{
-            system: String,
-            referenceId: String,
-            referenceType: String
         }]
     },
 
     // ** AUDIT TRAIL **
-    auditInfo: {
-        createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee',
-            required: [true, 'Created by reference is required']
-        },
-        lastModifiedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        lastModifiedAt: Date,
-        
-        // Detailed audit log
-        auditLog: [{
-            action: {
+    auditTrail: {
+        events: [{
+            eventType: {
                 type: String,
                 enum: [
-                    'Created', 'Sent', 'Delivered', 'Read', 'Acknowledged', 
-                    'Escalated', 'Archived', 'Failed', 'Retried', 'Cancelled'
+                    'Created', 'Scheduled', 'Sent', 'Delivered', 'Read', 'Clicked',
+                    'Dismissed', 'Escalated', 'Archived', 'Failed', 'Retried', 'Cancelled'
                 ],
                 required: true
             },
@@ -688,6 +555,13 @@ notificationsSchema.index({ 'notificationInfo.notificationType': 1, createdAt: -
 notificationsSchema.index({ 'notificationInfo.priority': 1, 'delivery.scheduledFor': 1 });
 notificationsSchema.index({ 'escalation.isEscalated': 1, 'escalation.lastEscalationDate': 1 });
 
+// 🆕 RCM-specific indexes
+notificationsSchema.index({ 'notificationInfo.rcmContext.claimId': 1, createdAt: -1 });
+notificationsSchema.index({ 'notificationInfo.rcmContext.patientId': 1, createdAt: -1 });
+notificationsSchema.index({ 'notificationInfo.rcmContext.batchId': 1, createdAt: -1 });
+notificationsSchema.index({ 'notificationInfo.sourceModule': 1, 'notificationInfo.notificationType': 1 });
+
+
 // Compound indexes
 notificationsSchema.index({
     companyRef: 1,
@@ -707,24 +581,23 @@ notificationsSchema.index({
 notificationsSchema.index({
     'content.title': 'text',
     'content.message': 'text',
-    'content.shortMessage': 'text'
 });
 
 // ** VIRTUAL FIELDS **
-notificationsSchema.virtual('isUnread').get(function() {
+notificationsSchema.virtual('isUnread').get(function () {
     // Determine if notification is unread for a specific user
     // This would typically be calculated based on current user context
     return this.interaction.readStatus.length === 0;
 });
 
-notificationsSchema.virtual('isOverdue').get(function() {
+notificationsSchema.virtual('isOverdue').get(function () {
     if (!this.delivery.scheduledFor) return false;
     return new Date() > this.delivery.scheduledFor && this.status.notificationStatus === 'Scheduled';
 });
 
-notificationsSchema.virtual('urgencyScore').get(function() {
+notificationsSchema.virtual('urgencyScore').get(function () {
     let score = 0;
-    
+
     // Priority scoring
     switch (this.notificationInfo.priority) {
         case 'Emergency': score += 100; break;
@@ -733,7 +606,7 @@ notificationsSchema.virtual('urgencyScore').get(function() {
         case 'Normal': score += 25; break;
         case 'Low': score += 10; break;
     }
-    
+
     // Severity scoring
     switch (this.notificationInfo.severity) {
         case 'Fatal': score += 50; break;
@@ -742,59 +615,84 @@ notificationsSchema.virtual('urgencyScore').get(function() {
         case 'Warning': score += 20; break;
         case 'Info': score += 10; break;
     }
-    
+
     // Time sensitivity
     if (this.escalation.isEscalationEnabled && this.escalation.isEscalated) {
         score += 25;
     }
-    
+
     return score;
 });
 
 // ** STATIC METHODS **
-notificationsSchema.statics.findUnreadByUser = function(userId, limit = 50) {
+notificationsSchema.statics.findUnreadByUser = function (userId, limit = 50) {
     return this.find({
         'recipients.primaryRecipient.recipientRef': userId,
         'status.isActive': true,
         'status.isVisible': true,
         'interaction.readStatus.userId': { $ne: userId }
     })
-    .sort({ 'notificationInfo.priority': -1, createdAt: -1 })
-    .limit(limit)
-    .populate('notificationInfo.relatedEntities.entityId');
+        .sort({ 'notificationInfo.priority': -1, createdAt: -1 })
+        .limit(limit)
+        .populate('notificationInfo.relatedEntities.entityId');
 };
 
-notificationsSchema.statics.findByType = function(companyRef, notificationType, fromDate = null, toDate = null) {
+notificationsSchema.statics.findByType = function (companyRef, notificationType, fromDate = null, toDate = null) {
     const query = {
         companyRef,
         'notificationInfo.notificationType': notificationType,
         'status.isActive': true
     };
-    
+
     if (fromDate || toDate) {
         query.createdAt = {};
         if (fromDate) query.createdAt.$gte = new Date(fromDate);
         if (toDate) query.createdAt.$lte = new Date(toDate);
     }
-    
+
     return this.find(query)
         .sort({ createdAt: -1 })
         .populate('recipients.primaryRecipient.recipientRef', 'personalInfo.firstName personalInfo.lastName');
 };
 
-notificationsSchema.statics.findPendingDelivery = function(companyRef) {
+// 🆕 RCM-Specific Static Methods
+notificationsSchema.statics.findByClaimId = function (claimId, limit = 20) {
+    return this.find({
+        'notificationInfo.rcmContext.claimId': claimId,
+        'status.isActive': true
+    })
+        .sort({ createdAt: -1 })
+        .limit(limit);
+};
+
+notificationsSchema.statics.findRcmAlerts = function (companyRef, alertTypes = []) {
+    const rcmAlertTypes = alertTypes.length > 0 ? alertTypes : [
+        'SLA Violation', 'QA Score Below Threshold', 'Denial Rate High',
+        'Payment Posting Error', 'EDI File Error', 'Claim Deadline'
+    ];
+
+    return this.find({
+        companyRef,
+        'notificationInfo.notificationType': { $in: rcmAlertTypes },
+        'status.isActive': true,
+        'status.notificationStatus': { $in: ['Delivered', 'Read'] }
+    })
+        .sort({ 'notificationInfo.priority': -1, createdAt: -1 });
+};
+
+notificationsSchema.statics.findPendingDelivery = function (companyRef) {
     return this.find({
         companyRef,
         'status.notificationStatus': { $in: ['Scheduled', 'Sending'] },
         'delivery.scheduledFor': { $lte: new Date() },
         'status.isActive': true
     })
-    .sort({ 'notificationInfo.priority': -1, 'delivery.scheduledFor': 1 });
+        .sort({ 'notificationInfo.priority': -1, 'delivery.scheduledFor': 1 });
 };
 
-notificationsSchema.statics.findEscalationRequired = function(companyRef) {
+notificationsSchema.statics.findEscalationRequired = function (companyRef) {
     const now = new Date();
-    
+
     return this.find({
         companyRef,
         'escalation.isEscalationEnabled': true,
@@ -808,208 +706,71 @@ notificationsSchema.statics.findEscalationRequired = function(companyRef) {
             ]
         }
     })
-    .sort({ createdAt: 1 });
-};
-
-notificationsSchema.statics.getDeliveryStats = function(companyRef, fromDate, toDate) {
-    return this.aggregate([
-        {
-            $match: {
-                companyRef: mongoose.Types.ObjectId(companyRef),
-                createdAt: {
-                    $gte: new Date(fromDate),
-                    $lte: new Date(toDate)
-                }
-            }
-        },
-        {
-            $group: {
-                _id: '$notificationInfo.notificationType',
-                totalSent: { $sum: 1 },
-                totalDelivered: {
-                    $sum: {
-                        $cond: [{ $eq: ['$status.notificationStatus', 'Delivered'] }, 1, 0]
-                    }
-                },
-                totalFailed: {
-                    $sum: {
-                        $cond: [{ $eq: ['$status.notificationStatus', 'Failed'] }, 1, 0]
-                    }
-                },
-                avgDeliveryTime: { $avg: '$analytics.deliveryTime' },
-                avgResponseTime: { $avg: '$analytics.responseTime' }
-            }
-        },
-        {
-            $addFields: {
-                deliveryRate: {
-                    $multiply: [
-                        { $divide: ['$totalDelivered', '$totalSent'] },
-                        100
-                    ]
-                }
-            }
-        }
-    ]);
+        .sort({ createdAt: 1 });
 };
 
 // ** INSTANCE METHODS **
-notificationsSchema.methods.markAsRead = function(userId, readMethod = 'In-App') {
+notificationsSchema.methods.markAsRead = function (userId) {
     const existingRead = this.interaction.readStatus.find(
-        read => read.userId.equals(userId)
+        r => r.userId.toString() === userId.toString()
     );
-    
+
     if (!existingRead) {
         this.interaction.readStatus.push({
             userId,
-            readAt: new Date(),
-            readMethod
+            readAt: new Date()
         });
-        
-        // Update analytics
-        this.analytics.impressions += 1;
-        
-        // Add to audit log
-        this.auditInfo.auditLog.push({
-            action: 'Read',
-            performedBy: userId,
-            details: `Read via ${readMethod}`
-        });
+
+        if (this.status.notificationStatus === 'Delivered') {
+            this.status.notificationStatus = 'Read';
+        }
     }
+
+    return this.save();
 };
 
-notificationsSchema.methods.acknowledge = function(userId, notes = '', method = 'In-App') {
-    const existingAck = this.interaction.acknowledgments.find(
-        ack => ack.userId.equals(userId)
-    );
-    
-    if (!existingAck) {
-        this.interaction.acknowledgments.push({
-            userId,
-            acknowledgedAt: new Date(),
-            acknowledgmentMethod: method,
-            notes
-        });
-        
-        // Add to audit log
-        this.auditInfo.auditLog.push({
-            action: 'Acknowledged',
-            performedBy: userId,
-            details: notes || 'Acknowledged by user'
-        });
-    }
-};
-
-notificationsSchema.methods.triggerEscalation = function() {
-    if (!this.escalation.isEscalationEnabled) return false;
-    
-    this.escalation.currentEscalationLevel += 1;
+notificationsSchema.methods.escalate = function (escalatedTo, reason) {
     this.escalation.isEscalated = true;
+    this.escalation.escalatedAt = new Date();
+    this.escalation.escalatedTo = escalatedTo;
+    this.escalation.escalationReason = reason;
     this.escalation.lastEscalationDate = new Date();
-    
-    // Create escalation notification
-    const escalationPath = this.escalation.escalationPath.find(
-        path => path.level === this.escalation.currentEscalationLevel
-    );
-    
-    if (escalationPath) {
-        // Create new notification for escalated recipient
-        // This would typically be handled by the notification service
-        console.log(`Escalating to level ${this.escalation.currentEscalationLevel}`);
-    }
-    
-    // Add to audit log
-    this.auditInfo.auditLog.push({
-        action: 'Escalated',
-        details: `Escalated to level ${this.escalation.currentEscalationLevel}`,
-        systemGenerated: true
+
+    // Add audit event
+    this.auditTrail.events.push({
+        eventType: 'Escalated',
+        performedBy: escalatedTo,
+        details: reason,
+        systemGenerated: false
     });
-    
-    return true;
+
+    return this.save();
 };
 
-notificationsSchema.methods.updateDeliveryStatus = function(channel, status, deliveredAt = null, failureReason = null) {
-    const deliveryChannel = this.delivery.deliveryChannels.find(
-        ch => ch.channel === channel
-    );
-    
-    if (deliveryChannel) {
-        deliveryChannel.deliveryStatus = status;
-        deliveryChannel.lastAttempt = new Date();
-        
-        if (status === 'Delivered' && deliveredAt) {
-            deliveryChannel.deliveredAt = deliveredAt;
-            this.delivery.successfulDeliveries += 1;
-        } else if (status === 'Failed') {
-            deliveryChannel.failureReason = failureReason;
-            deliveryChannel.attemptCount += 1;
-            this.delivery.failedDeliveries += 1;
-        }
-        
-        // Update overall delivery rate
-        const totalAttempts = this.delivery.successfulDeliveries + this.delivery.failedDeliveries;
-        if (totalAttempts > 0) {
-            this.delivery.deliveryRate = (this.delivery.successfulDeliveries / totalAttempts) * 100;
-        }
-        
-        // Update notification status
-        const allDelivered = this.delivery.deliveryChannels.every(
-            ch => ch.deliveryStatus === 'Delivered' || ch.deliveryStatus === 'Failed'
-        );
-        
-        if (allDelivered) {
-            const hasSuccessful = this.delivery.deliveryChannels.some(
-                ch => ch.deliveryStatus === 'Delivered'
-            );
-            this.status.notificationStatus = hasSuccessful ? 'Delivered' : 'Failed';
-        }
-    }
+// 🆕 RCM-Specific Instance Methods
+notificationsSchema.methods.updateRcmContext = function (contextData) {
+    this.notificationInfo.rcmContext = {
+        ...this.notificationInfo.rcmContext,
+        ...contextData
+    };
+    return this.save();
 };
 
-notificationsSchema.methods.archive = function(archivedBy, reason = '') {
-    this.status.notificationStatus = 'Archived';
-    this.status.archivedDate = new Date();
-    this.status.isVisible = false;
-    
-    // Add to audit log
-    this.auditInfo.auditLog.push({
-        action: 'Archived',
-        performedBy: archivedBy,
-        details: reason
+notificationsSchema.methods.addRcmRelatedEntity = function (entityType, entityId, entityName, relationshipType = 'Related') {
+    this.notificationInfo.relatedEntities.push({
+        entityType,
+        entityId,
+        entityName,
+        relationshipType
     });
+    return this.save();
 };
 
-// ** PRE-SAVE MIDDLEWARE **
-notificationsSchema.pre('save', function(next) {
-    // Auto-expire old notifications
-    if (this.businessRules.autoArchiveAfterDays && !this.status.archivedDate) {
-        const autoArchiveDate = new Date();
-        autoArchiveDate.setDate(autoArchiveDate.getDate() - this.businessRules.autoArchiveAfterDays);
-        
-        if (this.createdAt < autoArchiveDate) {
-            this.status.notificationStatus = 'Archived';
-            this.status.archivedDate = new Date();
-            this.status.isVisible = false;
-        }
-    }
-    
-    // Set expiry if not set
-    if (!this.status.expiryDate && this.businessRules.autoArchiveAfterDays) {
-        this.status.expiryDate = new Date();
-        this.status.expiryDate.setDate(this.status.expiryDate.getDate() + this.businessRules.autoArchiveAfterDays);
-    }
-    
-    // Set default scheduled time if immediate delivery
-    if (this.delivery.deliverImmediately && !this.delivery.scheduledFor) {
-        this.delivery.scheduledFor = new Date();
-    }
-    
-    // Set lastModifiedAt
-    if (this.isModified() && !this.isNew) {
-        this.auditInfo.lastModifiedAt = new Date();
-    }
-    
-    next();
+// PLUGINS
+notificationsSchema.plugin(scopedIdPlugin, {
+    idField: 'notificationId',
+    prefix: 'NOTF',
+    companyRefPath: 'companyRef'
 });
 
-export const Notifications = mongoose.model('Notifications', notificationsSchema, 'notifications');
+export const Notification = mongoose.model('Notification', notificationsSchema, 'notifications');

@@ -3,6 +3,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 import { CLIENT_TYPES, SPECIALTY_TYPES, SERVICE_TYPES, CURRENCIES, BILLING_MODELS, TIME_ZONES } from '../../constants.js';
 
 // NEW RCM Workflows Schema (ADDED)
@@ -263,7 +264,7 @@ const clientSchema = new mongoose.Schema({
     clientId: {
         type: String,
         unique: true,
-        default: () => `CLT-${uuidv4().substring(0, 8).toUpperCase()}`,
+        // default: () => `CLT-${uuidv4().substring(0, 8).toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
@@ -1225,6 +1226,13 @@ clientSchema.methods.validateQaRequirements = function () {
 
     return errors;
 };
+
+// PLUGINS
+clientSchema.plugin(scopedIdPlugin, {
+    idField: 'clientId',
+    prefix: 'CLT',
+    companyRefPath: 'companyRef'
+});
 
 // EXISTING PRE-SAVE MIDDLEWARE (PRESERVED + NEW)
 clientSchema.pre('save', function (next) {

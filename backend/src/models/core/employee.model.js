@@ -1,4 +1,5 @@
 // backend/src/models/core/employee.model.js
+
 // COMPLETE MODEL WITH ALL EXISTING FIELDS + NEW RCM SKILLS, QA METRICS, SLA PERFORMANCE
 
 import mongoose from "mongoose";
@@ -8,6 +9,7 @@ import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-j
 import performanceMetricsSchema from "../performance/performance.model.js";
 import gamificationSchema from "../performance/gamification.model.js";
 import { USER_ROLE_LEVELS, SERVICE_TYPES, SPECIALTY_TYPES } from '../../utils/constants.js';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 
 // NEW RCM Skills Schema (ADDED)
 const rcmSkillsSchema = new mongoose.Schema({
@@ -230,7 +232,7 @@ const employeeSchema = new mongoose.Schema({
     employeeId: {
         type: String,
         unique: true,
-        default: () => `EMP-${uuidv4().substring(0, 8).toUpperCase()}`,
+        // default: () => `EMP-${uuidv4().substring(0, 8).toUpperCase()}`,
         trim: true,
         immutable: true,
     },
@@ -1154,30 +1156,6 @@ employeeSchema.methods.hasSkill = function (skillCategory, minProficiency = 'Int
     );
 };
 
-// Pre-save middleware (PRESERVED + NEW)
-employeeSchema.pre('save', async function (next) {
-    // Hash password if modified
-    if (this.isModified('loginInfo.hashedPassword') && this.loginInfo?.hashedPassword) {
-        const salt = await bcrypt.genSalt(12);
-        this.loginInfo.hashedPassword = await bcrypt.hash(this.loginInfo.hashedPassword, salt);
-    }
-
-    // Auto-generate employee code if not provided
-    if (this.isNew && !this.employmentInfo.employeeCode) {
-        this.employmentInfo.employeeCode = `EMP-${Date.now()}`;
-    }
-
-    // Auto-generate display name if not provided
-    if (!this.personalInfo.displayName) {
-        this.personalInfo.displayName = this.fullName;
-    }
-
-    // Update profile completion percentage
-    this.systemInfo.profileCompletionPercentage = this.calculateProfileCompletion();
-
-    next();
-});
-
 // Helper method to calculate profile completion
 employeeSchema.methods.calculateProfileCompletion = function () {
     let completedFields = 0;
@@ -1208,4 +1186,35 @@ employeeSchema.methods.calculateProfileCompletion = function () {
     return Math.round((completedFields / totalFields) * 100);
 };
 
-export const Employee = mongoose.model("Employee", employeeSchema);
+// PLUGINS
+employeeSchema.plugin(scopedIdPlugin, {
+    idField: 'employeeId',
+    prefix: 'EMP',
+    companyRefPath: 'companyRef'
+});
+
+// Pre-save middleware (PRESERVED + NEW)
+employeeSchema.pre('save', async function (next) {
+    // Hash password if modified
+    if (this.isModified('loginInfo.hashedPassword') && this.loginInfo?.hashedPassword) {
+        const salt = await bcrypt.genSalt(12);
+        this.loginInfo.hashedPassword = await bcrypt.hash(this.loginInfo.hashedPassword, salt);
+    }
+
+    // Auto-generate employee code if not provided
+    if (this.isNew && !this.employmentInfo.employeeCode) {
+        this.employmentInfo.employeeCode = `EMP-${Date.now()}`;
+    }
+
+    // Auto-generate display name if not provided
+    if (!this.personalInfo.displayName) {
+        this.personalInfo.displayName = this.fullName;
+    }
+
+    // Update profile completion percentage
+    this.systemInfo.profileCompletionPercentage = this.calculateProfileCompletion();
+
+    next();
+});
+
+export const Employee = mongoose.model("Employee", employeeSchema, "employees");

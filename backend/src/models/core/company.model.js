@@ -1,4 +1,5 @@
 // backend/src/models/core/company.model.js
+
 // COMPLETE MODEL WITH ALL EXISTING FIELDS + NEW RCM CONFIGURATION
 
 import mongoose from "mongoose";
@@ -7,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { validate as validatePostalCode } from 'postal-codes-js';
 import bcrypt from 'bcryptjs';
+import slugify from 'slugify';
 import { SERVICE_TYPES, TIME_ZONES, CURRENCIES, PAYMENT_TERMS, BILLING_MODELS, CLIENT_TYPES } from '../../utils/constants.js';
 
 // Address Schema (PRESERVED EXACTLY)
@@ -338,6 +340,18 @@ const companySchema = new mongoose.Schema({
         type: String,
         required: [true, 'Company name is required'],
         trim: true,
+    },
+    companyCode: {
+        type: String,
+        unique: true,
+        immutable: true,
+        default: function () {
+            return slugify(this.companyName, {
+                lower: false,
+                replacement: '',
+                remove: /[*+~.()'"!:@]/g
+            }).substring(0, 6).toUpperCase();
+        }
     },
     legalName: {
         type: String,
