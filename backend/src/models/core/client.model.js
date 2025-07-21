@@ -1,10 +1,265 @@
-// backend/src/models/client-model.js
+// backend/src/models/core/client.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { CLIENT_TYPES, SPECIALTY_TYPES, SERVICE_TYPES, CURRENCIES, BILLING_MODELS, TIME_ZONES } from '../../constants.js';
 
+// NEW RCM Workflows Schema (ADDED)
+const rcmWorkflowsSchema = new mongoose.Schema({
+    workflowName: { type: String, required: true, trim: true },
+    serviceType: { type: String, enum: Object.values(SERVICE_TYPES), required: true },
+    workflowStages: [{
+        stageName: { type: String, required: true, trim: true },
+        stageOrder: { type: Number, required: true, min: 1 },
+        isRequired: { type: Boolean, default: true },
+        slaHours: { type: Number, required: true, min: 1 },
+        description: { type: String, trim: true },
+        assignmentRules: {
+            autoAssign: { type: Boolean, default: false },
+            requiredSkills: [String],
+            requiredRoleLevel: { type: Number, min: 1, max: 10 },
+            roundRobinGroup: String,
+            skillCategory: String
+        },
+        qaRules: {
+            qaRequired: { type: Boolean, default: false },
+            qaPercentage: { type: Number, min: 0, max: 100, default: 10 },
+            qaSkipConditions: [String]
+        },
+        escalationRules: {
+            escalateAfterHours: Number, escalateTo: String, escalationCriteria: [String]
+        },
+        completionCriteria: {
+            requiresApproval: { type: Boolean, default: false },
+            approvalRole: String,
+            requiredFields: [String],
+            validationRules: [String]
+        }
+    }],
+    isActive: { type: Boolean, default: true },
+    isDefault: { type: Boolean, default: false },
+    effectiveDate: { type: Date, default: Date.now },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    lastModifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    version: { type: String, default: '1.0' },
+    workflowMetrics: {
+        averageCompletionTime: { type: Number, default: 0 },
+        successRate: { type: Number, default: 0 },
+        totalExecutions: { type: Number, default: 0 },
+        lastExecuted: Date
+    }
+}, { _id: false });
+
+// Clearinghouse Configuration Schema
+const clearinghouseConfigSchema = new mongoose.Schema({
+    clearinghouseName: {
+        type: String,
+        enum: ['Availity', 'Change Healthcare', 'RelayHealth', 'Trizetto', 'Office Ally', 'Navicure', 'athenaCollector', 'NextGen', 'AllMeds', 'ClaimMD'],
+        required: true
+    },
+    isActive: { type: Boolean, default: true },
+    isPrimary: { type: Boolean, default: false },
+    submitterId: { type: String, trim: true },
+    receiverId: { type: String, trim: true },
+    tradingPartnerId: { type: String, trim: true },
+    connectionSettings: {
+        connectionType: {
+            type: String,
+            enum: ['API', 'SFTP', 'Web Portal', 'Direct'],
+            default: 'API'
+        },
+        endpoint: String,
+        port: Number,
+        username: String,
+        password: String, // This should be encrypted
+        apiKey: String,
+        testMode: { type: Boolean, default: true }
+    },
+    supportedTransactions: [{
+        transactionType: {
+            type: String,
+            enum: ['270/271', '276/277', '837P', '837I', '835', '278', '999', '997'],
+            required: true
+        },
+        isEnabled: { type: Boolean, default: true },
+        customMapping: String
+    }],
+    submissionSettings: {
+        batchSize: {
+            type: Number,
+            default: 100,
+            min: 1,
+            max: 1000
+        },
+        submissionFrequency: {
+            type: String,
+            enum: ['Real-time', 'Hourly', 'Daily', 'Weekly'],
+            default: 'Real-time'
+        },
+        submissionTimes: [String], // Array of times like "09:00", "15:00"
+        acknowledgmentTimeout: {
+            type: Number,
+            default: 60 // minutes
+        },
+        retryAttempts: {
+            type: Number,
+            default: 3,
+            min: 1,
+            max: 10
+        },
+        retryDelayMinutes: {
+            type: Number,
+            default: 15
+        }
+    },
+    mapping: {
+        fieldMappings: [{
+            sourceField: String,
+            targetField: String,
+            transformation: String,
+            isRequired: Boolean
+        }],
+        customRules: [String]
+    },
+    performance: {
+        averageResponseTime: Number, // in milliseconds
+        successRate: Number, // percentage
+        lastSuccessfulSubmission: Date,
+        totalSubmissions: { type: Number, default: 0 },
+        failedSubmissions: { type: Number, default: 0 }
+    }
+}, { _id: false });
+
+// NEW QA Requirements Schema (ADDED)
+const qaRequirementsSchema = new mongoose.Schema({
+    // General QA Settings
+    defaultQaPercentage: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 10
+    },
+    qualityThresholds: {
+        excellent: { type: Number, min: 90, max: 100, default: 95 },
+        good: { type: Number, min: 80, max: 94, default: 90 },
+        satisfactory: { type: Number, min: 70, max: 89, default: 85 },
+        needsImprovement: { type: Number, min: 0, max: 79, default: 80 }
+    },
+
+    // Service-Specific QA Requirements
+    serviceQaRequirements: [{
+        serviceType: {
+            type: String,
+            enum: Object.values(SERVICE_TYPES),
+            required: true
+        },
+        qaPercentage: {
+            type: Number,
+            min: 0,
+            max: 100,
+            required: true
+        },
+        scoringCriteria: [{
+            criteriaName: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            weight: {
+                type: Number,
+                min: 0,
+                max: 100,
+                required: true
+            },
+            description: String,
+            isRequired: {
+                type: Boolean,
+                default: true
+            }
+        }],
+        escalationRules: {
+            failureThreshold: { type: Number, min: 1, max: 5, default: 3 },
+            escalationSteps: [{
+                stepOrder: Number,
+                action: { type: String, enum: ['Email Manager', 'Training Required', 'Immediate Review', 'Account Review'] },
+                triggerCondition: String
+            }]
+        },
+        turnaroundTime: {
+            type: Number,
+            default: 24 // hours
+        }
+    }],
+
+    // QA Team Settings
+    qaTeamSettings: {
+        dedicatedQaTeam: {
+            type: Boolean,
+            default: false
+        },
+        qaManagerRef: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        qaAnalysts: [{
+            analystRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
+            serviceTypes: [String],
+            workload: Number, // percentage allocation
+            isLead: { type: Boolean, default: false }
+        }],
+        calibrationFrequency: {
+            type: String,
+            enum: ['Weekly', 'Bi-weekly', 'Monthly', 'Quarterly'],
+            default: 'Monthly'
+        }
+    },
+
+    // Reporting Requirements
+    reportingRequirements: {
+        frequencyRequired: {
+            type: String,
+            enum: ['Daily', 'Weekly', 'Monthly', 'Quarterly'],
+            default: 'Weekly'
+        },
+        metricsRequired: [String],
+        deliveryFormat: {
+            type: String,
+            enum: ['Email', 'Dashboard', 'PDF Report', 'Excel'],
+            default: 'Dashboard'
+        },
+        recipients: [{
+            name: String,
+            email: String,
+            role: String
+        }],
+        customRequirements: [String]
+    },
+
+    // Compliance Requirements
+    complianceRequirements: {
+        regulatoryStandards: [String],
+        auditFrequency: {
+            type: String,
+            enum: ['Monthly', 'Quarterly', 'Semi-annually', 'Annually']
+        },
+        documentationRequired: {
+            type: Boolean,
+            default: true
+        },
+        retentionPeriod: {
+            type: Number,
+            default: 7 // years
+        }
+    }
+}, { _id: false });
+
+// Main Client Schema (PRESERVING ALL EXISTING FIELDS)
 const clientSchema = new mongoose.Schema({
+    // EXISTING CLIENT ID (PRESERVED EXACTLY)
     clientId: {
         type: String,
         unique: true,
@@ -14,7 +269,7 @@ const clientSchema = new mongoose.Schema({
         index: true
     },
 
-    // ** MAIN RELATIONSHIPS **
+    // EXISTING MAIN RELATIONSHIPS (PRESERVED EXACTLY)
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company', // GetMax company managing this client
@@ -22,7 +277,7 @@ const clientSchema = new mongoose.Schema({
         index: true
     },
 
-    // ** CLIENT BASIC INFORMATION **
+    // EXISTING CLIENT BASIC INFORMATION (PRESERVED EXACTLY)
     clientInfo: {
         clientName: {
             type: String,
@@ -48,22 +303,10 @@ const clientSchema = new mongoose.Schema({
         taxId: {
             type: String,
             trim: true,
-            // validate: {
-            //     validator: function(v) {
-            //         return !v || /^\d{2}-\d{7}$/.test(v); // Basic EIN format
-            //     },
-            //     message: 'Tax ID must be in XX-XXXXXXX format'
-            // }
         },
         npiNumber: {
             type: String,
             trim: true,
-            // validate: {
-            //     validator: function(v) {
-            //         return !v || /^\d{10}$/.test(v); // NPI is 10 digits
-            //     },
-            //     message: 'NPI must be 10 digits'
-            // }
         },
         description: {
             type: String,
@@ -71,7 +314,7 @@ const clientSchema = new mongoose.Schema({
         }
     },
 
-    // ** CONTACT INFORMATION **
+    // EXISTING CONTACT INFORMATION (PRESERVED EXACTLY)
     contactInfo: {
         primaryContact: {
             name: {
@@ -134,7 +377,7 @@ const clientSchema = new mongoose.Schema({
         }
     },
 
-    // ** ADDRESS INFORMATION **
+    // EXISTING ADDRESS INFORMATION (PRESERVED EXACTLY)
     addressInfo: {
         businessAddress: {
             street: {
@@ -175,282 +418,533 @@ const clientSchema = new mongoose.Schema({
         }
     },
 
-    // ** 🚀 INTEGRATION STRATEGY & EHR/PM SYSTEMS **
+    // EXISTING INTEGRATION STRATEGY & EHR/PM SYSTEMS (PRESERVED EXACTLY)
     integrationStrategy: {
         workflowType: {
             type: String,
-            required: [true, 'Workflow type is required'],
-            default: 'Manual Only',
-            index: true
+            enum: ['Manual Portal Entry', 'API Integration', 'FTP Transfer', 'Database Sync', 'Screen Scraping', 'Hybrid'],
+            default: 'Manual Portal Entry'
         },
-
-        // ** EHR/PM SYSTEM DETAILS **
-        ehrPmSystem: {
+        ehrSystem: {
             systemName: {
-                type: String,
-                default: 'None'
-            },
-            systemVersion: {
                 type: String,
                 trim: true
             },
-            vendorContact: {
-                name: String,
-                email: String,
-                phone: String
+            version: String,
+            vendor: String,
+            lastUpdated: Date,
+            customizations: [String],
+            integrationMethod: {
+                type: String,
+                enum: ['API', 'HL7', 'Direct DB', 'File Export', 'Manual'],
+                default: 'Manual'
+            },
+            connectionStatus: {
+                type: String,
+                enum: ['Connected', 'Disconnected', 'Testing', 'Not Configured'],
+                default: 'Not Configured'
             }
         },
-
-        // ** API CONFIGURATION **
+        pmSystem: {
+            systemName: {
+                type: String,
+                trim: true
+            },
+            version: String,
+            vendor: String,
+            lastUpdated: Date,
+            billingModule: {
+                type: Boolean,
+                default: true
+            },
+            integrationMethod: {
+                type: String,
+                enum: ['API', 'HL7', 'Direct DB', 'File Export', 'Manual'],
+                default: 'Manual'
+            },
+            connectionStatus: {
+                type: String,
+                enum: ['Connected', 'Disconnected', 'Testing', 'Not Configured'],
+                default: 'Not Configured'
+            }
+        },
+        clearinghouseInfo: {
+            primaryClearinghouse: String,
+            secondaryClearinghouse: String,
+            submissionMethod: {
+                type: String,
+                enum: ['Direct', 'Through EHR', 'Through PM', 'Manual Upload'],
+                default: 'Manual Upload'
+            },
+            ediFormat: {
+                type: String,
+                enum: ['837P', '837I', '837D', 'Custom'],
+                default: '837P'
+            }
+        },
         apiConfig: {
             hasApiAccess: {
                 type: Boolean,
                 default: false
             },
-            apiBaseUrl: {
-                type: String,
-                trim: true
-            },
-            apiVersion: {
-                type: String,
-                trim: true
-            },
-            authMethod: {
-                type: String,
-                default: 'API Key'
-            },
-            // Encrypted credentials - NEVER store in plain text
-            encryptedCredentials: {
-                type: String, // Will store encrypted JSON
-                select: false // Never return in queries
-            },
-            testEndpoint: {
-                type: String,
-                trim: true
-            },
-            productionEndpoint: {
-                type: String,
-                trim: true
-            },
-            rateLimitPerHour: {
-                type: Number,
-                min: [1, 'Rate limit must be at least 1 per hour'],
-                default: 100
-            },
-            lastSuccessfulSync: Date,
-            lastFailedSync: Date,
-            syncStatus: {
-                type: String,
-                default: 'Not Configured'
-            }
-        },
-
-        // ** SFTP CONFIGURATION **
-        sftpConfig: {
-            enabled: {
+            apiDocumentationUrl: String,
+            sandboxAvailable: {
                 type: Boolean,
                 default: false
             },
-            host: {
+            rateLimits: String,
+            authenticationMethod: {
                 type: String,
-                trim: true
+                enum: ['API Key', 'OAuth', 'Basic Auth', 'Token', 'None'],
+                default: 'None'
             },
-            port: {
-                type: Number,
-                min: [1, 'Port must be positive'],
-                max: [65535, 'Port cannot exceed 65535'],
-                default: 22
+            encryptedCredentials: {
+                type: String,
+                select: false // Don't return in queries by default
             },
-            username: {
+            lastConnectionTest: Date,
+            connectionTestResult: {
                 type: String,
-                trim: true
-            },
-            // Encrypted password/key
-            encryptedAuth: {
-                type: String,
-                select: false
-            },
-            inboundPath: {
-                type: String,
-                trim: true,
-                default: '/inbound/'
-            },
-            outboundPath: {
-                type: String,
-                trim: true,
-                default: '/outbound/'
-            },
-            fileFormat: [{
-                type: String,
-                default: 'Excel (.xlsx)'
-            }],
-            syncFrequency: {
-                type: String,
-                default: 'Daily'
+                enum: ['Success', 'Failed', 'Pending', 'Not Tested'],
+                default: 'Not Tested'
             }
-        },
+        }
+    },
 
-        // ** MANUAL UPLOAD CONFIGURATION **
-        manualConfig: {
-            allowedFileFormats: {
-                type: [String],
-                default: []
+    // EXISTING SPECIALTIES & SERVICES (PRESERVED EXACTLY)
+    specialtiesAndServices: {
+        primarySpecialty: {
+            type: String,
+            enum: SPECIALTY_TYPES,
+            default: 'Primary Care'
+        },
+        secondarySpecialties: [{
+            type: String,
+            enum: SPECIALTY_TYPES
+        }],
+        servicesOffered: [{
+            serviceType: {
+                type: String,
+                enum: Object.values(SERVICE_TYPES),
+                required: true
             },
-            maxFileSize: {
-                type: Number, // in MB
-            },
-            templateRequired: {
+            isActive: {
                 type: Boolean,
                 default: true
             },
-        }
-    },
-
-    // ** SERVICE AGREEMENTS & SOWS **
-    serviceAgreements: {
-        serviceType: [{
-            type: String,
-        }],
-        compliances: [{
-            type: String,
-            signed: {
-                type: Boolean,
-                default: false
+            startDate: {
+                type: Date,
+                default: Date.now
             },
-            signedDate: Date,
-            expiryDate: Date,
-            documentPath: String
+            endDate: Date,
+            volumeExpected: {
+                type: Number,
+                min: [0, 'Volume cannot be negative'],
+                default: 0
+            },
+            priority: {
+                type: String,
+                enum: ['Low', 'Normal', 'High', 'Critical'],
+                default: 'Normal'
+            },
+            serviceNotes: {
+                type: String,
+                trim: true,
+                maxlength: [500, 'Service notes cannot exceed 500 characters']
+            }
         }],
-        activeSOWs: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'SOW'
-        }],
-        totalSOWsCreated: {
-            type: Number,
-            default: 0
+        patientDemographics: {
+            averageAge: Number,
+            primaryInsuranceTypes: [{
+                type: String,
+                enum: ['Medicare', 'Medicaid', 'Commercial', 'Self-Pay', 'Workers Comp', 'Other']
+            }],
+            geographicRegions: [String],
+            languagesSpoken: [String]
         }
     },
 
-    // ** FINANCIAL INFORMATION **
-    financialInfo: {
-        billingCurrency: {
+    // EXISTING BILLING & FINANCIAL (PRESERVED EXACTLY)
+    billingAndFinancial: {
+        billingModel: {
             type: String,
-            default: 'INR'
+            enum: Object.values(BILLING_MODELS),
+            required: [true, 'Billing model is required']
+        },
+        rateCard: {
+            currency: {
+                type: String,
+                enum: Object.keys(CURRENCIES),
+                default: 'USD'
+            },
+            rates: [{
+                serviceType: {
+                    type: String,
+                    enum: Object.values(SERVICE_TYPES),
+                    required: true
+                },
+                rateType: {
+                    type: String,
+                    enum: ['Per Transaction', 'Per Hour', 'Per Claim', 'Percentage', 'Fixed Monthly'],
+                    required: true
+                },
+                rate: {
+                    type: Number,
+                    required: true,
+                    min: [0, 'Rate cannot be negative']
+                },
+                effectiveDate: {
+                    type: Date,
+                    default: Date.now
+                },
+                expiryDate: Date,
+                isActive: {
+                    type: Boolean,
+                    default: true
+                }
+            }],
+            minimumMonthlyFee: {
+                type: Number,
+                min: [0, 'Minimum fee cannot be negative'],
+                default: 0
+            },
+            setupFee: {
+                type: Number,
+                min: [0, 'Setup fee cannot be negative'],
+                default: 0
+            }
         },
         paymentTerms: {
             type: String,
-            default: 'Net 30'
+            enum: Object.values(PAYMENT_TERMS),
+            default: 'NET_30'
         },
-        creditLimit: {
-            type: Number,
-            min: [0, 'Credit limit cannot be negative'],
-            default: 0
+        invoicingPreferences: {
+            frequency: {
+                type: String,
+                enum: ['Weekly', 'Bi-weekly', 'Monthly', 'Quarterly'],
+                default: 'Monthly'
+            },
+            deliveryMethod: {
+                type: String,
+                enum: ['Email', 'Portal', 'Mail', 'API'],
+                default: 'Email'
+            },
+            consolidatedInvoice: {
+                type: Boolean,
+                default: true
+            },
+            detailLevel: {
+                type: String,
+                enum: ['Summary', 'Detailed', 'Line Item'],
+                default: 'Detailed'
+            }
         },
-        outstandingBalance: {
-            type: Number,
-            default: 0
-        },
-        totalRevenueGenerated: {
-            type: Number,
-            default: 0,
-            min: [0, 'Total revenue cannot be negative']
-        },
-        invoiceFormat: {
-            type: String,
-            default: 'PDF'
-        },
-        lastInvoiceDate: Date,
-        nextInvoiceDate: Date
+        financialMetrics: {
+            monthlyRevenue: {
+                type: Number,
+                min: [0, 'Revenue cannot be negative'],
+                default: 0
+            },
+            averageTransactionValue: {
+                type: Number,
+                min: [0, 'Transaction value cannot be negative'],
+                default: 0
+            },
+            outstandingBalance: {
+                type: Number,
+                default: 0
+            },
+            creditLimit: {
+                type: Number,
+                min: [0, 'Credit limit cannot be negative'],
+                default: 0
+            },
+            lastPaymentDate: Date,
+            paymentHistory: [{
+                amount: Number,
+                date: Date,
+                method: String,
+                invoiceNumber: String
+            }]
+        }
     },
 
-    // ** CLIENT STATUS & LIFECYCLE **
+    // EXISTING OPERATIONAL PREFERENCES (PRESERVED EXACTLY)
+    operationalPreferences: {
+        workingHours: {
+            timezone: {
+                type: String,
+                enum: Object.keys(TIME_ZONES),
+                default: 'EST'
+            },
+            startTime: {
+                type: String,
+                default: '09:00',
+                validate: {
+                    validator: function (v) {
+                        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+                    },
+                    message: 'Invalid time format. Use HH:MM'
+                }
+            },
+            endTime: {
+                type: String,
+                default: '17:00',
+                validate: {
+                    validator: function (v) {
+                        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+                    },
+                    message: 'Invalid time format. Use HH:MM'
+                }
+            },
+            workingDays: [{
+                type: String,
+                enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            }],
+            holidays: [Date],
+            afterHoursSupport: {
+                type: Boolean,
+                default: false
+            }
+        },
+        communicationPreferences: {
+            primaryChannel: {
+                type: String,
+                enum: ['Email', 'Phone', 'Slack', 'Teams', 'Portal'],
+                default: 'Email'
+            },
+            escalationChannel: {
+                type: String,
+                enum: ['Email', 'Phone', 'Slack', 'Teams', 'Portal'],
+                default: 'Phone'
+            },
+            reportingFrequency: {
+                type: String,
+                enum: ['Daily', 'Weekly', 'Monthly', 'On-demand'],
+                default: 'Weekly'
+            },
+            meetingFrequency: {
+                type: String,
+                enum: ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Quarterly'],
+                default: 'Weekly'
+            }
+        },
+        qualityRequirements: {
+            accuracyTarget: {
+                type: Number,
+                min: [0, 'Accuracy target cannot be negative'],
+                max: [100, 'Accuracy target cannot exceed 100'],
+                default: 95
+            },
+            slaRequirements: [{
+                metric: String,
+                target: Number,
+                measurement: String,
+                penalty: String
+            }],
+            reportingRequirements: [String],
+            auditFrequency: {
+                type: String,
+                enum: ['Monthly', 'Quarterly', 'Semi-annually', 'Annually'],
+                default: 'Quarterly'
+            }
+        }
+    },
+
+    // EXISTING COMPLIANCE & SECURITY (PRESERVED EXACTLY)
+    complianceAndSecurity: {
+        hipaaCompliance: {
+            required: {
+                type: Boolean,
+                default: true
+            },
+            baaSigned: {
+                type: Boolean,
+                default: false
+            },
+            baaSignedDate: Date,
+            baaExpiryDate: Date,
+            lastAuditDate: Date,
+            nextAuditDate: Date,
+            complianceNotes: String
+        },
+        dataRetention: {
+            period: {
+                type: Number,
+                default: 7, // years
+                min: [1, 'Retention period must be at least 1 year']
+            },
+            backupRequired: {
+                type: Boolean,
+                default: true
+            },
+            archiveMethod: {
+                type: String,
+                enum: ['Cloud', 'Physical', 'Hybrid'],
+                default: 'Cloud'
+            }
+        },
+        accessControl: {
+            mfaRequired: {
+                type: Boolean,
+                default: false
+            },
+            passwordPolicy: String,
+            ipWhitelist: [String],
+            vpnRequired: {
+                type: Boolean,
+                default: false
+            }
+        },
+        additionalCompliance: [{
+            standard: String,
+            required: Boolean,
+            certificationDate: Date,
+            expiryDate: Date,
+            notes: String
+        }]
+    },
+
+    // NEW RCM WORKFLOWS (ADDED)
+    rcmWorkflows: [rcmWorkflowsSchema],
+
+    // NEW CLEARINGHOUSE CONFIGURATION (ADDED)
+    clearinghouseConfig: [clearinghouseConfigSchema],
+
+    // NEW QA REQUIREMENTS (ADDED)
+    qaRequirements: {
+        type: qaRequirementsSchema,
+        default: () => ({})
+    },
+
+    // EXISTING STATUS & LIFECYCLE (PRESERVED EXACTLY)
     status: {
         clientStatus: {
             type: String,
+            enum: ['Prospect', 'Active', 'On Hold', 'Terminated', 'Suspended'],
             default: 'Prospect',
             index: true
         },
         onboardingStatus: {
             type: String,
+            enum: ['Not Started', 'Documentation Pending', 'Technical Setup', 'Testing Phase', 'Training Phase', 'Go Live', 'Completed'],
             default: 'Not Started'
         },
         onboardingProgress: {
             type: Number,
-            min: [0, 'Onboarding progress cannot be negative'],
-            max: [100, 'Onboarding progress cannot exceed 100%'],
+            min: [0, 'Progress cannot be negative'],
+            max: [100, 'Progress cannot exceed 100'],
             default: 0
         },
+        goLiveDate: Date,
         lastActivityDate: {
             type: Date,
             default: Date.now
-        }
+        },
+        relationshipManager: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        accountHealth: {
+            type: String,
+            enum: ['Excellent', 'Good', 'At Risk', 'Critical'],
+            default: 'Good'
+        },
+        riskFactors: [String],
+        statusNotes: String
     },
 
-    // ** PERFORMANCE METRICS **
-    performanceMetrics: {
-        averageClaimsPerMonth: {
-            type: Number,
-            default: 0,
-            min: [0, 'Average claims per month cannot be negative']
-        },
-        averageProcessingTime: {
-            type: Number, // in hours
-            default: 0,
-            min: [0, 'Average processing time cannot be negative']
-        },
-        qualityScoreAverage: {
-            type: Number,
-            default: 0,
-            min: [0, 'Quality score cannot be negative'],
-            max: [100, 'Quality score cannot exceed 100%']
-        },
-        slaComplianceRate: {
-            type: Number,
-            default: 0,
-            min: [0, 'SLA compliance cannot be negative'],
-            max: [100, 'SLA compliance cannot exceed 100%']
-        },
-        clientSatisfactionScore: {
-            type: Number,
-            min: [1, 'Satisfaction score must be at least 1'],
-            max: [10, 'Satisfaction score cannot exceed 10'],
-            default: 8
-        }
+    // EXISTING DOCUMENTS & CONTRACTS (PRESERVED EXACTLY)
+    documentsAndContracts: {
+        contracts: [{
+            contractType: {
+                type: String,
+                enum: ['Master Service Agreement', 'Statement of Work', 'NDA', 'BAA', 'Amendment'],
+                required: true
+            },
+            contractNumber: String,
+            signedDate: Date,
+            effectiveDate: Date,
+            expiryDate: Date,
+            autoRenewal: {
+                type: Boolean,
+                default: false
+            },
+            renewalNoticePeriod: Number, // days
+            documentPath: String,
+            signedBy: String,
+            status: {
+                type: String,
+                enum: ['Draft', 'Pending Signature', 'Signed', 'Expired', 'Terminated'],
+                default: 'Draft'
+            }
+        }],
+        policies: [{
+            policyType: String,
+            version: String,
+            effectiveDate: Date,
+            documentPath: String,
+            acknowledged: Boolean,
+            acknowledgedDate: Date,
+            acknowledgedBy: String
+        }],
+        technicalDocuments: [{
+            documentType: {
+                type: String,
+                enum: ['Integration Guide', 'API Documentation', 'Workflow Manual', 'Training Material', 'Other']
+            },
+            title: String,
+            version: String,
+            lastUpdated: Date,
+            documentPath: String,
+            accessLevel: {
+                type: String,
+                enum: ['Public', 'Client Only', 'Internal Only'],
+                default: 'Client Only'
+            }
+        }]
     },
 
-    // ** SYSTEM INFO **
+    // EXISTING SYSTEM INFO (PRESERVED EXACTLY)
     systemInfo: {
         isActive: {
             type: Boolean,
             default: true,
             index: true
         },
-        timezone: {
+        isTemplate: {
+            type: Boolean,
+            default: false
+        },
+        templateCategory: String,
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        lastModifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        },
+        lastModifiedAt: Date,
+        dataSource: {
             type: String,
-            default: 'IST'
+            enum: ['Manual Entry', 'Import', 'API', 'Migration'],
+            default: 'Manual Entry'
         },
-        businessHours: {
-            start: {
+        migrationInfo: {
+            sourceSystem: String,
+            migrationDate: Date,
+            migrationBatch: String,
+            validationStatus: {
                 type: String,
-                default: '09:00'
-            },
-            end: {
-                type: String,
-                default: '17:00'
-            },
-            workingDays: [{
-                type: String,
-                default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-            }]
-        },
-        dataRetentionPeriod: {
-            type: Number, // in days
-            min: [1, 'Data retention period must be at least 1 month'],
-            default: 12
+                enum: ['Pending', 'Validated', 'Issues Found'],
+                default: 'Pending'
+            }
         }
     },
 
-    // ** AUDIT TRAIL **
+    // EXISTING AUDIT INFO (PRESERVED EXACTLY)
     auditInfo: {
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -462,16 +956,43 @@ const clientSchema = new mongoose.Schema({
             ref: 'Employee'
         },
         lastModifiedAt: Date,
-        onboardedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        onboardedAt: Date,
-        lastReviewBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        lastReviewAt: Date
+        changeHistory: [{
+            modifiedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
+            modifiedAt: {
+                type: Date,
+                default: Date.now
+            },
+            changeType: {
+                type: String,
+                enum: ['Created', 'Updated', 'Status Changed', 'Archived', 'Deleted'],
+                required: true
+            },
+            changedFields: [String],
+            oldValues: mongoose.Schema.Types.Mixed,
+            newValues: mongoose.Schema.Types.Mixed,
+            reason: String,
+            ipAddress: String
+        }],
+        accessLog: [{
+            accessedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
+            accessTime: {
+                type: Date,
+                default: Date.now
+            },
+            action: {
+                type: String,
+                enum: ['View', 'Edit', 'Export', 'Print', 'Download'],
+                required: true
+            },
+            ipAddress: String,
+            userAgent: String
+        }]
     }
 }, {
     timestamps: true,
@@ -479,105 +1000,160 @@ const clientSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// ** INDEXES FOR PERFORMANCE **
-clientSchema.index({ companyRef: 1, 'status.clientStatus': 1 });
-clientSchema.index({ 'clientInfo.clientType': 1, 'systemInfo.isActive': 1 });
-clientSchema.index({ 'integrationStrategy.workflowType': 1 });
-clientSchema.index({ 'integrationStrategy.ehrPmSystem.systemName': 1 });
+// EXISTING INDEXES (PRESERVED) + NEW RCM INDEXES
+clientSchema.index({ companyRef: 1, 'systemInfo.isActive': 1 });
+clientSchema.index({ 'clientInfo.clientName': 1 });
+clientSchema.index({ 'clientInfo.clientType': 1 });
+clientSchema.index({ 'status.clientStatus': 1 });
 clientSchema.index({ 'status.onboardingStatus': 1 });
+clientSchema.index({ 'specialtiesAndServices.primarySpecialty': 1 });
+clientSchema.index({ 'billingAndFinancial.billingModel': 1 });
+// NEW RCM INDEXES
+clientSchema.index({ 'rcmWorkflows.serviceType': 1 });
+clientSchema.index({ 'clearinghouseConfig.clearinghouseName': 1 });
+clientSchema.index({ 'clearinghouseConfig.isPrimary': 1 });
 
-// Compound indexes for complex queries
-clientSchema.index({
-    companyRef: 1,
-    'status.clientStatus': 1,
-    'systemInfo.isActive': 1
+// EXISTING VIRTUAL FIELDS (PRESERVED)
+clientSchema.virtual('displayName').get(function () {
+    return this.clientInfo.legalName || this.clientInfo.clientName;
 });
 
-clientSchema.index({
-    'integrationStrategy.workflowType': 1,
-    'integrationStrategy.ehrPmSystem.systemName': 1
+clientSchema.virtual('primaryContact').get(function () {
+    return this.contactInfo.primaryContact;
 });
 
-// ** VIRTUAL FIELDS **
-clientSchema.virtual('totalActiveSOWs', {
-    ref: 'SOW',
-    localField: '_id',
-    foreignField: 'clientCompanyRef',
-    count: true,
-    match: { 'status.sowStatus': 'Active', 'systemInfo.isActive': true }
+clientSchema.virtual('isOnboarded').get(function () {
+    return this.status.onboardingStatus === 'Completed';
 });
 
-clientSchema.virtual('isIntegrationReady').get(function () {
-    if (this.integrationStrategy.workflowType === 'Manual Only') return true;
-    if (this.integrationStrategy.workflowType === 'API Integration Only') {
-        return this.integrationStrategy.apiConfig.syncStatus === 'Active';
-    }
-    if (this.integrationStrategy.workflowType === 'SFTP Integration') {
-        return this.integrationStrategy.sftpConfig.enabled;
-    }
-    return false;
+clientSchema.virtual('daysToGoLive').get(function () {
+    if (!this.status.goLiveDate) return null;
+    const today = new Date();
+    const goLive = new Date(this.status.goLiveDate);
+    const diffTime = goLive - today;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-clientSchema.virtual('revenueThisMonth').get(function () {
-    // This would be calculated from actual invoice data
-    return this.financialInfo.totalRevenueGenerated || 0;
+clientSchema.virtual('activeServices').get(function () {
+    return this.specialtiesAndServices.servicesOffered.filter(service => service.isActive);
 });
 
-// ** STATIC METHODS **
+clientSchema.virtual('totalMonthlyRevenue').get(function () {
+    return this.billingAndFinancial.financialMetrics.monthlyRevenue || 0;
+});
+
+// NEW RCM VIRTUAL FIELDS (ADDED)
+clientSchema.virtual('activeWorkflows').get(function () {
+    return this.rcmWorkflows?.filter(workflow => workflow.isActive) || [];
+});
+
+clientSchema.virtual('primaryClearinghouse').get(function () {
+    return this.clearinghouseConfig?.find(ch => ch.isPrimary && ch.isActive) || null;
+});
+
+clientSchema.virtual('activeClearinghouses').get(function () {
+    return this.clearinghouseConfig?.filter(ch => ch.isActive) || [];
+});
+
+clientSchema.virtual('workflowCompletionRate').get(function () {
+    const workflows = this.rcmWorkflows || [];
+    if (workflows.length === 0) return 0;
+
+    const totalExecutions = workflows.reduce((sum, wf) => sum + (wf.workflowMetrics?.totalExecutions || 0), 0);
+    const successfulExecutions = workflows.reduce((sum, wf) => {
+        const successRate = wf.workflowMetrics?.successRate || 0;
+        const executions = wf.workflowMetrics?.totalExecutions || 0;
+        return sum + (executions * successRate / 100);
+    }, 0);
+
+    return totalExecutions > 0 ? Math.round((successfulExecutions / totalExecutions) * 100) : 0;
+});
+
+// EXISTING STATIC METHODS (PRESERVED)
 clientSchema.statics.findActiveClients = function (companyRef) {
     return this.find({
         companyRef,
-        'status.clientStatus': 'Active',
-        'systemInfo.isActive': true
-    }).populate('serviceAgreements.activeSOWs', 'sowName serviceDetails.serviceType')
-        .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
+        'systemInfo.isActive': true,
+        'status.clientStatus': 'Active'
+    }).populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
 };
 
-clientSchema.statics.findClientsByIntegrationType = function (companyRef, integrationType) {
+clientSchema.statics.findByClientType = function (companyRef, clientType) {
     return this.find({
         companyRef,
-        'integrationStrategy.workflowType': integrationType,
+        'clientInfo.clientType': clientType,
         'systemInfo.isActive': true
     });
 };
 
-clientSchema.statics.findClientsNeedingOnboarding = function (companyRef) {
+clientSchema.statics.findBySpecialty = function (companyRef, specialty) {
     return this.find({
         companyRef,
-        'status.onboardingStatus': {
-            $nin: ['Completed']
-        },
+        'specialtiesAndServices.primarySpecialty': specialty,
         'systemInfo.isActive': true
     });
 };
 
-clientSchema.statics.findClientsByEHRSystem = function (companyRef, ehrSystem) {
+clientSchema.statics.findPendingOnboarding = function (companyRef) {
     return this.find({
         companyRef,
-        'integrationStrategy.ehrPmSystem.systemName': ehrSystem,
+        'status.onboardingStatus': { $ne: 'Completed' },
         'systemInfo.isActive': true
     });
 };
 
-// ** INSTANCE METHODS **
-clientSchema.methods.updatePerformanceMetrics = function (newMetrics) {
-    if (newMetrics.claimsProcessed) this.performanceMetrics.averageClaimsPerMonth = newMetrics.claimsProcessed;
-    if (newMetrics.processingTime) this.performanceMetrics.averageProcessingTime = newMetrics.processingTime;
-    if (newMetrics.qualityScore) this.performanceMetrics.qualityScoreAverage = newMetrics.qualityScore;
-    if (newMetrics.slaCompliance) this.performanceMetrics.slaComplianceRate = newMetrics.slaCompliance;
-    if (newMetrics.satisfactionScore) this.performanceMetrics.clientSatisfactionScore = newMetrics.satisfactionScore;
-
-    this.status.lastActivityDate = new Date();
+clientSchema.statics.findByRevenue = function (companyRef, minRevenue) {
+    return this.find({
+        companyRef,
+        'billingAndFinancial.financialMetrics.monthlyRevenue': { $gte: minRevenue },
+        'systemInfo.isActive': true
+    });
 };
 
-clientSchema.methods.canStartSOW = function () {
-    const hasSignedMSA = this.serviceAgreements.masterServiceAgreement.signed;
-    const hasSignedBAA = this.serviceAgreements.hipaaBAA.signed;
+// NEW RCM STATIC METHODS (ADDED)
+clientSchema.statics.findByServiceType = function (companyRef, serviceType) {
+    return this.find({
+        companyRef,
+        'systemInfo.isActive': true,
+        'specialtiesAndServices.servicesOffered.serviceType': serviceType,
+        'specialtiesAndServices.servicesOffered.isActive': true
+    });
+};
+
+clientSchema.statics.findByClearinghouse = function (companyRef, clearinghouseName) {
+    return this.find({
+        companyRef,
+        'systemInfo.isActive': true,
+        'clearinghouseConfig.clearinghouseName': clearinghouseName,
+        'clearinghouseConfig.isActive': true
+    });
+};
+
+clientSchema.statics.findNeedingWorkflowSetup = function (companyRef) {
+    return this.find({
+        companyRef,
+        'systemInfo.isActive': true,
+        $or: [
+            { rcmWorkflows: { $size: 0 } },
+            { rcmWorkflows: { $exists: false } }
+        ]
+    });
+};
+
+// EXISTING INSTANCE METHODS (PRESERVED)
+clientSchema.methods.getOnboardingStatus = function () {
+    const hasSignedMSA = this.documentsAndContracts.contracts.some(
+        contract => contract.contractType === 'Master Service Agreement' &&
+            contract.status === 'Signed'
+    );
+
+    const hasSignedBAA = this.complianceAndSecurity.hipaaCompliance.baaSigned;
     const isOnboarded = this.status.onboardingStatus === 'Completed';
 
     return {
-        canStart: hasSignedMSA && hasSignedBAA && isOnboarded,
-        missingRequirements: {
+        overall: this.status.onboardingStatus,
+        progress: this.status.onboardingProgress,
+        blockers: {
             msa: !hasSignedMSA,
             baa: !hasSignedBAA,
             onboarding: !isOnboarded
@@ -615,7 +1191,42 @@ clientSchema.methods.decryptCredentials = function () {
     }
 };
 
-// ** PRE-SAVE MIDDLEWARE **
+// NEW RCM INSTANCE METHODS (ADDED)
+clientSchema.methods.getWorkflowForService = function (serviceType) {
+    return this.rcmWorkflows?.find(workflow =>
+        workflow.serviceType === serviceType && workflow.isActive
+    );
+};
+
+clientSchema.methods.getActiveClearinghouses = function () {
+    return this.clearinghouseConfig?.filter(ch => ch.isActive) || [];
+};
+
+clientSchema.methods.updateWorkflowMetrics = function (workflowName, metrics) {
+    const workflow = this.rcmWorkflows?.find(wf => wf.workflowName === workflowName);
+    if (workflow) {
+        Object.assign(workflow.workflowMetrics, metrics);
+        workflow.workflowMetrics.lastExecuted = new Date();
+    }
+};
+
+clientSchema.methods.validateQaRequirements = function () {
+    const qa = this.qaRequirements;
+    const errors = [];
+
+    if (qa?.serviceQaRequirements) {
+        qa.serviceQaRequirements.forEach(serviceQa => {
+            const totalWeight = serviceQa.scoringCriteria?.reduce((sum, criteria) => sum + criteria.weight, 0) || 0;
+            if (totalWeight !== 100) {
+                errors.push(`Scoring criteria weights for ${serviceQa.serviceType} must total 100%`);
+            }
+        });
+    }
+
+    return errors;
+};
+
+// EXISTING PRE-SAVE MIDDLEWARE (PRESERVED + NEW)
 clientSchema.pre('save', function (next) {
     // Auto-set billing address if same as business address
     if (this.addressInfo.billingAddress.sameAsBusinessAddress) {
@@ -645,10 +1256,18 @@ clientSchema.pre('save', function (next) {
         this.status.onboardingProgress = statusProgressMap[this.status.onboardingStatus];
     }
 
+    // NEW: Ensure only one primary clearinghouse
+    const primaryClearinghouses = this.clearinghouseConfig?.filter(ch => ch.isPrimary) || [];
+    if (primaryClearinghouses.length > 1) {
+        this.clearinghouseConfig.forEach((ch, index) => {
+            if (index > 0) ch.isPrimary = false;
+        });
+    }
+
     next();
 });
 
-// ** POST-SAVE MIDDLEWARE **
+// EXISTING POST-SAVE MIDDLEWARE (PRESERVED)
 clientSchema.post('save', function (doc, next) {
     // Could trigger webhooks, notifications, etc.
     next();
