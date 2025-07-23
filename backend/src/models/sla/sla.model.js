@@ -1,595 +1,492 @@
-// backend/src/models/sla.model.js
+// backend/src/models/sla/sla.model.js
 
 import mongoose from 'mongoose';
+// import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import { SLA_CONSTANTS, GAMIFICATION } from '../../utils/constants.js';
+import { scopedIdPlugin } from '../../plugins/scopedIdPlugin.js';
 
 const slaSchema = new mongoose.Schema({
+    // ** UNIQUE IDENTIFIERS **
     slaId: {
         type: String,
         unique: true,
-        default: () => `SLA-${uuidv4().substring(0, 10).toUpperCase()}`,
-        trim: true,
+        // default: () => `SLA-${uuidv4().substring(0, 8).toUpperCase()}`,
         immutable: true,
         index: true
     },
-    
-    // ** MAIN RELATIONSHIPS **
+
+    // ** CORE RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Company', // GetMax company
+        ref: 'Company',
         required: [true, 'Company reference is required'],
         index: true
     },
-    claimRef: {
+
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks', // Claim being tracked
-        required: [true, 'Claim reference is required'],
-        index: true
-    },
-    clientRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Client', // Client for SLA rules
-        required: [true, 'Client reference is required'],
-        index: true
-    },
-    sowRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SOW', // SOW for SLA configuration
-        required: [true, 'SOW reference is required'],
-        index: true
-    },
-    assignedEmployeeRef: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee', // Currently assigned employee
-        index: true
+        ref: 'Employee',
+        required: [true, 'Created by employee is required']
     },
 
-    // ** SLA CONFIGURATION **
-    slaConfig: {
-        slaType: {
+    // ** SLA TEMPLATE INFORMATION **
+    templateInfo: {
+        templateName: {
             type: String,
-            enum: [
-                'Initial Review', 'Assignment', 'Processing', 'Follow-up',
-                'QA Review', 'Appeal Processing', 'Payment Processing',
-                'Resolution', 'Client Response', 'Custom'
-            ],
-            required: [true, 'SLA type is required'],
+            required: [true, 'Template name is required'],
+            trim: true,
+            maxlength: [100, 'Template name cannot exceed 100 characters']
+        },
+        templateType: {
+            type: String,
+            required: [true, 'Template type is required'],
+            enum: {
+                values: ['SERVICE_LEVEL', 'RESPONSE_TIME', 'RESOLUTION_TIME', 'QUALITY_TARGET', 'AVAILABILITY'],
+                message: 'Invalid template type'
+            },
             index: true
         },
-        slaDescription: {
+        serviceType: {
+            type: String,
+            required: [true, 'Service type is required'],
+            enum: {
+                values: [
+                    'AR_CALLING', 'MEDICAL_CODING', 'PRIOR_AUTH', 'DENIAL_MANAGEMENT',
+                    'PATIENT_REGISTRATION', 'INSURANCE_VERIFICATION', 'PAYMENT_POSTING',
+                    'CLAIMS_PROCESSING', 'CLEARINGHOUSE_SUBMISSION', 'QA_REVIEW',
+                    'CALL_HANDLING', 'DOCUMENT_PROCESSING'
+                ],
+                message: 'Invalid service type'
+            },
+            index: true
+        },
+        description: {
             type: String,
             trim: true,
-            maxlength: [200, 'SLA description cannot exceed 200 characters']
+            maxlength: [500, 'Description cannot exceed 500 characters']
         },
-        targetHours: {
-            type: Number,
-            required: [true, 'Target hours is required'],
-            min: [0.5, 'Target hours must be at least 0.5 hours'],
-            max: [8760, 'Target hours cannot exceed 8760 hours (1 year)'] // 1 year max
-        },
-        businessHoursOnly: {
-            type: Boolean,
-            default: true
-        },
-        workingDays: [{
+        version: {
             type: String,
-            enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-            default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-        }],
-        excludeHolidays: {
-            type: Boolean,
-            default: true
-        },
-        timezone: {
-            type: String,
-            enum: [
-                'EST', 'CST', 'MST', 'PST', 'GMT', 'IST',
-                'America/New_York', 'America/Chicago', 'America/Denver', 
-                'America/Los_Angeles', 'UTC', 'Asia/Kolkata'
-            ],
-            default: 'EST'
+            default: '1.0.0'
         }
     },
 
-    // ** TRIGGER EVENTS **
-    triggerInfo: {
-        triggerEvent: {
-            type: String,
-            enum: [
-                'Claim Import', 'Claim Assignment', 'Status Change', 
-                'Note Addition', 'Manual Start', 'QA Assignment',
-                'Escalation', 'Appeal Filing', 'Payment Request'
-            ],
-            required: [true, 'Trigger event is required'],
-            index: true
-        },
-        triggerCondition: {
-            type: String,
-            trim: true // Additional conditions like "Status = In Progress"
-        },
-        autoTrigger: {
-            type: Boolean,
-            default: true
-        },
-        triggerSource: {
-            type: String,
-            enum: ['System', 'User', 'API', 'Workflow', 'Schedule'],
-            default: 'System'
-        },
-        triggeredBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        }
-    },
-
-    // ** TIMER INFORMATION **
-    timerInfo: {
-        startDateTime: {
-            type: Date,
-            required: [true, 'Start date time is required'],
-            index: true
-        },
-        endDateTime: {
-            type: Date,
-            index: true
-        },
-        dueDateTime: {
-            type: Date,
-            required: [true, 'Due date time is required'],
-            index: true
-        },
-        actualCompletionDateTime: Date,
-        
-        // Time calculations
-        totalElapsedHours: {
-            type: Number,
-            default: 0,
-            min: [0, 'Total elapsed hours cannot be negative']
-        },
-        businessHoursElapsed: {
-            type: Number,
-            default: 0,
-            min: [0, 'Business hours elapsed cannot be negative']
-        },
-        timeRemaining: {
-            type: Number,
-            default: 0 // Can be negative if breached
-        },
-        businessHoursRemaining: {
-            type: Number,
-            default: 0 // Can be negative if breached
-        },
-        
-        // Pause functionality
-        isPaused: {
-            type: Boolean,
-            default: false,
-            index: true
-        },
-        totalPausedHours: {
-            type: Number,
-            default: 0,
-            min: [0, 'Total paused hours cannot be negative']
-        },
-        pauseHistory: [{
-            pausedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee',
-                required: true
-            },
-            pausedAt: {
-                type: Date,
-                required: true
-            },
-            pauseReason: {
+    // ** SLA TARGETS & THRESHOLDS **
+    slaTargets: {
+        primaryTarget: {
+            targetName: {
                 type: String,
-                enum: [
-                    'Waiting for Client', 'Waiting for Payer', 'Waiting for Information',
-                    'System Maintenance', 'Holiday', 'Technical Issue', 'Manual Hold',
-                    'Patient Request', 'Provider Request', 'Other'
-                ],
-                required: true
-            },
-            pauseNotes: {
-                type: String,
+                required: [true, 'Primary target name is required'],
                 trim: true
             },
-            resumedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee'
-            },
-            resumedAt: Date,
-            resumeNotes: {
-                type: String,
-                trim: true
-            },
-            pauseDurationHours: {
+            targetValue: {
                 type: Number,
-                default: 0,
-                min: [0, 'Pause duration cannot be negative']
+                required: [true, 'Primary target value is required'],
+                min: [0, 'Target value cannot be negative']
+            },
+            targetUnit: {
+                type: String,
+                required: [true, 'Target unit is required'],
+                enum: {
+                    values: ['HOURS', 'MINUTES', 'DAYS', 'PERCENTAGE', 'COUNT', 'CALLS_PER_HOUR', 'ACCURACY_RATE'],
+                    message: 'Invalid target unit'
+                }
+            },
+            targetOperator: {
+                type: String,
+                required: [true, 'Target operator is required'],
+                enum: {
+                    values: ['LESS_THAN', 'LESS_THAN_EQUAL', 'GREATER_THAN', 'GREATER_THAN_EQUAL', 'EQUAL'],
+                    message: 'Invalid target operator'
+                },
+                default: 'LESS_THAN_EQUAL'
             }
-        }]
-    },
+        },
 
-    // ** SLA STATUS TRACKING **
-    statusInfo: {
-        currentStatus: {
-            type: String,
-            enum: [
-                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached', 
-                'Completed', 'Cancelled', 'Reset', 'Escalated'
-            ],
-            required: [true, 'Current status is required'],
-            default: 'Not Started',
-            index: true
-        },
-        previousStatus: {
-            type: String,
-            enum: [
-                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached', 
-                'Completed', 'Cancelled', 'Reset', 'Escalated'
-            ]
-        },
-        
-        // Warning thresholds
-        warningThresholdPercent: {
-            type: Number,
-            min: [50, 'Warning threshold cannot be less than 50%'],
-            max: [95, 'Warning threshold cannot exceed 95%'],
-            default: 75
-        },
-        criticalThresholdPercent: {
-            type: Number,
-            min: [80, 'Critical threshold cannot be less than 80%'],
-            max: [99, 'Critical threshold cannot exceed 99%'],
-            default: 90
-        },
-        
-        // Status change history
-        statusHistory: [{
-            status: {
+        secondaryTargets: [{
+            targetName: {
                 type: String,
-                required: true
-            },
-            changedAt: {
-                type: Date,
                 required: true,
-                default: Date.now
-            },
-            changedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee'
-            },
-            reason: {
-                type: String,
                 trim: true
             },
-            notes: {
-                type: String,
-                trim: true
+            targetValue: {
+                type: Number,
+                required: true,
+                min: [0, 'Target value cannot be negative']
             },
-            systemGenerated: {
+            targetUnit: {
+                type: String,
+                required: true,
+                enum: ['HOURS', 'MINUTES', 'DAYS', 'PERCENTAGE', 'COUNT', 'CALLS_PER_HOUR', 'ACCURACY_RATE']
+            },
+            weight: {
+                type: Number,
+                min: [1, 'Weight must be at least 1'],
+                max: [10, 'Weight cannot exceed 10'],
+                default: 1
+            },
+            isRequired: {
                 type: Boolean,
                 default: false
             }
         }],
-        
-        lastStatusUpdate: {
-            type: Date,
-            default: Date.now,
-            index: true
+
+        // Warning Thresholds
+        warningThresholds: {
+            green: {
+                type: Number,
+                min: [0, 'Green threshold cannot be negative'],
+                max: [100, 'Green threshold cannot exceed 100'],
+                default: function () { return SLA_CONSTANTS.WARNING_THRESHOLDS.GREEN; }
+            },
+            yellow: {
+                type: Number,
+                min: [0, 'Yellow threshold cannot be negative'],
+                max: [100, 'Yellow threshold cannot exceed 100'],
+                default: function () { return SLA_CONSTANTS.WARNING_THRESHOLDS.YELLOW; }
+            },
+            red: {
+                type: Number,
+                min: [0, 'Red threshold cannot be negative'],
+                max: [100, 'Red threshold cannot exceed 100'],
+                default: function () { return SLA_CONSTANTS.WARNING_THRESHOLDS.RED; }
+            }
         }
     },
 
-    // ** BREACH INFORMATION **
-    breachInfo: {
-        isBreached: {
-            type: Boolean,
-            default: false,
-            index: true
-        },
-        breachDateTime: {
-            type: Date,
-            index: true
-        },
-        breachDurationHours: {
-            type: Number,
-            default: 0,
-            min: [0, 'Breach duration cannot be negative']
-        },
-        breachSeverity: {
+    // ** MEASUREMENT CONFIGURATION **
+    measurementConfig: {
+        measurementFrequency: {
             type: String,
-            enum: ['Minor', 'Moderate', 'Major', 'Critical'],
-            default: 'Minor'
+            required: [true, 'Measurement frequency is required'],
+            enum: {
+                values: ['REAL_TIME', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'],
+                message: 'Invalid measurement frequency'
+            },
+            default: 'DAILY'
         },
-        breachCategory: {
+        measurementWindow: {
             type: String,
-            enum: [
-                'Processing Delay', 'Assignment Delay', 'Follow-up Delay',
-                'QA Delay', 'System Issue', 'Resource Shortage',
-                'Client Delay', 'External Dependency', 'Other'
-            ]
+            enum: {
+                values: ['SLIDING', 'CALENDAR_PERIOD', 'BUSINESS_HOURS', 'CUSTOM'],
+                message: 'Invalid measurement window'
+            },
+            default: 'CALENDAR_PERIOD'
         },
-        breachReason: {
+        businessHours: {
+            timezone: {
+                type: String,
+                default: 'EST'
+            },
+            workingDays: [{
+                type: String,
+                enum: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+            }],
+            startTime: String, // Format: "09:00"
+            endTime: String,   // Format: "17:00"
+            excludeHolidays: {
+                type: Boolean,
+                default: true
+            }
+        },
+        dataSource: {
             type: String,
-            trim: true
+            required: [true, 'Data source is required'],
+            enum: {
+                values: [
+                    'SYSTEM_LOGS', 'MANUAL_ENTRY', 'AUTOMATED_TRACKING',
+                    'EXTERNAL_SYSTEM', 'WORKFLOW_ENGINE', 'TIME_TRACKING'
+                ],
+                message: 'Invalid data source'
+            }
         },
-        breachImpact: {
+        calculationMethod: {
             type: String,
-            enum: ['Low', 'Medium', 'High', 'Critical'],
-            default: 'Low'
-        },
-        clientNotified: {
-            type: Boolean,
-            default: false
-        },
-        clientNotificationDate: Date,
-        managementNotified: {
-            type: Boolean,
-            default: false
-        },
-        managementNotificationDate: Date
+            enum: {
+                values: ['AVERAGE', 'MEDIAN', 'PERCENTILE', 'MINIMUM', 'MAXIMUM', 'SUM', 'COUNT'],
+                message: 'Invalid calculation method'
+            },
+            default: 'AVERAGE'
+        }
     },
 
-    // ** ESCALATION INFORMATION **
-    escalationInfo: {
-        isEscalated: {
+    // ** ESCALATION RULES **
+    escalationRules: {
+        enableEscalation: {
             type: Boolean,
-            default: false,
-            index: true
+            default: true
         },
-        escalationLevel: {
-            type: Number,
-            min: [1, 'Escalation level must be at least 1'],
-            max: [5, 'Escalation level cannot exceed 5'],
-            default: 1
-        },
-        escalatedTo: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        escalatedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        escalationDateTime: Date,
-        escalationReason: {
-            type: String,
-            enum: [
-                'SLA Breach', 'At Risk', 'Complex Case', 'Client Request',
-                'Quality Issue', 'Resource Constraint', 'Technical Issue', 'Other'
-            ]
-        },
-        escalationNotes: {
-            type: String,
-            trim: true
-        },
-        escalationHistory: [{
+        escalationLevels: [{
             level: {
                 type: Number,
+                required: true,
+                min: [1, 'Escalation level must be at least 1']
+            },
+            triggerCondition: {
+                type: String,
+                enum: [
+                    'THRESHOLD_BREACH', 'TIME_BASED', 'CONSECUTIVE_FAILURES',
+                    'CRITICAL_SERVICE', 'CUSTOMER_IMPACT', 'MANUAL_ESCALATION'
+                ],
                 required: true
             },
-            escalatedTo: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee',
+            triggerValue: Number,
+            escalationDelay: {
+                type: Number,
+                min: [0, 'Escalation delay cannot be negative'],
+                default: 0
+            },
+            escalateTo: [{
+                employeeRef: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Employee',
+                    required: true
+                },
+                roleRequired: String,
+                notificationMethods: [{
+                    type: String,
+                    enum: ['EMAIL', 'SMS', 'IN_APP', 'PHONE', 'WEBHOOK']
+                }]
+            }],
+            autoActions: [{
+                actionType: {
+                    type: String,
+                    enum: ['REASSIGN_TASK', 'INCREASE_PRIORITY', 'TRIGGER_WORKFLOW', 'SEND_ALERT']
+                },
+                actionConfig: mongoose.Schema.Types.Mixed
+            }]
+        }],
+
+        maxEscalationLevel: {
+            type: Number,
+            min: [1, 'Max escalation level must be at least 1'],
+            default: 3
+        }
+    },
+
+    // ** PENALTY & INCENTIVE CONFIGURATION **
+    penaltyIncentiveConfig: {
+        enablePenalties: {
+            type: Boolean,
+            default: false
+        },
+        penaltyRules: [{
+            breachType: {
+                type: String,
+                enum: ['MINOR_BREACH', 'MAJOR_BREACH', 'CRITICAL_BREACH', 'REPEATED_BREACH'],
                 required: true
             },
-            escalatedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee',
+            penaltyType: {
+                type: String,
+                enum: ['XP_DEDUCTION', 'WARNING', 'PERFORMANCE_IMPACT', 'ESCALATION'],
                 required: true
             },
-            escalatedAt: {
-                type: Date,
+            penaltyValue: Number,
+            description: String
+        }],
+
+        enableIncentives: {
+            type: Boolean,
+            default: true
+        },
+        incentiveRules: [{
+            achievementType: {
+                type: String,
+                enum: ['TARGET_MET', 'EARLY_COMPLETION', 'CONSISTENT_PERFORMANCE', 'EXCELLENCE'],
                 required: true
             },
-            reason: String,
-            notes: String,
-            resolvedAt: Date,
-            resolvedBy: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Employee'
+            incentiveType: {
+                type: String,
+                enum: ['XP_BONUS', 'RECOGNITION', 'BADGE', 'CERTIFICATE'],
+                required: true
             },
-            resolution: String
+            incentiveValue: Number,
+            description: String
         }]
     },
 
-    // ** RESOLUTION INFORMATION **
-    resolutionInfo: {
-        isResolved: {
-            type: Boolean,
-            default: false,
-            index: true
-        },
-        resolutionDateTime: Date,
-        resolutionMethod: {
+    // ** REPORTING CONFIGURATION **
+    reportingConfig: {
+        reportingFrequency: {
             type: String,
-            enum: [
-                'Completed On Time', 'Completed Late', 'Cancelled', 'Transferred',
-                'Escalated to Higher Level', 'Client Extension', 'System Override'
-            ]
+            enum: ['REAL_TIME', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'],
+            default: 'DAILY'
         },
-        resolutionNotes: {
-            type: String,
-            trim: true
-        },
-        resolvedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
-        },
-        finalOutcome: {
-            type: String,
-            enum: [
-                'Success', 'Partial Success', 'Failed', 'Cancelled',
-                'Transferred', 'Extension Granted', 'Override Applied'
-            ]
-        },
-        
-        // Performance metrics
-        performanceRating: {
-            type: String,
-            enum: ['Excellent', 'Good', 'Satisfactory', 'Poor', 'Failed'],
-            default: 'Satisfactory'
-        },
-        meetsExpectation: {
-            type: Boolean,
-            default: true
-        },
-        lessonsLearned: {
-            type: String,
-            trim: true
-        },
-        improvementSuggestions: {
-            type: String,
-            trim: true
-        }
-    },
-
-    // ** NOTIFICATIONS & ALERTS **
-    notificationInfo: {
-        warningAlertSent: {
-            type: Boolean,
-            default: false
-        },
-        warningAlertDateTime: Date,
-        criticalAlertSent: {
-            type: Boolean,
-            default: false
-        },
-        criticalAlertDateTime: Date,
-        breachAlertSent: {
-            type: Boolean,
-            default: false
-        },
-        breachAlertDateTime: Date,
-        
-        notificationRecipients: [{
-            recipientType: {
-                type: String,
-                enum: ['Employee', 'Manager', 'Client', 'Admin', 'External'],
-                required: true
-            },
-            recipientRef: {
+        reportRecipients: [{
+            employeeRef: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Employee'
             },
-            notificationMethod: {
+            reportTypes: [{
                 type: String,
-                enum: ['Email', 'SMS', 'In-App', 'Slack', 'Teams', 'Webhook'],
-                required: true
-            },
-            lastNotified: Date,
-            notificationCount: {
-                type: Number,
-                default: 0
+                enum: ['COMPLIANCE_SUMMARY', 'VIOLATION_ALERT', 'TREND_ANALYSIS', 'DETAILED_METRICS']
+            }],
+            deliveryMethod: {
+                type: String,
+                enum: ['EMAIL', 'IN_APP', 'DASHBOARD', 'SMS'],
+                default: 'EMAIL'
             }
         }],
-        
-        suppressNotifications: {
-            type: Boolean,
-            default: false
-        },
-        suppressionReason: {
-            type: String,
-            trim: true
+
+        dashboardConfig: {
+            showRealTimeStatus: {
+                type: Boolean,
+                default: true
+            },
+            showTrends: {
+                type: Boolean,
+                default: true
+            },
+            showComparisons: {
+                type: Boolean,
+                default: true
+            },
+            autoRefreshInterval: {
+                type: Number,
+                min: [30, 'Auto refresh interval must be at least 30 seconds'],
+                default: 300 // 5 minutes
+            }
         }
     },
 
-    // ** COMPLIANCE & REPORTING **
-    complianceInfo: {
-        complianceType: {
+    // ** APPLICABILITY RULES **
+    applicabilityRules: {
+        appliesTo: {
             type: String,
-            enum: ['Internal SLA', 'Client SLA', 'Regulatory', 'Industry Standard', 'Custom'],
-            default: 'Internal SLA'
+            required: [true, 'Applies to is required'],
+            enum: {
+                values: ['ALL_EMPLOYEES', 'SPECIFIC_EMPLOYEES', 'DEPARTMENTS', 'ROLES', 'TEAMS', 'CUSTOM_CRITERIA'],
+                message: 'Invalid applies to value'
+            }
         },
-        regulatoryRequirement: {
-            type: String,
-            trim: true
-        },
-        auditTrailRequired: {
-            type: Boolean,
-            default: true
-        },
-        reportingRequired: {
-            type: Boolean,
-            default: true
-        },
-        reportingFrequency: {
-            type: String,
-            enum: ['Real-time', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'As Needed'],
-            default: 'Weekly'
-        },
-        lastReported: Date,
-        complianceScore: {
-            type: Number,
-            min: [0, 'Compliance score cannot be negative'],
-            max: [100, 'Compliance score cannot exceed 100'],
-            default: 100
-        }
+        specificEmployees: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee'
+        }],
+        departments: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Department'
+        }],
+        roles: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Role'
+        }],
+        customCriteria: [{
+            criteriaType: {
+                type: String,
+                enum: ['EXPERIENCE_LEVEL', 'SKILL_LEVEL', 'LOCATION', 'SHIFT', 'CLIENT']
+            },
+            criteriaValue: String,
+            operator: {
+                type: String,
+                enum: ['EQUALS', 'NOT_EQUALS', 'GREATER_THAN', 'LESS_THAN', 'CONTAINS']
+            }
+        }],
+
+        // Exclusion Rules
+        exclusions: [{
+            exclusionType: {
+                type: String,
+                enum: ['TRAINING_PERIOD', 'PROBATION', 'LEAVE', 'SPECIAL_CIRCUMSTANCES']
+            },
+            exclusionCriteria: String,
+            startDate: Date,
+            endDate: Date,
+            isActive: {
+                type: Boolean,
+                default: true
+            }
+        }]
     },
 
-    // ** SYSTEM INFO **
-    systemInfo: {
+    // ** STATUS & LIFECYCLE **
+    statusInfo: {
         isActive: {
             type: Boolean,
             default: true,
             index: true
         },
-        isSystemGenerated: {
+        isDraft: {
             type: Boolean,
             default: true
         },
-        automatedCalculations: {
-            type: Boolean,
-            default: true
-        },
-        manualOverride: {
+        isApproved: {
             type: Boolean,
             default: false
         },
-        overrideReason: {
-            type: String,
-            trim: true
-        },
-        overrideBy: {
+        approvedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Employee'
         },
-        overrideDate: Date,
-        
-        // Calculation metadata
-        lastCalculationRun: {
+        approvedAt: Date,
+        effectiveDate: {
             type: Date,
             default: Date.now
         },
-        calculationVersion: {
-            type: String,
-            default: '1.0'
-        },
-        dataSource: {
-            type: String,
-            enum: ['Real-time', 'Scheduled Job', 'Manual Update', 'API Sync'],
-            default: 'Real-time'
-        }
+        expiryDate: Date,
+        lastReviewed: Date,
+        nextReviewDate: Date,
+
+        // Version Control
+        versionHistory: [{
+            version: String,
+            changes: String,
+            changedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
+            changedAt: {
+                type: Date,
+                default: Date.now
+            }
+        }]
     },
 
-    // ** AUDIT TRAIL **
-    auditInfo: {
-        createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee',
-            required: [true, 'Created by reference is required']
+    // ** PERFORMANCE METRICS **
+    performanceMetrics: {
+        totalInstances: {
+            type: Number,
+            default: 0,
+            min: [0, 'Total instances cannot be negative']
         },
-        lastModifiedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
+        metInstances: {
+            type: Number,
+            default: 0,
+            min: [0, 'Met instances cannot be negative']
         },
-        lastModifiedAt: Date,
-        lastCalculatedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee'
+        violatedInstances: {
+            type: Number,
+            default: 0,
+            min: [0, 'Violated instances cannot be negative']
         },
-        lastCalculatedAt: Date
+        complianceRate: {
+            type: Number,
+            min: [0, 'Compliance rate cannot be negative'],
+            max: [100, 'Compliance rate cannot exceed 100'],
+            default: 0
+        },
+
+        averagePerformance: {
+            type: Number,
+            min: [0, 'Average performance cannot be negative'],
+            default: 0
+        },
+
+        trendAnalysis: {
+            direction: {
+                type: String,
+                enum: ['IMPROVING', 'STABLE', 'DECLINING'],
+                default: 'STABLE'
+            },
+            changeRate: Number,
+            lastCalculated: Date
+        },
+
+        lastUpdated: {
+            type: Date,
+            default: Date.now
+        }
     }
 }, {
     timestamps: true,
@@ -597,400 +494,273 @@ const slaSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// ** INDEXES FOR PERFORMANCE **
-slaTrackingSchema.index({ companyRef: 1, 'statusInfo.currentStatus': 1 });
-slaTrackingSchema.index({ claimRef: 1, 'systemInfo.isActive': 1 });
-slaTrackingSchema.index({ assignedEmployeeRef: 1, 'statusInfo.currentStatus': 1 });
-slaTrackingSchema.index({ 'timerInfo.dueDateTime': 1, 'statusInfo.currentStatus': 1 });
-slaTrackingSchema.index({ 'breachInfo.isBreached': 1, 'breachInfo.breachDateTime': 1 });
-slaTrackingSchema.index({ 'escalationInfo.isEscalated': 1 });
+// INDEXES
+slaSchema.index({ companyRef: 1, 'templateInfo.serviceType': 1 });
+slaSchema.index({ 'statusInfo.isActive': 1, 'statusInfo.isDraft': 1 });
+slaSchema.index({ 'applicabilityRules.appliesTo': 1 });
+slaSchema.index({ 'statusInfo.effectiveDate': 1, 'statusInfo.expiryDate': 1 });
+slaSchema.index({ 'performanceMetrics.complianceRate': -1 });
 
-// Compound indexes for complex queries
-slaTrackingSchema.index({
-    companyRef: 1,
-    'statusInfo.currentStatus': 1,
-    'timerInfo.dueDateTime': 1
+// VIRTUALS
+slaSchema.virtual('isExpired').get(function () {
+    return this.statusInfo?.expiryDate && new Date() > this.statusInfo.expiryDate;
 });
 
-slaTrackingSchema.index({
-    sowRef: 1,
-    'slaConfig.slaType': 1,
-    'systemInfo.isActive': 1
-});
-
-// ** VIRTUAL FIELDS **
-slaTrackingSchema.virtual('isOverdue').get(function() {
-    return new Date() > this.timerInfo.dueDateTime && 
-           !['Completed', 'Cancelled'].includes(this.statusInfo.currentStatus);
-});
-
-slaTrackingSchema.virtual('urgencyLevel').get(function() {
-    if (this.statusInfo.currentStatus === 'Breached') return 'Critical';
-    if (this.statusInfo.currentStatus === 'At Risk') return 'High';
-    
+slaSchema.virtual('isEffective').get(function () {
     const now = new Date();
-    const timeRemainingPercent = (this.timerInfo.dueDateTime - now) / 
-                                (this.timerInfo.dueDateTime - this.timerInfo.startDateTime) * 100;
-    
-    if (timeRemainingPercent <= 10) return 'Critical';
-    if (timeRemainingPercent <= 25) return 'High';
-    if (timeRemainingPercent <= 50) return 'Medium';
-    return 'Low';
+    return this.statusInfo?.isActive &&
+        !this.statusInfo?.isDraft &&
+        this.statusInfo?.isApproved &&
+        (!this.statusInfo?.effectiveDate || now >= this.statusInfo.effectiveDate) &&
+        (!this.statusInfo?.expiryDate || now <= this.statusInfo.expiryDate);
 });
 
-slaTrackingSchema.virtual('performanceCategory').get(function() {
-    if (!this.resolutionInfo.isResolved) return 'In Progress';
-    if (this.breachInfo.isBreached) return 'Failed';
-    if (this.timerInfo.actualCompletionDateTime <= this.timerInfo.dueDateTime) return 'Met';
-    return 'Missed';
+slaSchema.virtual('complianceStatus').get(function () {
+    const rate = this.performanceMetrics?.complianceRate || 0;
+    if (rate >= 95) return 'EXCELLENT';
+    if (rate >= 90) return 'GOOD';
+    if (rate >= 80) return 'SATISFACTORY';
+    if (rate >= 70) return 'NEEDS_IMPROVEMENT';
+    return 'POOR';
 });
 
-slaTrackingSchema.virtual('claim', {
-    ref: 'ClaimTasks',
-    localField: 'claimRef',
-    foreignField: '_id',
-    justOne: true
-});
+slaSchema.virtual('riskLevel').get(function () {
+    const compliance = this.performanceMetrics?.complianceRate || 0;
+    const violations = this.performanceMetrics?.violatedInstances || 0;
+    const trend = this.performanceMetrics?.trendAnalysis?.direction || 'STABLE';
 
-slaTrackingSchema.virtual('assignedEmployee', {
-    ref: 'Employee',
-    localField: 'assignedEmployeeRef',
-    foreignField: '_id',
-    justOne: true
+    if (compliance < 70 || violations > 10 || trend === 'DECLINING') return 'HIGH';
+    if (compliance < 85 || violations > 5) return 'MEDIUM';
+    return 'LOW';
 });
 
 // ** STATIC METHODS **
-slaTrackingSchema.statics.findActiveByEmployee = function(employeeRef) {
+slaSchema.statics.findEffectiveForEmployee = function (companyId, employeeId) {
     return this.find({
-        assignedEmployeeRef: employeeRef,
-        'statusInfo.currentStatus': { $in: ['Active', 'At Risk'] },
-        'systemInfo.isActive': true
-    })
-    .populate('claimRef', 'claimId workflowStatus.currentStatus')
-    .sort({ 'timerInfo.dueDateTime': 1 });
+        companyRef: companyId,
+        'statusInfo.isActive': true,
+        'statusInfo.isDraft': false,
+        'statusInfo.isApproved': true,
+        $or: [
+            { 'applicabilityRules.appliesTo': 'ALL_EMPLOYEES' },
+            { 'applicabilityRules.specificEmployees': employeeId }
+        ]
+    }).populate('applicabilityRules.specificEmployees applicabilityRules.departments applicabilityRules.roles');
 };
 
-slaTrackingSchema.statics.findBreachedSLAs = function(companyRef, fromDate = null, toDate = null) {
-    const query = {
-        companyRef,
-        'breachInfo.isBreached': true,
-        'systemInfo.isActive': true
-    };
-    
-    if (fromDate || toDate) {
-        query['breachInfo.breachDateTime'] = {};
-        if (fromDate) query['breachInfo.breachDateTime'].$gte = new Date(fromDate);
-        if (toDate) query['breachInfo.breachDateTime'].$lte = new Date(toDate);
-    }
-    
-    return this.find(query)
-        .populate('claimRef', 'claimId workflowStatus.currentStatus')
-        .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
-        .sort({ 'breachInfo.breachDateTime': -1 });
-};
-
-slaTrackingSchema.statics.findAtRiskSLAs = function(companyRef, hoursAhead = 24) {
-    const cutoffDateTime = new Date();
-    cutoffDateTime.setHours(cutoffDateTime.getHours() + hoursAhead);
-    
+slaSchema.statics.findByServiceType = function (companyId, serviceType) {
     return this.find({
-        companyRef,
-        'statusInfo.currentStatus': { $in: ['Active', 'At Risk'] },
-        'timerInfo.dueDateTime': { $lte: cutoffDateTime },
-        'systemInfo.isActive': true
-    })
-    .populate('claimRef', 'claimId workflowStatus.currentStatus')
-    .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
-    .sort({ 'timerInfo.dueDateTime': 1 });
+        companyRef: companyId,
+        'templateInfo.serviceType': serviceType,
+        'statusInfo.isActive': true,
+        'statusInfo.isDraft': false
+    });
 };
 
-slaTrackingSchema.statics.findBySOWAndType = function(sowRef, slaType, status = null) {
-    const query = {
-        sowRef,
-        'slaConfig.slaType': slaType,
-        'systemInfo.isActive': true
-    };
-    
-    if (status) {
-        query['statusInfo.currentStatus'] = status;
-    }
-    
-    return this.find(query)
-        .populate('claimRef', 'claimId workflowStatus.currentStatus')
-        .sort({ 'timerInfo.startDateTime': -1 });
-};
-
-slaTrackingSchema.statics.getSLAPerformanceStats = function(companyRef, fromDate, toDate, sowRef = null) {
-    const matchStage = {
-        companyRef: mongoose.Types.ObjectId(companyRef),
-        'resolutionInfo.isResolved': true,
-        'timerInfo.startDateTime': {
-            $gte: new Date(fromDate),
-            $lte: new Date(toDate)
-        }
-    };
-    
-    if (sowRef) matchStage.sowRef = mongoose.Types.ObjectId(sowRef);
-    
+slaSchema.statics.getComplianceOverview = function (companyId, startDate, endDate) {
     return this.aggregate([
-        { $match: matchStage },
         {
-            $group: {
-                _id: '$slaConfig.slaType',
-                totalSLAs: { $sum: 1 },
-                metSLAs: {
-                    $sum: {
-                        $cond: [{ $eq: ['$breachInfo.isBreached', false] }, 1, 0]
-                    }
-                },
-                breachedSLAs: {
-                    $sum: {
-                        $cond: [{ $eq: ['$breachInfo.isBreached', true] }, 1, 0]
-                    }
-                },
-                avgCompletionHours: { $avg: '$timerInfo.totalElapsedHours' },
-                avgBreachDuration: { $avg: '$breachInfo.breachDurationHours' }
-            }
-        },
-        {
-            $addFields: {
-                complianceRate: {
-                    $multiply: [
-                        { $divide: ['$metSLAs', '$totalSLAs'] },
-                        100
-                    ]
+            $match: {
+                companyRef: new mongoose.Types.ObjectId(companyId),
+                'statusInfo.isActive': true,
+                'performanceMetrics.lastUpdated': {
+                    $gte: startDate,
+                    $lte: endDate
                 }
             }
         },
-        { $sort: { _id: 1 } }
+        {
+            $group: {
+                _id: '$templateInfo.serviceType',
+                totalSLAs: { $sum: 1 },
+                totalInstances: { $sum: '$performanceMetrics.totalInstances' },
+                metInstances: { $sum: '$performanceMetrics.metInstances' },
+                violatedInstances: { $sum: '$performanceMetrics.violatedInstances' },
+                avgComplianceRate: { $avg: '$performanceMetrics.complianceRate' }
+            }
+        },
+        {
+            $project: {
+                serviceType: '$_id',
+                totalSLAs: 1,
+                totalInstances: 1,
+                metInstances: 1,
+                violatedInstances: 1,
+                overallComplianceRate: {
+                    $round: [
+                        { $multiply: [{ $divide: ['$metInstances', '$totalInstances'] }, 100] },
+                        2
+                    ]
+                },
+                avgComplianceRate: { $round: ['$avgComplianceRate', 2] }
+            }
+        },
+        {
+            $sort: { overallComplianceRate: -1 }
+        }
     ]);
 };
 
 // ** INSTANCE METHODS **
-slaTrackingSchema.methods.calculateTimeRemaining = function() {
-    const now = new Date();
-    const dueDate = this.timerInfo.dueDateTime;
-    
-    if (this.timerInfo.isPaused) {
-        // If paused, time remaining stays the same as when paused
-        return this.timerInfo.timeRemaining;
-    }
-    
-    const remainingMs = dueDate.getTime() - now.getTime();
-    this.timerInfo.timeRemaining = remainingMs / (1000 * 60 * 60); // Convert to hours
-    
-    return this.timerInfo.timeRemaining;
-};
+slaSchema.methods.checkCompliance = function (actualValue, targetOperator = null) {
+    const target = this.slaTargets?.primaryTarget;
+    if (!target) return false;
 
-slaTrackingSchema.methods.updateStatus = function(newStatus, changedBy, reason = '', notes = '') {
-    const oldStatus = this.statusInfo.currentStatus;
-    
-    this.statusInfo.previousStatus = oldStatus;
-    this.statusInfo.currentStatus = newStatus;
-    this.statusInfo.lastStatusUpdate = new Date();
-    
-    // Add to status history
-    this.statusInfo.statusHistory.push({
-        status: newStatus,
-        changedBy,
-        reason,
-        notes,
-        systemGenerated: !changedBy
-    });
-    
-    // Handle specific status changes
-    if (newStatus === 'Breached' && !this.breachInfo.isBreached) {
-        this.handleBreach(reason);
-    }
-    
-    if (newStatus === 'Completed') {
-        this.complete(changedBy, notes);
+    const operator = targetOperator || target.targetOperator;
+    const targetValue = target.targetValue;
+
+    switch (operator) {
+        case 'LESS_THAN':
+            return actualValue < targetValue;
+        case 'LESS_THAN_EQUAL':
+            return actualValue <= targetValue;
+        case 'GREATER_THAN':
+            return actualValue > targetValue;
+        case 'GREATER_THAN_EQUAL':
+            return actualValue >= targetValue;
+        case 'EQUAL':
+            return actualValue === targetValue;
+        default:
+            return false;
     }
 };
 
-slaTrackingSchema.methods.handleBreach = function(reason = '') {
-    const now = new Date();
-    
-    this.breachInfo.isBreached = true;
-    this.breachInfo.breachDateTime = now;
-    this.breachInfo.breachReason = reason;
-    
-    // Calculate breach duration
-    const breachDurationMs = now.getTime() - this.timerInfo.dueDateTime.getTime();
-    this.breachInfo.breachDurationHours = breachDurationMs / (1000 * 60 * 60);
-    
-    // Determine breach severity based on duration
-    if (this.breachInfo.breachDurationHours <= 4) {
-        this.breachInfo.breachSeverity = 'Minor';
-    } else if (this.breachInfo.breachDurationHours <= 24) {
-        this.breachInfo.breachSeverity = 'Moderate';
-    } else if (this.breachInfo.breachDurationHours <= 72) {
-        this.breachInfo.breachSeverity = 'Major';
+slaSchema.methods.updatePerformance = function (isMet) {
+    this.performanceMetrics.totalInstances += 1;
+
+    if (isMet) {
+        this.performanceMetrics.metInstances += 1;
     } else {
-        this.breachInfo.breachSeverity = 'Critical';
+        this.performanceMetrics.violatedInstances += 1;
     }
-    
-    // Update status
-    this.updateStatus('Breached', null, 'Automatic breach detection');
-    
-    // Send breach alerts
-    this.sendBreachAlert();
-};
 
-slaTrackingSchema.methods.pause = function(pausedBy, reason, notes = '') {
-    if (this.timerInfo.isPaused) {
-        throw new Error('SLA is already paused');
-    }
-    
-    const now = new Date();
-    this.timerInfo.isPaused = true;
-    
-    // Add to pause history
-    this.timerInfo.pauseHistory.push({
-        pausedBy,
-        pausedAt: now,
-        pauseReason: reason,
-        pauseNotes: notes
-    });
-    
-    this.updateStatus('Paused', pausedBy, reason, notes);
-};
-
-slaTrackingSchema.methods.resume = function(resumedBy, notes = '') {
-    if (!this.timerInfo.isPaused) {
-        throw new Error('SLA is not currently paused');
-    }
-    
-    const now = new Date();
-    this.timerInfo.isPaused = false;
-    
-    // Update the last pause entry
-    const lastPause = this.timerInfo.pauseHistory[this.timerInfo.pauseHistory.length - 1];
-    lastPause.resumedBy = resumedBy;
-    lastPause.resumedAt = now;
-    lastPause.resumeNotes = notes;
-    
-    // Calculate pause duration
-    const pauseDurationMs = now.getTime() - lastPause.pausedAt.getTime();
-    lastPause.pauseDurationHours = pauseDurationMs / (1000 * 60 * 60);
-    
-    // Update total paused time
-    this.timerInfo.totalPausedHours += lastPause.pauseDurationHours;
-    
-    // Extend due date by pause duration
-    this.timerInfo.dueDateTime = new Date(
-        this.timerInfo.dueDateTime.getTime() + pauseDurationMs
+    // Recalculate compliance rate
+    this.performanceMetrics.complianceRate = Math.round(
+        (this.performanceMetrics.metInstances / this.performanceMetrics.totalInstances) * 100
     );
-    
-    this.updateStatus('Active', resumedBy, 'Resumed from pause', notes);
+
+    this.performanceMetrics.lastUpdated = new Date();
+
+    return this.save();
 };
 
-slaTrackingSchema.methods.complete = function(completedBy, notes = '') {
-    const now = new Date();
-    
-    this.timerInfo.actualCompletionDateTime = now;
-    this.timerInfo.endDateTime = now;
-    
-    // Calculate total elapsed time
-    const totalElapsedMs = now.getTime() - this.timerInfo.startDateTime.getTime();
-    this.timerInfo.totalElapsedHours = (totalElapsedMs / (1000 * 60 * 60)) - this.timerInfo.totalPausedHours;
-    
-    // Resolution info
-    this.resolutionInfo.isResolved = true;
-    this.resolutionInfo.resolutionDateTime = now;
-    this.resolutionInfo.resolvedBy = completedBy;
-    this.resolutionInfo.resolutionNotes = notes;
-    
-    // Determine resolution method and performance
-    if (now <= this.timerInfo.dueDateTime) {
-        this.resolutionInfo.resolutionMethod = 'Completed On Time';
-        this.resolutionInfo.performanceRating = 'Excellent';
-        this.resolutionInfo.finalOutcome = 'Success';
-        this.resolutionInfo.meetsExpectation = true;
-    } else {
-        this.resolutionInfo.resolutionMethod = 'Completed Late';
-        this.resolutionInfo.performanceRating = 'Poor';
-        this.resolutionInfo.finalOutcome = 'Partial Success';
-        this.resolutionInfo.meetsExpectation = false;
-    }
-    
-    this.updateStatus('Completed', completedBy, 'SLA completed', notes);
+slaSchema.methods.getWarningLevel = function (actualValue) {
+    const target = this.slaTargets?.primaryTarget;
+    if (!target) return 'GREEN';
+
+    const thresholds = this.slaTargets?.warningThresholds;
+    const percentUsed = (actualValue / target.targetValue) * 100;
+
+    if (percentUsed >= thresholds?.red) return 'RED';
+    if (percentUsed >= thresholds?.yellow) return 'YELLOW';
+    return 'GREEN';
 };
 
-slaTrackingSchema.methods.escalate = function(escalatedBy, escalatedTo, level, reason, notes = '') {
-    this.escalationInfo.isEscalated = true;
-    this.escalationInfo.escalationLevel = level;
-    this.escalationInfo.escalatedTo = escalatedTo;
-    this.escalationInfo.escalatedBy = escalatedBy;
-    this.escalationInfo.escalationDateTime = new Date();
-    this.escalationInfo.escalationReason = reason;
-    this.escalationInfo.escalationNotes = notes;
-    
-    // Add to escalation history
-    this.escalationInfo.escalationHistory.push({
-        level,
-        escalatedTo,
-        escalatedBy,
-        escalatedAt: new Date(),
-        reason,
-        notes
-    });
-    
-    this.updateStatus('Escalated', escalatedBy, reason, notes);
-};
+slaSchema.methods.shouldEscalate = function (currentLevel, actualValue) {
+    if (!this.escalationRules?.enableEscalation) return false;
 
-slaTrackingSchema.methods.sendBreachAlert = function() {
-    // Mark breach alert as sent
-    this.notificationInfo.breachAlertSent = true;
-    this.notificationInfo.breachAlertDateTime = new Date();
-    
-    // In a real implementation, this would trigger actual notifications
-    // via email, SMS, Slack, etc. based on notification recipients
-    console.log(`SLA Breach Alert: ${this.slaId} - Claim ${this.claimRef}`);
-};
+    const nextLevel = this.escalationRules.escalationLevels?.find(
+        level => level.level === currentLevel + 1
+    );
 
-slaTrackingSchema.methods.checkAndSendAlerts = function() {
-    const timeRemainingPercent = (this.timerInfo.timeRemaining / this.slaConfig.targetHours) * 100;
-    
-    // Send warning alert
-    if (timeRemainingPercent <= this.statusInfo.warningThresholdPercent && 
-        !this.notificationInfo.warningAlertSent) {
-        this.notificationInfo.warningAlertSent = true;
-        this.notificationInfo.warningAlertDateTime = new Date();
-        this.updateStatus('At Risk', null, 'Automatic warning threshold reached');
-    }
-    
-    // Send critical alert
-    if (timeRemainingPercent <= this.statusInfo.criticalThresholdPercent && 
-        !this.notificationInfo.criticalAlertSent) {
-        this.notificationInfo.criticalAlertSent = true;
-        this.notificationInfo.criticalAlertDateTime = new Date();
+    if (!nextLevel) return false;
+
+    switch (nextLevel.triggerCondition) {
+        case 'THRESHOLD_BREACH':
+            return !this.checkCompliance(actualValue);
+        case 'TIME_BASED':
+            return true; // Would need additional time logic
+        case 'CONSECUTIVE_FAILURES':
+            return true; // Would need failure history
+        default:
+            return false;
     }
 };
 
-// ** PRE-SAVE MIDDLEWARE **
-slaTrackingSchema.pre('save', function(next) {
-    // Calculate time remaining
-    this.calculateTimeRemaining();
-    
-    // Check and send alerts if needed
-    if (this.statusInfo.currentStatus === 'Active' && !this.timerInfo.isPaused) {
-        this.checkAndSendAlerts();
+slaSchema.methods.approve = function (approvedBy) {
+    this.statusInfo.isApproved = true;
+    this.statusInfo.isDraft = false;
+    this.statusInfo.approvedBy = approvedBy;
+    this.statusInfo.approvedAt = new Date();
+
+    if (!this.statusInfo.effectiveDate) {
+        this.statusInfo.effectiveDate = new Date();
     }
-    
-    // Auto-breach if overdue
-    if (this.timerInfo.timeRemaining < 0 && 
-        this.statusInfo.currentStatus === 'Active' && 
-        !this.breachInfo.isBreached) {
-        this.handleBreach('Automatic breach detection');
+
+    return this.save();
+};
+
+// PLUGINS
+slaSchema.plugin(scopedIdPlugin, {
+    idField: 'slaId',
+    prefix: 'SLA',
+    companyRefPath: 'companyRef'
+});
+
+// ** MIDDLEWARE **
+slaSchema.pre('save', function (next) {
+    // Calculate compliance rate
+    const total = this.performanceMetrics?.totalInstances || 0;
+    if (total > 0) {
+        this.performanceMetrics.complianceRate = Math.round(
+            (this.performanceMetrics.metInstances / total) * 100
+        );
     }
-    
-    // Set lastModifiedAt
-    if (this.isModified() && !this.isNew) {
-        this.auditInfo.lastModifiedAt = new Date();
+
+    // Set next review date if not set
+    if (!this.statusInfo?.nextReviewDate && this.statusInfo?.isApproved) {
+        this.statusInfo.nextReviewDate = new Date();
+        this.statusInfo.nextReviewDate.setMonth(this.statusInfo.nextReviewDate.getMonth() + 6);
     }
-    
+
+    // Validate escalation levels
+    if (this.escalationRules?.escalationLevels?.length > 0) {
+        const levels = this.escalationRules.escalationLevels.map(e => e.level);
+        const uniqueLevels = [...new Set(levels)];
+        if (levels.length !== uniqueLevels.length) {
+            next(new Error('Escalation levels must be unique'));
+            return;
+        }
+    }
+
     next();
 });
 
-export const SLA = mongoose.model('SLA', slaTrackingSchema, 'slas');
+slaSchema.post('save', async function (doc) {
+    try {
+        // Award XP for creating SLA templates
+        if (doc.isNew) {
+            const Employee = mongoose.model('Employee');
+            await Employee.findByIdAndUpdate(
+                doc.createdBy,
+                {
+                    $inc: {
+                        'gamification.experience.totalXP': GAMIFICATION.XP_REWARDS.PROCESS_IMPROVEMENT
+                    }
+                }
+            );
+        }
+
+        // Create notification for poor performance
+        if (doc.performanceMetrics?.complianceRate < 70 && doc.isModified('performanceMetrics')) {
+            const Notification = mongoose.model('Notification');
+            await Notification.create({
+                companyRef: doc.companyRef,
+                recipientRef: doc.createdBy,
+                type: 'SLA_PERFORMANCE_ALERT',
+                title: 'SLA Performance Alert',
+                message: `SLA ${doc.templateInfo.templateName} has compliance rate of ${doc.performanceMetrics.complianceRate}%`,
+                priority: 'HIGH',
+                relatedEntity: {
+                    entityType: 'SLA',
+                    entityId: doc._id
+                }
+            });
+        }
+
+    } catch (error) {
+        console.error('Post-save middleware error:', error);
+    }
+});
+
+export const SLA = mongoose.model('SLA', slaSchema, 'slas');

@@ -181,16 +181,16 @@ export const GAMIFICATION = {
         HELPING_COLLEAGUE: 5,
         PROCESS_IMPROVEMENT: 25,
         // NEW RCM REWARDS
-        CLAIM_SUBMISSION: 15,
-        DENIAL_OVERTURNED: 30,
-        ERA_PROCESSED: 10,
-        ELIGIBILITY_VERIFIED: 8,
-        AUTH_OBTAINED: 25,
-        PAYMENT_POSTED: 12,
-        AR_COLLECTED: 20,
-        CLEAN_CLAIM_RATE_90_PLUS: 40,
-        ZERO_DENIALS_DAY: 60,
-        CODING_ACCURACY_100: 50
+        CLAIM_SUBMITTED: 15,
+        CLAIM_ACCEPTED: 25,
+        DENIAL_OVERTURNED: 35,
+        PAYMENT_POSTED: 20,
+        ELIGIBILITY_VERIFIED: 10,
+        PRIOR_AUTH_APPROVED: 30,
+        CLEAN_CLAIM_RATE_90: 50,
+        ZERO_DENIALS_DAY: 75,
+        BATCH_PROCESSED: 40,
+        EDI_FILE_PROCESSED: 30
     },
 
     // Achievement Categories
@@ -235,14 +235,13 @@ export const SLA_CONSTANTS = {
         PAYMENT_POSTING: 24,
         CLAIMS_PROCESSING: 24,
         // NEW RCM SLAs
-        ELIGIBILITY_VERIFICATION: 2,
-        CLAIM_SUBMISSION: 8,
-        ERA_PROCESSING: 4,
-        DENIAL_APPEAL: 72,
-        COLLECTIONS_FOLLOWUP: 48,
-        CODING_REVIEW: 12,
-        QA_REVIEW: 24,
-        CLEARINGHOUSE_SUBMISSION: 1
+        ELIGIBILITY_CHECK: 2, // 2 hours
+        CLAIM_SUBMISSION: 24, // 24 hours
+        DENIAL_FOLLOW_UP: 48, // 48 hours
+        PAYMENT_POSTING: 12, // 12 hours
+        BATCH_PROCESSING: 6, // 6 hours
+        EDI_PROCESSING: 4, // 4 hours
+        CLEARINGHOUSE_RESPONSE: 1 // 1 hour
     },
 
     // SLA Status
@@ -393,18 +392,17 @@ export const SESSION_CONFIG = {
 // EDI Constants
 export const EDI_CONSTANTS = {
     // Transaction Types
-    TRANSACTION_TYPES: {
-        EDI_270: 'Eligibility Inquiry',
-        EDI_271: 'Eligibility Response',
-        EDI_276: 'Claim Status Inquiry',
-        EDI_277: 'Claim Status Response',
-        EDI_835: 'ERA - Payment/Remittance',
-        EDI_837P: 'Professional Claims',
-        EDI_837I: 'Institutional Claims',
-        EDI_837D: 'Dental Claims',
-        EDI_278: 'Authorization Request/Response',
-        EDI_999: 'Functional Acknowledgment',
-        EDI_997: 'Functional Acknowledgment'
+    EDI_TYPES: {
+        EDI_270: '270 - Eligibility Inquiry',
+        EDI_271: '271 - Eligibility Response',
+        EDI_276: '276 - Claim Status Request',
+        EDI_277: '277 - Claim Status Response',
+        EDI_835: '835 - ERA (Payment)',
+        EDI_837P: '837P - Professional Claims',
+        EDI_837I: '837I - Institutional Claims',
+        EDI_837D: '837D - Dental Claims',
+        EDI_999: '999 - Implementation Acknowledgment',
+        EDI_997: '997 - Functional Acknowledgment'
     },
 
     // EDI Status
@@ -431,7 +429,9 @@ export const EDI_CONSTANTS = {
         ATHENA_COLLECTOR: 'athenaCollector',
         NEXTGEN: 'NextGen',
         ALLMEDS: 'AllMeds',
-        CLAIMMD: 'ClaimMD'
+        CLAIMMD: 'ClaimMD',
+        WAYSTAR: 'Waystar',
+        NAVICURE: 'Navicure'
     },
 
     // File Formats
@@ -447,9 +447,12 @@ export const EDI_CONSTANTS = {
 
 // Workflow Status
 export const WORKFLOW_STATUS = {
+    DRAFT: 'Draft',
+    ACTIVE: 'Active',
+    PAUSED: 'Paused',
     NOT_STARTED: 'Not Started',
     IN_PROGRESS: 'In Progress',
-    PENDING_REVIEW: 'Pending Review',
+    UNDER_REVIEW: 'Under Review',
     ON_HOLD: 'On Hold',
     ESCALATED: 'Escalated',
     COMPLETED: 'Completed',
@@ -477,11 +480,12 @@ export const CLAIM_STATUS = {
 // Denial Reasons
 export const DENIAL_REASONS = {
     // Administrative Denials
+    MISSING_AUTHORIZATION: 'Missing Prior Authorization',
     MISSING_INFORMATION: 'Missing Information',
+    MEMBER_NOT_ELIGIBLE: 'Member Not Eligible',
     INVALID_MEMBER_ID: 'Invalid Member ID',
     DUPLICATE_CLAIM: 'Duplicate Claim',
     UNTIMELY_FILING: 'Untimely Filing',
-    MISSING_AUTHORIZATION: 'Missing Authorization',
     INVALID_PROVIDER_ID: 'Invalid Provider ID',
 
     // Clinical Denials
@@ -490,34 +494,55 @@ export const DENIAL_REASONS = {
     NON_COVERED_SERVICE: 'Non-Covered Service',
     INCORRECT_DIAGNOSIS: 'Incorrect Diagnosis',
     MISSING_DOCUMENTATION: 'Missing Documentation',
+    INVALID_PROCEDURE: 'Invalid Procedure Code',
 
     // Technical Denials
     INCORRECT_BILLING_CODE: 'Incorrect Billing Code',
     INVALID_DATE_OF_SERVICE: 'Invalid Date of Service',
     INCORRECT_MODIFIER: 'Incorrect Modifier',
     BUNDLING_ISSUE: 'Bundling Issue',
-    COORDINATION_OF_BENEFITS: 'Coordination of Benefits'
+    COORDINATION_OF_BENEFITS: 'Coordination of Benefits',
+    CODING_ERROR: 'Coding Error',
+    MODIFIER_ERROR: 'Modifier Error',
+    BUNDLING_ISSUE: 'Bundling Issue',
+    UNITS_EXCEED_LIMIT: 'Units Exceed Limit',
+
+    // Other
+    CO_INSURANCE: 'Co-insurance',
+    DEDUCTIBLE: 'Deductible',
+    COORDINATION_OF_BENEFITS: 'Coordination of Benefits',
+    OTHER: 'Other'
 };
 
 // Adjustment Codes
 export const ADJUSTMENT_CODES = {
     // Contractual Adjustments
-    CO_45: 'Contractual Adjustment',
-    CO_97: 'Payment Included in Previous Payment',
+    CO_1: 'Deductible Amount',
+    CO_2: 'Coinsurance Amount',
+    CO_3: 'Copayment Amount',
     CO_16: 'Claim Lacks Information',
+    CO_45: 'Charge exceeds fee schedule',
+    CO_97: 'Payment is included in another service',
 
     // Patient Responsibility
-    PR_1: 'Deductible Amount',
-    PR_2: 'Coinsurance Amount',
-    PR_3: 'Copayment Amount',
+    PR_1: 'Deductible Amount - Patient Responsibility',
+    PR_2: 'Coinsurance Amount - Patient Responsibility',
+    PR_3: 'Copayment Amount - Patient Responsibility',
 
-    // Other Adjustments
-    OA_23: 'Impact of Prior Payer Adjudication',
-    PI_72: 'Sequestration Reduction',
+    // Payer Adjustments
+    OA_23: 'Impacted by prior payer adjudication',
+    OA_94: 'Processed in excess of charges',
+    OA_109: 'Claim not covered by this payer',
 
     // Reversal/Correction
     CR_REVERSAL: 'Credit Reversal',
-    LATE_FILING: 'Late Filing Penalty'
+    LATE_FILING: 'Late Filing Penalty',
+
+    // Write-offs
+    WO_CONTRACTUAL: 'Contractual Write-off',
+    WO_BAD_DEBT: 'Bad Debt Write-off',
+    WO_CHARITY: 'Charity Write-off',
+    WO_ADMIN: 'Administrative Write-off'
 };
 
 // Financial Constants
@@ -638,5 +663,103 @@ export const API_CONSTANTS = {
         TOO_MANY_REQUESTS: 429,
         INTERNAL_ERROR: 500,
         SERVICE_UNAVAILABLE: 503
+    }
+};
+
+// Add these NEW RCM constants to your existing constants.js file:
+
+// ======== CLEARINGHOUSE CONSTANTS ========
+export const CLEARINGHOUSE_CONSTANTS = {
+    // Clearinghouse Types
+    CH_TYPES: {
+        AVAILITY: 'Availity',
+        CHANGE_HEALTHCARE: 'Change Healthcare',
+        OFFICE_ALLY: 'Office Ally',
+        CLAIMMD: 'ClaimMD',
+        WAYSTAR: 'Waystar',
+        TRIZETTO: 'Trizetto',
+        RELAY_HEALTH: 'Relay Health'
+    },
+
+    // Connection Protocols
+    PROTOCOLS: {
+        HTTPS: 'HTTPS',
+        SFTP: 'SFTP',
+        FTP: 'FTP',
+        API: 'API',
+        SOAP: 'SOAP',
+        REST: 'REST'
+    },
+
+    // Authentication Methods
+    AUTH_METHODS: {
+        BASIC_AUTH: 'Basic Auth',
+        API_KEY: 'API Key',
+        OAUTH: 'OAuth',
+        CERTIFICATE: 'Certificate',
+        TOKEN: 'Token'
+    },
+
+    // Transaction Types
+    TRANSACTION_TYPES: {
+        CLAIM_SUBMISSION: 'Claim Submission',
+        ELIGIBILITY_CHECK: 'Eligibility Check',
+        STATUS_CHECK: 'Status Check',
+        EDI_SUBMISSION: 'EDI Submission',
+        EDI_RESPONSE: 'EDI Response',
+        FILE_UPLOAD: 'File Upload',
+        FILE_DOWNLOAD: 'File Download',
+        BATCH_PROCESS: 'Batch Process'
+    },
+
+    // Transaction Status
+    TRANSACTION_STATUS: {
+        INITIATED: 'Initiated',
+        PROCESSING: 'Processing',
+        SUBMITTED: 'Submitted',
+        ACKNOWLEDGED: 'Acknowledged',
+        COMPLETED: 'Completed',
+        FAILED: 'Failed',
+        RETRYING: 'Retrying',
+        CANCELLED: 'Cancelled',
+        TIMEOUT: 'Timeout'
+    },
+
+    // Submission Methods
+    SUBMISSION_METHODS: {
+        API: 'API',
+        BATCH_FILE: 'Batch File',
+        REAL_TIME: 'Real Time',
+        SCHEDULED: 'Scheduled'
+    }
+};
+
+// ======== CLEARINGHOUSE CONFIGURATIONS ========
+export const CH_CONFIGURATIONS = {
+    // Availity Configuration
+    AVAILITY: {
+        ENDPOINT: 'https://apps.availity.com',
+        AUTH_METHOD: 'OAuth',
+        TIMEOUT: 30000,
+        RETRY_ATTEMPTS: 3,
+        SUPPORTED_TRANSACTIONS: ['270', '271', '276', '277', '835', '837']
+    },
+
+    // Change Healthcare Configuration
+    CHANGE_HEALTHCARE: {
+        ENDPOINT: 'https://webservices.changehealthcare.com',
+        AUTH_METHOD: 'API Key',
+        TIMEOUT: 45000,
+        RETRY_ATTEMPTS: 3,
+        SUPPORTED_TRANSACTIONS: ['270', '271', '276', '277', '835', '837']
+    },
+
+    // Office Ally Configuration
+    OFFICE_ALLY: {
+        ENDPOINT: 'https://www.officeally.com',
+        AUTH_METHOD: 'Basic Auth',
+        TIMEOUT: 30000,
+        RETRY_ATTEMPTS: 2,
+        SUPPORTED_TRANSACTIONS: ['837', '835', '276', '277']
     }
 };
