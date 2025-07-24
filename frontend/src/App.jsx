@@ -17,7 +17,7 @@ import GraphDashboard from "./pages/GraphDashboard.jsx";
 import DashboardLayout from "./components/layout/DashboardLayout.jsx";
 
 // Auth Pages
-import CompanySignup from "./pages/auth/signup/CompanySignup.jsx";
+import CompanySignup from "./pages/auth/signup/companySignup.jsx";
 import CompanyLogin from "./pages/auth/CompanyLogin.jsx";
 import MasterAdminLogin from "./pages/auth/MasterAdminLogin.jsx";
 import EmployeeLogin from "./pages/auth/EmployeeLogin.jsx";
