@@ -169,7 +169,9 @@ const PatientIntake = () => {
     }
   };
 
-  const filteredPayers = payers?.data?.filter(payer =>
+  console.log("Pyers in pateint Intake.....", payers);
+
+  const filteredPayers = payers?.filter(payer =>
     payer.payerInfo.payerName.toLowerCase().includes(payerSearch.toLowerCase())
   );
 
