@@ -303,7 +303,6 @@ const sowSchema = new mongoose.Schema({
     status: {
         sowStatus: {
             type: String,
-            enum: ['Draft', 'Active', 'Paused', 'Completed', 'Terminated'],
             default: 'Draft',
             index: true
         },
@@ -360,6 +359,11 @@ const sowSchema = new mongoose.Schema({
         }
     },
 
+    assignedEmployees: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee'
+    }],
+
     // ** SYSTEM INFO **
     systemInfo: {
         isActive: {
@@ -402,12 +406,10 @@ const sowSchema = new mongoose.Schema({
 });
 
 // ** INDEXES FOR PERFORMANCE **
-sowSchema.index({ companyRef: 1, clientRef: 1 });
+sowSchema.index({ companyRef: 1, clientCompanyRef: 1 });
 sowSchema.index({ 'serviceDetails.serviceType': 1, 'status.sowStatus': 1 });
 sowSchema.index({ 'status.startDate': 1, 'status.endDate': 1 });
 sowSchema.index({ 'systemInfo.isActive': 1, 'systemInfo.autoAssignmentEnabled': 1 });
-sowSchema.index({ 'activityMetrics.currentSlaComplianceRate': 1 });
-sowSchema.index({ 'activityMetrics.currentQualityScoreAverage': 1 });
 
 // Compound index for assignment queries
 sowSchema.index({
@@ -434,15 +436,13 @@ sowSchema.virtual('currentCapacityUtilization').get(function () {
     return Math.round((this.activityMetrics.totalClaimsAssigned / this.volumeForecasting.expectedDailyVolume) * 100);
 });
 
-// VIRTUAL POPULATION: Replaces the old `assignedEmployees` array.
-// This is more robust as the Employee model is the single source of truth.
-sowSchema.virtual('assignedEmployees', {
+sowSchema.virtual('assignedEmployeesCount', {
     ref: 'Employee',
     localField: '_id',
     foreignField: 'sowAssignments.sowRef',
-    justOne: false,
+    count: true,
+    match: { 'sowAssignments.isActive': true }
 });
-
 
 // ** STATIC METHODS **
 sowSchema.statics.findActiveSOWsByCompany = function (companyRef) {
@@ -450,7 +450,7 @@ sowSchema.statics.findActiveSOWsByCompany = function (companyRef) {
         companyRef,
         'status.sowStatus': 'Active',
         'systemInfo.isActive': true
-    }).populate('clientRef', 'clientInfo.clientName') // Corrected from clientCompanyRef
+    }).populate('clientCompanyRef', 'companyName companyType')
         .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
 };
 
@@ -513,25 +513,28 @@ sowSchema.methods.canEmployeeBeAssigned = function (employee) {
 // ** PRE-SAVE MIDDLEWARE **
 sowSchema.pre('save', function (next) {
     // Auto-calculate monthly volume if not set
-    if (this.isModified('volumeForecasting.expectedDailyVolume') && this.volumeForecasting) {
+    if (this.volumeForecasting && !this.volumeForecasting.expectedMonthlyVolume) {
         this.volumeForecasting.expectedMonthlyVolume = this.volumeForecasting.expectedDailyVolume * 22;
     }
 
     // Validate priority weights sum to 1
-    if (this.isModified('allocationConfig.priorityFormula')) {
-        const { agingWeight, payerWeight, denialWeight } = this.allocationConfig.priorityFormula;
-        const totalWeight = agingWeight + payerWeight + denialWeight;
-        if (Math.abs(totalWeight - 1) > 0.01) {
-            return next(new Error('Priority weights must sum to 1.0'));
-        }
+    const { agingWeight, payerWeight, denialWeight } = this.allocationConfig.priorityFormula;
+    const totalWeight = agingWeight + payerWeight + denialWeight;
+    if (Math.abs(totalWeight - 1) > 0.01) {
+        return next(new Error('Priority weights must sum to 1.0'));
     }
-
 
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
 
+    next();
+});
+
+// ** POST-SAVE MIDDLEWARE **
+sowSchema.post('save', function (doc, next) {
+    // Update company's SOW count or other aggregations if needed
     next();
 });
 

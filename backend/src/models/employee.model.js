@@ -1,4 +1,4 @@
-// backend/src/models/core/employee.model.js
+// backend/src/models/employee.model.js
 
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -359,7 +359,7 @@ const employeeSchema = new mongoose.Schema({
             default: true
         },
     }],
-
+    
     // rampPercentage shifted from sow to employee...
     rampPercentage: {
         type: Number,

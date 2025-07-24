@@ -2,7 +2,6 @@
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto'; // Import crypto for checksum generation
 
 const patientSchema = new mongoose.Schema({
     patientId: {
@@ -13,7 +12,7 @@ const patientSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-
+    
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -34,7 +33,7 @@ const patientSchema = new mongoose.Schema({
         externalPatientId: {
             type: String,
             trim: true,
-            index: true // ADDED: Index for faster lookups
+            index: true
         },
         firstName: {
             type: String,
@@ -63,7 +62,7 @@ const patientSchema = new mongoose.Schema({
             type: Date,
             required: [true, 'Date of birth is required'],
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return v <= new Date();
                 },
                 message: 'Date of birth cannot be in the future'
@@ -84,7 +83,7 @@ const patientSchema = new mongoose.Schema({
             type: String,
             trim: true,
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || /^\d{3}-\d{2}-\d{4}$/.test(v);
                 },
                 message: 'SSN must be in XXX-XX-XXXX format'
@@ -104,7 +103,7 @@ const patientSchema = new mongoose.Schema({
             type: String,
             trim: true,
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || /^\+?[\d\s\-\(\)]{10,15}$/.test(v);
                 },
                 message: 'Invalid phone number format'
@@ -114,7 +113,7 @@ const patientSchema = new mongoose.Schema({
             type: String,
             trim: true,
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || /^\+?[\d\s\-\(\)]{10,15}$/.test(v);
                 },
                 message: 'Invalid phone number format'
@@ -125,7 +124,7 @@ const patientSchema = new mongoose.Schema({
             trim: true,
             lowercase: true,
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
                 },
                 message: 'Invalid email format'
@@ -165,7 +164,7 @@ const patientSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function (v) {
+                    validator: function(v) {
                         return !v || /^\d{5}(-\d{4})?$/.test(v);
                     },
                     message: 'Invalid ZIP code format'
@@ -224,7 +223,7 @@ const patientSchema = new mongoose.Schema({
             expirationDate: {
                 type: Date,
                 validate: {
-                    validator: function (v) {
+                    validator: function(v) {
                         return !v || v > this.insuranceInfo.primaryInsurance.effectiveDate;
                     },
                     message: 'Expiration date must be after effective date'
@@ -378,7 +377,7 @@ const patientSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function (v) {
+                    validator: function(v) {
                         return !v || /^[A-Z]\d{2}(\.\d{1,3})?$/.test(v);
                     },
                     message: 'Invalid ICD-10 code format'
@@ -478,7 +477,7 @@ const patientSchema = new mongoose.Schema({
             npi: {
                 type: String,
                 validate: {
-                    validator: function (v) {
+                    validator: function(v) {
                         return !v || /^\d{10}$/.test(v);
                     },
                     message: 'NPI must be 10 digits'
@@ -706,7 +705,7 @@ patientSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-patientSchema.virtual('fullName').get(function () {
+patientSchema.virtual('fullName').get(function() {
     const { firstName, middleName, lastName, suffix } = this.personalInfo;
     let name = `${firstName} ${lastName}`;
     if (middleName) name = `${firstName} ${middleName} ${lastName}`;
@@ -714,7 +713,7 @@ patientSchema.virtual('fullName').get(function () {
     return name;
 });
 
-patientSchema.virtual('age').get(function () {
+patientSchema.virtual('age').get(function() {
     if (!this.personalInfo.dateOfBirth) return null;
     const today = new Date();
     const birthDate = new Date(this.personalInfo.dateOfBirth);
@@ -726,19 +725,19 @@ patientSchema.virtual('age').get(function () {
     return age;
 });
 
-patientSchema.virtual('insuranceStatus').get(function () {
+patientSchema.virtual('insuranceStatus').get(function() {
     const primary = this.insuranceInfo.primaryInsurance;
     if (!primary.isActive) return 'No Insurance';
-
+    
     const today = new Date();
     if (primary.expirationDate && primary.expirationDate < today) {
         return 'Expired';
     }
-
+    
     if (this.insuranceInfo.eligibilityStatus === 'Verified') {
         return 'Active - Verified';
     }
-
+    
     return 'Active - Not Verified';
 });
 
@@ -747,14 +746,14 @@ patientSchema.virtual('totalActiveClaims', {
     localField: '_id',
     foreignField: 'patientRef',
     count: true,
-    match: {
+    match: { 
         'workflowStatus.currentStatus': { $nin: ['Completed', 'Closed'] },
-        'systemInfo.isActive': true
+        'systemInfo.isActive': true 
     }
 });
 
 // ** STATIC METHODS **
-patientSchema.statics.findByInsurance = function (payerRef, memberId) {
+patientSchema.statics.findByInsurance = function(payerRef, memberId) {
     return this.findOne({
         'insuranceInfo.primaryInsurance.payerRef': payerRef,
         'insuranceInfo.primaryInsurance.memberId': memberId,
@@ -762,7 +761,7 @@ patientSchema.statics.findByInsurance = function (payerRef, memberId) {
     });
 };
 
-patientSchema.statics.findDuplicates = function (firstName, lastName, dateOfBirth) {
+patientSchema.statics.findDuplicates = function(firstName, lastName, dateOfBirth) {
     return this.find({
         'personalInfo.firstName': new RegExp(firstName, 'i'),
         'personalInfo.lastName': new RegExp(lastName, 'i'),
@@ -771,7 +770,7 @@ patientSchema.statics.findDuplicates = function (firstName, lastName, dateOfBirt
     });
 };
 
-patientSchema.statics.findExpiredInsurance = function (companyRef) {
+patientSchema.statics.findExpiredInsurance = function(companyRef) {
     const today = new Date();
     return this.find({
         companyRef,
@@ -781,10 +780,10 @@ patientSchema.statics.findExpiredInsurance = function (companyRef) {
     });
 };
 
-patientSchema.statics.findEligibilityNeeded = function (companyRef, daysSinceLastCheck = 30) {
+patientSchema.statics.findEligibilityNeeded = function(companyRef, daysSinceLastCheck = 30) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastCheck);
-
+    
     return this.find({
         companyRef,
         $or: [
@@ -798,28 +797,28 @@ patientSchema.statics.findEligibilityNeeded = function (companyRef, daysSinceLas
 };
 
 // ** INSTANCE METHODS **
-patientSchema.methods.calculateDataQualityScore = function () {
+patientSchema.methods.calculateDataQualityScore = function() {
     let score = 0;
     let maxScore = 0;
-
+    
     // Personal info completeness (30 points)
     maxScore += 30;
     if (this.personalInfo.firstName) score += 5;
     if (this.personalInfo.lastName) score += 5;
     if (this.personalInfo.dateOfBirth) score += 10;
     if (this.personalInfo.gender) score += 5;
-    if (this.personalInfo.socialSecurityNumber || this.encryptedSSN) score += 5;
-
+    if (this.personalInfo.socialSecurityNumber) score += 5;
+    
     // Contact info completeness (20 points)
     maxScore += 20;
     if (this.contactInfo.primaryPhone) score += 10;
     if (this.contactInfo.email) score += 10;
-
+    
     // Address completeness (20 points)
     maxScore += 20;
     const addr = this.addressInfo.homeAddress;
     if (addr.street && addr.city && addr.state && addr.zipCode) score += 20;
-
+    
     // Insurance completeness (30 points)
     maxScore += 30;
     const ins = this.insuranceInfo.primaryInsurance;
@@ -827,18 +826,18 @@ patientSchema.methods.calculateDataQualityScore = function () {
     if (ins.memberId) score += 10;
     if (ins.effectiveDate) score += 5;
     if (ins.isActive) score += 5;
-
+    
     this.systemInfo.dataQualityScore = Math.round((score / maxScore) * 100);
     this.systemInfo.lastDataQualityCheck = new Date();
-
+    
     return this.systemInfo.dataQualityScore;
 };
 
-patientSchema.methods.updateEligibility = function (eligibilityData) {
+patientSchema.methods.updateEligibility = function(eligibilityData) {
     this.insuranceInfo.eligibilityStatus = eligibilityData.status;
     this.insuranceInfo.eligibilityLastVerified = new Date();
     this.insuranceInfo.eligibilityNotes = eligibilityData.notes || '';
-
+    
     if (eligibilityData.benefits) {
         const primary = this.insuranceInfo.primaryInsurance;
         if (eligibilityData.benefits.copay !== undefined) primary.copay = eligibilityData.benefits.copay;
@@ -850,60 +849,52 @@ patientSchema.methods.updateEligibility = function (eligibilityData) {
     }
 };
 
-patientSchema.methods.encryptSensitiveData = function () {
+patientSchema.methods.encryptSensitiveData = function() {
     if (this.personalInfo.socialSecurityNumber && !this.encryptedSSN) {
         // Implement encryption logic here
+        const crypto = require('crypto');
         const algorithm = 'aes-256-gcm';
-        // IMPORTANT: Use a secure, managed key from environment variables
-        const secretKey = process.env.ENCRYPTION_KEY;
-        if (!secretKey) throw new Error("ENCRYPTION_KEY is not set.");
-
-        const iv = crypto.randomBytes(16); // Initialization vector
-        const cipher = crypto.createCipheriv(algorithm, Buffer.from(secretKey, 'hex'), iv);
+        const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+        
+        const cipher = crypto.createCipher(algorithm, secretKey);
         let encrypted = cipher.update(this.personalInfo.socialSecurityNumber, 'utf8', 'hex');
         encrypted += cipher.final('hex');
-        const authTag = cipher.getAuthTag();
-
-        // Store iv and authTag with the encrypted data for decryption
-        this.encryptedSSN = `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+        
+        this.encryptedSSN = encrypted;
         this.personalInfo.socialSecurityNumber = undefined; // Remove plain text
     }
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-patientSchema.pre('save', function (next) {
-    // Only run on create or if relevant fields are modified
-    if (this.isModified('personalInfo')) {
-        this.calculateDataQualityScore();
-
-        // Generate duplicate checksum
+patientSchema.pre('save', function(next) {
+    // Calculate data quality score
+    this.calculateDataQualityScore();
+    
+    // Generate duplicate checksum
+    if (!this.systemInfo.duplicateCheckSum) {
         const checksumData = `${this.personalInfo.firstName}-${this.personalInfo.lastName}-${this.personalInfo.dateOfBirth}`;
-        this.systemInfo.duplicateCheckSum = crypto
+        this.systemInfo.duplicateCheckSum = require('crypto')
             .createHash('md5')
             .update(checksumData.toLowerCase())
             .digest('hex');
-
-        // Encrypt sensitive data
-        try {
-            this.encryptSensitiveData();
-        } catch (error) {
-            return next(error);
-        }
     }
-
+    
     // Auto-set mailing address if same as home address
-    if (this.isModified('addressInfo.homeAddress') && this.addressInfo.mailingAddress.sameAsHomeAddress) {
+    if (this.addressInfo.mailingAddress.sameAsHomeAddress) {
         this.addressInfo.mailingAddress = {
             ...this.addressInfo.homeAddress,
             sameAsHomeAddress: true
         };
     }
-
+    
+    // Encrypt sensitive data
+    this.encryptSensitiveData();
+    
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-
+    
     next();
 });
 

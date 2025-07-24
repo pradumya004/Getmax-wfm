@@ -1,7 +1,7 @@
 // backend/src/models/claimTasks.model.js
+
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto'; // Import crypto
 
 const claimTasksSchema = new mongoose.Schema({
     claimId: {
@@ -12,7 +12,7 @@ const claimTasksSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-
+    
     // ** MAIN RELATIONSHIPS - Core Links **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -47,8 +47,9 @@ const claimTasksSchema = new mongoose.Schema({
     primaryPayerRef: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Payer', // Primary insurance payer
-        required: [true, 'Primary payer reference is required'], // Made this required for integrity
-        index: true
+        // required: [true, 'Primary payer reference is required'],
+        // index: true
+        default: null
     },
     secondaryPayerRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -68,7 +69,7 @@ const claimTasksSchema = new mongoose.Schema({
         claimType: {
             type: String,
             enum: [
-                'Professional', 'Institutional', 'Dental', 'Vision',
+                'Professional', 'Institutional', 'Dental', 'Vision', 
                 'DME', 'Pharmacy', 'Behavioral Health', 'Other'
             ],
             required: [true, 'Claim type is required'],
@@ -82,7 +83,7 @@ const claimTasksSchema = new mongoose.Schema({
         dateOfServiceEnd: {
             type: Date, // For multi-day services
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || v >= this.claimInfo.dateOfService;
                 },
                 message: 'End date must be after or equal to start date'
@@ -93,7 +94,7 @@ const claimTasksSchema = new mongoose.Schema({
             trim: true,
             maxlength: [2, 'Place of service must be 2 characters'],
             validate: {
-                validator: function (v) {
+                validator: function(v) {
                     return !v || /^\d{2}$/.test(v);
                 },
                 message: 'Place of service must be 2 digits'
@@ -105,6 +106,12 @@ const claimTasksSchema = new mongoose.Schema({
                 type: String,
                 required: true,
                 trim: true,
+                validate: {
+                    validator: function(v) {
+                        return /^\d{5}$|^[A-Z]\d{4}$/.test(v); // CPT or HCPCS format
+                    },
+                    message: 'Invalid CPT/HCPCS code format'
+                }
             },
             modifier: {
                 type: String,
@@ -127,6 +134,12 @@ const claimTasksSchema = new mongoose.Schema({
                 type: String,
                 required: true,
                 trim: true,
+                validate: {
+                    validator: function(v) {
+                        return /^[A-Z]\d{2}(\.\d{1,3})?$/.test(v); // ICD-10 format
+                    },
+                    message: 'Invalid ICD-10 code format'
+                }
             },
             isPrimary: {
                 type: Boolean,
@@ -143,7 +156,7 @@ const claimTasksSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function (v) {
+                    validator: function(v) {
                         return !v || /^\d{10}$/.test(v);
                     },
                     message: 'NPI must be 10 digits'
@@ -167,21 +180,27 @@ const claimTasksSchema = new mongoose.Schema({
 
     // ** FINANCIAL BREAKDOWN **
     financialInfo: {
+        // Original charges
         grossCharges: {
             type: Number,
             required: [true, 'Gross charges is required'],
             min: [0, 'Gross charges cannot be negative']
         },
+        // Contractual adjustments
         contractualDiscount: {
             type: Number,
             default: 0,
             min: [0, 'Contractual discount cannot be negative']
         },
+        // Net charges after contractual
         netCharges: {
             type: Number,
-            default: 0,
+            default: function() {
+                return this.financialInfo.grossCharges - (this.financialInfo.contractualDiscount || 0);
+            },
             min: [0, 'Net charges cannot be negative']
         },
+        // Payments received
         paymentsPosted: [{
             paymentDate: {
                 type: Date,
@@ -216,6 +235,7 @@ const claimTasksSchema = new mongoose.Schema({
             default: 0,
             min: [0, 'Total payments cannot be negative']
         },
+        // Adjustments
         adjustments: [{
             adjustmentDate: {
                 type: Date,
@@ -223,7 +243,8 @@ const claimTasksSchema = new mongoose.Schema({
             },
             amount: {
                 type: Number,
-                required: true
+                required: true,
+                min: [0, 'Adjustment amount cannot be negative']
             },
             adjustmentType: {
                 type: String,
@@ -242,8 +263,10 @@ const claimTasksSchema = new mongoose.Schema({
         }],
         totalAdjustments: {
             type: Number,
-            default: 0
+            default: 0,
+            min: [0, 'Total adjustments cannot be negative']
         },
+        // Patient responsibility
         patientResponsibility: {
             copay: {
                 type: Number,
@@ -262,12 +285,19 @@ const claimTasksSchema = new mongoose.Schema({
             },
             totalPatientResponsibility: {
                 type: Number,
-                default: 0
+                default: function() {
+                    const pr = this.financialInfo.patientResponsibility;
+                    return (pr.copay || 0) + (pr.coinsurance || 0) + (pr.deductible || 0);
+                }
             }
         },
+        // Outstanding balance
         outstandingBalance: {
             type: Number,
-            default: 0,
+            default: function() {
+                const fi = this.financialInfo;
+                return (fi.netCharges || 0) - (fi.totalPaymentsPosted || 0) - (fi.totalAdjustments || 0);
+            },
             min: [0, 'Outstanding balance cannot be negative']
         }
     },
@@ -278,7 +308,7 @@ const claimTasksSchema = new mongoose.Schema({
             type: String,
             enum: [
                 'New', 'Assigned', 'In Progress', 'Pending Info', 'On Hold',
-                'Pending Payment', 'Appealed', 'Denied', 'Completed',
+                'Pending Payment', 'Appealed', 'Denied', 'Completed', 
                 'QA Review', 'QA Failed', 'Closed'
             ],
             required: [true, 'Current status is required'],
@@ -293,7 +323,7 @@ const claimTasksSchema = new mongoose.Schema({
             type: String,
             enum: [
                 'Initial Review', 'Sent to Payer', 'Follow Up Call', 'Appeal Submitted',
-                'Info Requested', 'Payment Posted', 'Denied - File Appeal',
+                'Info Requested', 'Payment Posted', 'Denied - File Appeal', 
                 'Collect from Patient', 'Write Off', 'Close Claim'
             ]
         },
@@ -389,7 +419,11 @@ const claimTasksSchema = new mongoose.Schema({
         },
         agingDays: {
             type: Number,
-            default: 0,
+            default: function() {
+                const today = new Date();
+                const dos = this.claimInfo.dateOfService;
+                return Math.floor((today - dos) / (1000 * 60 * 60 * 24));
+            },
             min: [0, 'Aging days cannot be negative']
         },
         payerScore: {
@@ -657,16 +691,16 @@ const claimTasksSchema = new mongoose.Schema({
 });
 
 // ** INDEXES FOR PERFORMANCE OPTIMIZATION **
+// Basic indexes
 claimTasksSchema.index({ companyRef: 1, clientRef: 1, sowRef: 1 });
 claimTasksSchema.index({ assignedEmployeeRef: 1, 'workflowStatus.currentStatus': 1 });
 claimTasksSchema.index({ 'claimInfo.dateOfService': 1 });
 claimTasksSchema.index({ 'financialInfo.outstandingBalance': 1 });
 claimTasksSchema.index({ 'priorityInfo.priorityScore': -1 });
-claimTasksSchema.index({ 'systemInfo.duplicateCheckSum': 1 });
 
 // Compound indexes for complex queries
-claimTasksSchema.index({
-    companyRef: 1,
+claimTasksSchema.index({ 
+    companyRef: 1, 
     'workflowStatus.currentStatus': 1,
     'assignmentInfo.isInFloatingPool': 1
 });
@@ -688,114 +722,241 @@ claimTasksSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-claimTasksSchema.virtual('isOverdue').get(function () {
+claimTasksSchema.virtual('isOverdue').get(function() {
     if (!this.slaTracking.slaDeadline) return false;
     return new Date() > this.slaTracking.slaDeadline;
 });
 
-// ... other virtuals ...
+claimTasksSchema.virtual('totalClaimValue').get(function() {
+    return this.financialInfo.grossCharges || 0;
+});
+
+claimTasksSchema.virtual('netCollectable').get(function() {
+    return this.financialInfo.netCharges - (this.financialInfo.totalPaymentsPosted || 0);
+});
+
+claimTasksSchema.virtual('isHighValue').get(function() {
+    return this.financialInfo.grossCharges > 1000; // Configurable threshold
+});
+
+claimTasksSchema.virtual('isPastDue').get(function() {
+    const agingThreshold = 90; // 90 days
+    return this.priorityInfo.agingDays > agingThreshold;
+});
+
+// Populate references for common queries
+claimTasksSchema.virtual('assignedEmployee', {
+    ref: 'Employee',
+    localField: 'assignedEmployeeRef',
+    foreignField: '_id',
+    justOne: true
+});
+
+claimTasksSchema.virtual('client', {
+    ref: 'Client',
+    localField: 'clientRef',
+    foreignField: '_id',
+    justOne: true
+});
+
+claimTasksSchema.virtual('sow', {
+    ref: 'SOW',
+    localField: 'sowRef',
+    foreignField: '_id',
+    justOne: true
+});
 
 // ** STATIC METHODS **
-claimTasksSchema.statics.findFloatingPoolClaims = async function (companyRef, sowRef = null) {
+claimTasksSchema.statics.findFloatingPoolClaims = function(companyRef, sowRef = null) {
     const query = {
         companyRef,
         'assignmentInfo.isInFloatingPool': true,
         'systemInfo.isActive': true,
         'workflowStatus.currentStatus': { $nin: ['Completed', 'Closed'] }
     };
+    
     if (sowRef) query.sowRef = sowRef;
-
-    // To use updated payer scores, we need to populate them.
-    // This is now an async function.
-    const claims = await this.find(query)
-        .populate('sowRef', 'allocationConfig.priorityFormula')
-        .populate('primaryPayerRef', 'performanceMetrics.priorityScore')
-        .sort({ 'assignmentInfo.floatingPoolEntry': 1 })
-        .limit(500) // Safety limit
-        .exec();
-
-    // Recalculate and sort in memory. Not ideal for huge pools, but more accurate.
-    claims.forEach(claim => claim.calculatePriorityScore());
-    claims.sort((a, b) => b.priorityInfo.priorityScore - a.priorityInfo.priorityScore);
-
-    return claims;
+    
+    return this.find(query)
+        .populate('clientRef', 'clientInfo.clientName')
+        .populate('patientRef', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ 'priorityInfo.priorityScore': -1, 'assignmentInfo.floatingPoolEntry': 1 });
 };
 
-// ... other static methods ...
+claimTasksSchema.statics.findEmployeeWorkload = function(employeeRef) {
+    return this.find({
+        assignedEmployeeRef: employeeRef,
+        'systemInfo.isActive': true,
+        'workflowStatus.currentStatus': { $nin: ['Completed', 'Closed'] }
+    })
+    .populate('clientRef', 'clientInfo.clientName')
+    .populate('sowRef', 'sowName serviceDetails.serviceType')
+    .sort({ 'priorityInfo.priorityScore': -1 });
+};
 
+claimTasksSchema.statics.findSLABreachedClaims = function(companyRef) {
+    return this.find({
+        companyRef,
+        'slaTracking.slaStatus': 'Breached',
+        'systemInfo.isActive': true
+    })
+    .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
+    .populate('clientRef', 'clientInfo.clientName');
+};
+
+claimTasksSchema.statics.findQAPendingClaims = function(companyRef) {
+    return this.find({
+        companyRef,
+        'qaInfo.isSelectedForQA': true,
+        'qaInfo.qaStatus': { $in: ['Pending', 'In Review'] },
+        'systemInfo.isActive': true
+    });
+};
+
+claimTasksSchema.statics.findHighValueClaims = function(companyRef, minValue = 1000) {
+    return this.find({
+        companyRef,
+        'financialInfo.grossCharges': { $gte: minValue },
+        'financialInfo.outstandingBalance': { $gt: 0 },
+        'systemInfo.isActive': true
+    });
+};
 
 // ** INSTANCE METHODS **
-claimTasksSchema.methods.calculatePriorityScore = function () {
-    // This method now relies on populated sowRef and primaryPayerRef for accuracy
-    const sow = this.populated('sowRef');
-    const payer = this.populated('primaryPayerRef');
-
-    let weights;
-    if (sow && sow.allocationConfig) {
-        weights = sow.allocationConfig.priorityFormula;
+claimTasksSchema.methods.calculatePriorityScore = function() {
+    const sow = this.populated('sowRef') || this.sowRef;
+    
+    if (!sow || !sow.allocationConfig) {
+        // Default weights if SOW not available
+        const agingWeight = 0.4;
+        const payerWeight = 0.3;
+        const denialWeight = 0.3;
+        
+        this.priorityInfo.priorityScore = 
+            (this.priorityInfo.agingDays * agingWeight) +
+            (this.priorityInfo.payerScore * payerWeight) +
+            ((this.priorityInfo.isDenied ? 10 : 0) * denialWeight);
     } else {
-        // Fallback weights if SOW is not populated
-        weights = { agingWeight: 0.4, payerWeight: 0.3, denialWeight: 0.3 };
+        const weights = sow.allocationConfig.priorityFormula;
+        this.priorityInfo.priorityScore = 
+            (this.priorityInfo.agingDays * weights.agingWeight) +
+            (this.priorityInfo.payerScore * weights.payerWeight) +
+            ((this.priorityInfo.isDenied ? 10 : 0) * weights.denialWeight);
     }
-
-    // Update the payer score on the claim from the populated payer record
-    if (payer && payer.performanceMetrics) {
-        this.priorityInfo.payerScore = payer.performanceMetrics.priorityScore || 5;
-    }
-
-    // Calculate the final priority score
-    this.priorityInfo.priorityScore =
-        (this.priorityInfo.agingDays * weights.agingWeight) +
-        (this.priorityInfo.payerScore * weights.payerWeight) +
-        ((this.priorityInfo.isDenied ? 10 : 0) * weights.denialWeight);
-
+    
     this.priorityInfo.lastPriorityUpdate = new Date();
     return this.priorityInfo.priorityScore;
 };
 
-// ... other instance methods ...
+claimTasksSchema.methods.assignToEmployee = function(employeeRef, assignedBy, method = 'Manual') {
+    this.assignedEmployeeRef = employeeRef;
+    this.assignmentInfo.assignmentDate = new Date();
+    this.assignmentInfo.assignedBy = assignedBy;
+    this.assignmentInfo.assignmentMethod = method;
+    this.assignmentInfo.isInFloatingPool = false;
+    
+    // Update status if it's still 'New'
+    if (this.workflowStatus.currentStatus === 'New') {
+        this.workflowStatus.currentStatus = 'Assigned';
+        this.workflowStatus.lastStatusUpdate = {
+            date: new Date(),
+            updatedBy: assignedBy,
+            previousStatus: 'New'
+        };
+    }
+};
 
-// ** PRE-SAVE MIDDLEWARE **
-claimTasksSchema.pre('save', async function (next) {
-    // Calculate financial fields
-    if (this.isModified('financialInfo')) {
-        this.financialInfo.netCharges = this.financialInfo.grossCharges - (this.financialInfo.contractualDiscount || 0);
-        this.financialInfo.totalPaymentsPosted = this.financialInfo.paymentsPosted.reduce((sum, p) => sum + p.amount, 0);
-        this.financialInfo.totalAdjustments = this.financialInfo.adjustments.reduce((sum, a) => sum + a.amount, 0);
-        this.financialInfo.outstandingBalance = Math.max(0,
-            this.financialInfo.netCharges - this.financialInfo.totalPaymentsPosted - this.financialInfo.totalAdjustments
+claimTasksSchema.methods.moveToFloatingPool = function(reason = 'Auto-reassignment') {
+    this.assignedEmployeeRef = null;
+    this.assignmentInfo.isInFloatingPool = true;
+    this.assignmentInfo.floatingPoolEntry = new Date();
+    
+    // Add to reassignment history
+    this.assignmentInfo.reassignmentHistory.push({
+        fromEmployee: this.assignedEmployeeRef,
+        toEmployee: null,
+        reassignmentDate: new Date(),
+        reason: reason
+    });
+};
+
+claimTasksSchema.methods.updateFinancials = function(financialData) {
+    if (financialData.payment) {
+        this.financialInfo.paymentsPosted.push(financialData.payment);
+        this.financialInfo.totalPaymentsPosted = this.financialInfo.paymentsPosted.reduce(
+            (sum, payment) => sum + payment.amount, 0
         );
     }
+    
+    if (financialData.adjustment) {
+        this.financialInfo.adjustments.push(financialData.adjustment);
+        this.financialInfo.totalAdjustments = this.financialInfo.adjustments.reduce(
+            (sum, adj) => sum + adj.amount, 0
+        );
+    }
+    
+    // Recalculate outstanding balance
+    this.financialInfo.outstandingBalance = 
+        this.financialInfo.netCharges - 
+        this.financialInfo.totalPaymentsPosted - 
+        this.financialInfo.totalAdjustments;
+    
+    // Update activity
+    this.activityMetrics.lastActivityDate = new Date();
+    this.activityMetrics.touchCount += 1;
+};
 
+claimTasksSchema.methods.canBeCompleted = function() {
+    const hasZeroBalance = this.financialInfo.outstandingBalance <= 0;
+    const hasResolution = ['Paid', 'Denied', 'Written Off'].includes(this.workflowStatus.actionCode);
+    
+    return {
+        canComplete: hasZeroBalance || hasResolution,
+        reason: hasZeroBalance ? 'Zero balance' : hasResolution ? 'Resolution recorded' : 'Outstanding balance or no resolution'
+    };
+};
+
+// ** PRE-SAVE MIDDLEWARE **
+claimTasksSchema.pre('save', function(next) {
     // Calculate aging days
-    if (this.isModified('claimInfo.dateOfService')) {
+    if (this.claimInfo.dateOfService) {
         const today = new Date();
         this.priorityInfo.agingDays = Math.floor((today - this.claimInfo.dateOfService) / (1000 * 60 * 60 * 24));
     }
-
-    // Populate refs if needed for priority calculation
-    if (!this.populated('sowRef') || !this.populated('primaryPayerRef')) {
-        await this.populate([
-            { path: 'sowRef', select: 'allocationConfig.priorityFormula' },
-            { path: 'primaryPayerRef', select: 'performanceMetrics.priorityScore' }
-        ]);
-    }
+    
+    // Calculate net charges
+    this.financialInfo.netCharges = this.financialInfo.grossCharges - (this.financialInfo.contractualDiscount || 0);
+    
+    // Calculate outstanding balance
+    this.financialInfo.outstandingBalance = Math.max(0, 
+        this.financialInfo.netCharges - 
+        (this.financialInfo.totalPaymentsPosted || 0) - 
+        (this.financialInfo.totalAdjustments || 0)
+    );
+    
+    // Update priority score
     this.calculatePriorityScore();
-
-    // Generate duplicate checksum for new documents
-    if (this.isNew) {
-        const checksumData = `${this.claimInfo.externalClaimId || ''}-${this.patientRef}-${this.claimInfo.dateOfService.toISOString().split('T')[0]}-${this.financialInfo.grossCharges}`;
-        this.systemInfo.duplicateCheckSum = crypto
+    
+    // Generate duplicate checksum for duplicate detection
+    if (!this.systemInfo.duplicateCheckSum) {
+        const checksumData = `${this.claimInfo.externalClaimId}-${this.patientRef}-${this.claimInfo.dateOfService}-${this.financialInfo.grossCharges}`;
+        this.systemInfo.duplicateCheckSum = require('crypto')
             .createHash('md5')
             .update(checksumData)
             .digest('hex');
     }
-
+    
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
+    
+    next();
+});
 
+// ** POST-SAVE MIDDLEWARE **
+claimTasksSchema.post('save', function(doc, next) {
+    // Could trigger real-time notifications, webhook calls, etc.
     next();
 });
 

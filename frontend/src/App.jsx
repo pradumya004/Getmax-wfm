@@ -179,7 +179,7 @@ function App() {
             {/* <Route path="system/database" element={<DatabaseMonitor />} /> */}
             <Route path="system/performance" element={<PerformanceMonitor />} />
             {/* <Route path="system/alerts" element={<NotificationCenter />} /> */}
-            <Route path="system/api" element={<ApiMonitoring />} />
+            {/* <Route path="system/api" element={<ApiMonitoring />} /> */}
 
             {/* Security & Configuration */}
             <Route path="security/settings" element={<SecurityCenter />} />
