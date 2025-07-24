@@ -10,6 +10,9 @@ import {
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 
+// Graphs
+import GraphDashboard from "./pages/GraphDashboard.jsx";
+
 // Layout
 import DashboardLayout from "./components/layout/DashboardLayout.jsx";
 
@@ -121,6 +124,9 @@ function App() {
           {/* PUBLIC ROUTES */}
           <Route path="/" element={<HomePage />} />
           <Route path="/claimintake" element={<ClaimIntake />} />
+
+          {/* MERMAID GRAPHS */}
+          <Route path="/graphs" element={<GraphDashboard />} />
 
           {/* AUTH ROUTES */}
           <Route path="/signup" element={<CompanySignup />} />
