@@ -12,7 +12,6 @@ import {
 
 import {
   verifyEmployeeToken,
-  requirePermission
 } from '../middlewares/auth.middleware.js';
 
 import { cleanupMiddleware, uploadBulkMiddleware } from '../middlewares/upload.middleware.js';
@@ -23,16 +22,15 @@ router.use(verifyEmployeeToken);
 
 // CRUD Routes
 router.post('/', createPatient);
-router.get('/', requirePermission('patient', 'View'), getAllPatients);
-router.get('/:id', requirePermission('patient', 'View'), getPatientById);
-router.put('/:id', requirePermission('patient', 'Update'), updatePatient);
-router.delete('/:id', requirePermission('patient', 'Delete'), deactivatePatient);
+router.get('/', getAllPatients);
+router.get('/:id',getPatientById);
+router.put('/:id', updatePatient);
+router.delete('/:id', deactivatePatient);
 
 // Bulk Upload
 router.post(
   '/upload/bulk',
   uploadBulkMiddleware,  
-  requirePermission('patient', 'Create'),
   bulkUploadPatients,
   cleanupMiddleware
 );

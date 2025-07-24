@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from "crypto";
 
 const patientSchema = new mongoose.Schema({
     patientId: {
@@ -334,7 +335,7 @@ const patientSchema = new mongoose.Schema({
             allergen: {
                 type: String,
                 trim: true,
-                required: true
+                // required: true
             },
             reaction: {
                 type: String,
@@ -350,7 +351,7 @@ const patientSchema = new mongoose.Schema({
             medicationName: {
                 type: String,
                 trim: true,
-                required: true
+                // required: true
             },
             dosage: {
                 type: String,
@@ -371,7 +372,7 @@ const patientSchema = new mongoose.Schema({
             condition: {
                 type: String,
                 trim: true,
-                required: true
+                // required: true
             },
             icdCode: {
                 type: String,
@@ -433,7 +434,7 @@ const patientSchema = new mongoose.Schema({
         financialClass: {
             type: String,
             enum: ['Commercial', 'Medicare', 'Medicaid', 'Self Pay', 'Workers Comp', 'Other'],
-            required: [true, 'Financial class is required'],
+            // required: [true, 'Financial class is required'],
             index: true
         },
         creditScore: {
@@ -497,7 +498,7 @@ const patientSchema = new mongoose.Schema({
             npi: String,
             specialty: {
                 type: String,
-                required: true
+                // required: true
             },
             phone: String,
             lastVisitDate: Date
@@ -565,7 +566,7 @@ const patientSchema = new mongoose.Schema({
         dataSource: {
             type: String,
             enum: ['Manual Entry', 'EHR Sync', 'Registration Form', 'API Import', 'SFTP', 'Other'],
-            required: [true, 'Data source is required'],
+            // required: [true, 'Data source is required'],
             default: 'Manual Entry'
         },
         sourceSystemId: {
@@ -664,7 +665,7 @@ const patientSchema = new mongoose.Schema({
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Employee',
-            required: [true, 'Created by reference is required']
+            // required: [true, 'Created by reference is required']
         },
         lastModifiedBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -852,7 +853,6 @@ patientSchema.methods.updateEligibility = function(eligibilityData) {
 patientSchema.methods.encryptSensitiveData = function() {
     if (this.personalInfo.socialSecurityNumber && !this.encryptedSSN) {
         // Implement encryption logic here
-        const crypto = require('crypto');
         const algorithm = 'aes-256-gcm';
         const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
         
@@ -873,7 +873,7 @@ patientSchema.pre('save', function(next) {
     // Generate duplicate checksum
     if (!this.systemInfo.duplicateCheckSum) {
         const checksumData = `${this.personalInfo.firstName}-${this.personalInfo.lastName}-${this.personalInfo.dateOfBirth}`;
-        this.systemInfo.duplicateCheckSum = require('crypto')
+        this.systemInfo.duplicateCheckSum = crypto
             .createHash('md5')
             .update(checksumData.toLowerCase())
             .digest('hex');

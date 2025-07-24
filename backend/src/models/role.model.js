@@ -72,6 +72,18 @@ const roleSchema = new mongoose.Schema({
             required: true,
             default: "None"
         },
+        // patientPermissions: {
+        //     type: String,
+        //     enum: ["None", "View", "Create", "Export", "Full"],
+        //     required: true,
+        //     default: "None"
+        // },
+        // payerPermissions: {
+        //     type: String,
+        //     enum: ["None", "View", "Create", "Export", "Full"],
+        //     required: true,
+        //     default: "None"
+        // },
 
     },
 
