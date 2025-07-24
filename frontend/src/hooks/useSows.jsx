@@ -228,11 +228,17 @@ export const useSOWs = () => {
   };
 
   // Get SOWs for specific client
-  const getClientSOWs = async (clientId) => {
+  const getClientSOWs = useCallback(async (clientId) => {
+    if (!clientId) return []; // Add a guard clause
+
     try {
       setLoading(true);
       const response = await sowAPI.getByClientId(clientId);
-      const data = response?.data || response;
+
+      // Assuming your API returns { success: true, data: [...] }
+      const data = response?.data?.data?.data ;
+      console.log("RAW SOWs RESPONSE:", data); 
+      
       return Array.isArray(data) ? data : [];
     } catch (err) {
       const errorMessage =
@@ -244,7 +250,8 @@ export const useSOWs = () => {
     } finally {
       setLoading(false);
     }
-  };
+    // 3. Add a dependency array. It's empty because the function doesn't depend on any props or state from this hook.
+  }, []); 
 
   // Get SOW metrics
   const getSOWMetrics = async (id) => {

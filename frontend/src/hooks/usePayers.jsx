@@ -20,7 +20,7 @@ export const usePayers = () => {
       const res = await fetchAllPayers();
       console.log("Payers Response In usePayers:", res);
 
-      setPayers(res.data || []);
+      setPayers(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch payers", err);
     }
