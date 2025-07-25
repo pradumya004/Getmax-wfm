@@ -1,604 +1,642 @@
+// frontend/src/pages/GraphDashboard.jsx
+
 import MermaidGraph from "../mermaid/MermaidGraph.jsx";
+import { useState, useRef } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-const graph1 = `
-graph TB
-    subgraph Data_Ingestion_Layer
-        A[Manual Entry] --> E
-        B[API Integration] --> E
-        C[SFTP Upload] --> E
-        D[EDI Import] --> E
-        F[EHR Integration] --> E
-    end
-    
-    subgraph Core_Claims_Engine
-        E[ClaimTasks Core] --> G[Workflow Engine]
-        G --> H[Batch Processing]
-        G --> I[QA System]
-        G --> J[Audit System]
-    end
-    
-    subgraph Processing_Layer
-        H[ClaimBatch] --> K[EDI Generation]
-        K --> L[Clearinghouse]
-        L --> M[Payer Systems]
-    end
-    
-    subgraph Quality_&_Compliance
-        I[ClaimAudit] --> N[Compliance Reports]
-        J[QA Reviews] --> N
-    end
-    
-    subgraph Output_&_Reporting
-        M --> O[Payment Posting]
-        N --> P[Management Dashboards]
-        O --> P
-    end
-`;
+const graphs = [
+  {
+    id: "graph1",
+    title: "GetMax WFM - Entire Beta Version Workflow",
+    chart: `
+    graph TB
 
-const graph2 = `
-graph LR
-    A[Claim Enters Stage] --> B{Auto-Progress Rules}
-    B -->|Met| C[Auto Transition]
-    B -->|Not Met| D{Escalation Rules}
-    D -->|Triggered| E[Escalate to Manager]
-    D -->|Not Triggered| F[Continue in Stage]
-    C --> G[Update Metrics]
-    E --> G
-    F --> H[Monitor SLA]
-`;
+    %% -- Layout & Spacing Configuration --
+    %%{
+      init: {
+        "theme": "base",
+        "themeVariables": {
+          "ranksep": 100,
+          "nodesep": 160
+        }
+      }
+    }%%
 
-const graph3 = `
-sequenceDiagram
-    participant C as Claims
-    participant B as Batch System
-    participant V as Validation Engine
-    participant CH as Clearinghouse
-    participant P as Payer
-    
-    C->>B: Claims Ready for Submission
-    B->>B: Group by Business Rules
-    B->>V: Validate Batch
-    V-->>B: Validation Results
-    
-    alt Validation Passed
-        B->>CH: Submit Batch
-        CH-->>B: Acknowledgment
-        B->>P: Forward to Payer
-        P-->>B: Status Updates
-    else Validation Failed
-        B->>C: Return with Errors
+    %% === PLATFORM ONBOARDING PHASE ===
+    subgraph "🏢 BILLING COMPANY ONBOARDING"
+        A1[Billing Company Inquiry] --> A2[Demo & Consultation]
+        A2 --> A3[Company Registration]
+        A3 --> A4[Master Admin Review & Approval]
+        A4 --> A5[Company Profile Setup]
+        A5 --> A6[Subscription Plan Selection]
+        A6 --> A7[Initial Configuration]
+        A7 --> A8[Go-Live Preparation]
     end
-`;
 
-const graph4 = `
-graph TD
-    A[Claim Selection] --> B{Audit Type}
-    B -->|Pre-Submission| C[Coding & Documentation]
-    B -->|Post-Submission| D[Quality Review]
-    B -->|Compliance| E[Regulatory Check]
-    
-    C --> F[Scoring Engine]
-    D --> F
-    E --> F
-    
-    F --> G{Score Threshold}
-    G -->|Pass| H[Release/Continue]
-    G -->|Fail| I[Corrective Actions]
-    G -->|Warning| J[Management Review]
-    
-    I --> K[Assign Tasks]
-    J --> L[Escalation Process]
-`;
+    %% === ORGANIZATION SETUP PHASE ===
+    subgraph "🏗️ ORGANIZATION STRUCTURE SETUP"
+        B1[Department Creation] --> B2[Sub-Department Setup]
+        B2 --> B3[Role Definition]
+        B3 --> B4[Designation Creation]
+        B4 --> B5[Reporting Hierarchy]
+        B5 --> B6[Permission Matrix Setup]
+        B6 --> B7[Organization Validation]
+    end
 
-const graph5 = `
-stateDiagram-v2
-    [*] --> New_Claim
-    New_Claim --> In_Floating_Pool
-    In_Floating_Pool --> Assigned_For_Review
-    
-    Assigned_For_Review --> Initial_Review
-    Initial_Review --> Coding_Review
-    Coding_Review --> Billing_Review
-    
-    Billing_Review --> Ready_For_Submission
-    Ready_For_Submission --> Batch_Created
-    Batch_Created --> Submitted_To_Clearinghouse
-    
-    Submitted_To_Clearinghouse --> Acknowledged_By_Clearinghouse
-    Acknowledged_By_Clearinghouse --> Sent_To_Payer
-    Sent_To_Payer --> Under_Payer_Review
-    
-    Under_Payer_Review --> Paid
-    Under_Payer_Review --> Denied
-    Under_Payer_Review --> Partially_Paid
-    
-    Denied --> Appeal_Required
-    Appeal_Required --> Appeal_Submitted
-    Appeal_Submitted --> Appeal_Under_Review
-    
-    Paid --> Payment_Posted
-    Partially_Paid --> Secondary_Billing
-    Payment_Posted --> Closed
-    
-    Closed --> [*]
-`;
+    %% === EMPLOYEE MANAGEMENT PHASE ===
+    subgraph "👥 EMPLOYEE LIFECYCLE MANAGEMENT"
+        C1[Employee Onboarding] --> C2[Profile Creation]
+        C2 --> C3[Role Assignment]
+        C3 --> C4[Department Allocation]
+        C4 --> C5[Skill Assessment]
+        C5 --> C6[Training Assignment]
+        C6 --> C7[Performance Setup]
+        C7 --> C8[Active Employee Status]
+    end
 
-const graph6 = `
-graph TB
-    subgraph "External Data Sources"
-        EHR[EHR Systems<br/>Epic, Cerner, AllScripts]
-        PM[Practice Management<br/>Medisoft, AdvancedMD]
-        MANUAL[Manual Entry Portal]
-        API[Third-party APIs]
-        SFTP[SFTP File Uploads]
-        EMAIL[Email Processing]
+    %% === CLIENT ONBOARDING PHASE ===
+    subgraph "🏥 CLIENT ONBOARDING & MANAGEMENT"
+        D1[Healthcare Provider Inquiry] --> D2[Client Intake Process]
+        D2 --> D3[Documentation Collection]
+        D3 --> D4[Contract Negotiation]
+        D4 --> D5[SOW Creation]
+        D5 --> D6[Integration Setup]
+        D6 --> D7[Payer Configuration]
+        D7 --> D8[Patient Data Setup]
+        D8 --> D9[Client Go-Live]
     end
-    
-    subgraph "Data Ingestion Layer"
-        ROUTER[Data Router & Validator]
-        PARSER[Multi-format Parser<br/>CSV, Excel, EDI, JSON]
-        VALIDATOR[Business Rules Engine]
-    end
-    
-    subgraph "Core Claims Processing"
-        CLAIMTASKS[(ClaimTasks Model<br/>Primary Data Store)]
-        WORKFLOW[(ClaimWorkflow Model<br/>Process Management)]
-        BATCH[(ClaimBatch Model<br/>Submission Management)]
-        AUDIT[(ClaimAudit Model<br/>Quality Assurance)]
-    end
-    
-    subgraph "Processing Engines"
-        PRIORITY[Priority Calculator]
-        SLA[SLA Monitor]
-        QA[QA Selection Engine]
-        AUTO[Automation Engine]
-    end
-    
-    subgraph "External Integrations"
-        CH[Clearinghouses<br/>Availity, Change Healthcare]
-        PAYER[Payer Systems<br/>Insurance Companies]
-        BANK[Banking Systems<br/>Payment Processing]
-    end
-    
-    EHR --> ROUTER
-    PM --> ROUTER
-    MANUAL --> ROUTER
-    API --> ROUTER
-    SFTP --> PARSER
-    EMAIL --> PARSER
-    
-    ROUTER --> VALIDATOR
-    PARSER --> VALIDATOR
-    VALIDATOR --> CLAIMTASKS
-    
-    CLAIMTASKS --> WORKFLOW
-    WORKFLOW --> BATCH
-    WORKFLOW --> AUDIT
-    
-    CLAIMTASKS --> PRIORITY
-    CLAIMTASKS --> SLA
-    CLAIMTASKS --> QA
-    WORKFLOW --> AUTO
-    
-    BATCH --> CH
-    CH --> PAYER
-    PAYER --> BANK
-    
-    style CLAIMTASKS fill:#e1f5fe
-    style WORKFLOW fill:#f3e5f5
-    style BATCH fill:#e8f5e8
-    style AUDIT fill:#fff3e0
-`;
 
-const graph7 = `
-stateDiagram-v2
-    direction TB
-    
-    [*] --> NEW: Data Ingestion
-    NEW --> FLOATING: Auto-assignment Logic
-    FLOATING --> ASSIGNED: Employee Assignment
-    
-    state REVIEW {
-        ASSIGNED --> INITIAL_REVIEW
-        INITIAL_REVIEW --> CODING_REVIEW
-        CODING_REVIEW --> BILLING_REVIEW
-        BILLING_REVIEW --> READY_SUBMISSION
-    }
-    
-    state SUBMISSION {
-        READY_SUBMISSION --> BATCH_CREATED
-        BATCH_CREATED --> SUBMITTED_CH
-        SUBMITTED_CH --> ACKNOWLEDGED
-        ACKNOWLEDGED --> SENT_PAYER
-    }
-    
-    state PAYER_PROCESSING {
-        SENT_PAYER --> UNDER_REVIEW
-        UNDER_REVIEW --> PAID
-        UNDER_REVIEW --> DENIED
-        UNDER_REVIEW --> PARTIAL_PAID
-        UNDER_REVIEW --> SUSPENDED
-    }
-    
-    state APPEAL_PROCESS {
-        DENIED --> APPEAL_REQUIRED
-        APPEAL_REQUIRED --> APPEAL_SUBMITTED
-        APPEAL_SUBMITTED --> APPEAL_REVIEW
-        APPEAL_REVIEW --> PAID
-        APPEAL_REVIEW --> FINAL_DENIED
-    }
-    
-    state RESOLUTION {
-        PAID --> PAYMENT_POSTED
-        PARTIAL_PAID --> SECONDARY_BILLING
-        SECONDARY_BILLING --> PAYMENT_POSTED
-        FINAL_DENIED --> WRITE_OFF
-        PAYMENT_POSTED --> CLOSED
-        WRITE_OFF --> CLOSED
-    }
-    
-    CLOSED --> [*]
-    
-    note right of REVIEW : QA audits can occur<br/>at any review stage
-    note right of SUBMISSION : SLA monitoring<br/>is active throughout
-    note right of PAYER_PROCESSING : Real-time status<br/>updates from payers
-    note right of APPEAL_PROCESS : Automated deadline<br/>tracking and alerts
-`;
+    %% === TASK MANAGEMENT PHASE ===
+    subgraph "📋 WORKFORCE TASK MANAGEMENT"
+        E1[Task Creation] --> E2[Skill Matching]
+        E2 --> E3[Priority Assignment]
+        E3 --> E4[Employee Allocation]
+        E4 --> E5[Task Distribution]
+        E5 --> E6[Progress Tracking]
+        E6 --> E7[Quality Monitoring]
+        E7 --> E8[Task Completion]
+    end
 
-const graph8 = `
-graph LR
-    subgraph "Real-time Integration"
-        A1[API Calls] --> B1[Immediate Processing]
-        A2[EHR Direct Connect] --> B1
-        B1 --> C1[Real-time Validation]
-        C1 --> D1[Instant Workflow Trigger]
+    %% === PERFORMANCE MANAGEMENT PHASE ===
+    subgraph "📊 PERFORMANCE & PRODUCTIVITY"
+        F1[Performance Metrics Collection] --> F2[Productivity Analysis]
+        F2 --> F3[SLA Monitoring]
+        F3 --> F4[Quality Scoring]
+        F4 --> F5[Employee Ranking]
+        F5 --> F6[Gamification Updates]
+        F6 --> F7[Feedback Generation]
+        F7 --> F8[Performance Reviews]
     end
-    
-    subgraph "Batch Processing"
-        A3[SFTP Upload] --> B2[Scheduled Processing]
-        A4[Email Attachments] --> B2
-        A5[CSV/Excel Files] --> B2
-        B2 --> C2[Batch Validation]
-        C2 --> D2[Bulk Workflow Creation]
-    end
-    
-    subgraph "EDI Processing"
-        A6[837 Files] --> B3[EDI Parser]
-        B3 --> C3[X12 Validation]
-        C3 --> D3[Structured Data Creation]
-    end
-    
-    subgraph "Manual Entry"
-        A7[Web Portal] --> B4[Form Validation]
-        B4 --> C4[Real-time Checks]
-        C4 --> D4[Single Claim Creation]
-    end
-    
-    D1 --> E[ClaimTasks Database]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    
-    style A1 fill:#4caf50
-    style A2 fill:#4caf50
-    style A3 fill:#ff9800
-    style A4 fill:#ff9800
-    style A5 fill:#ff9800
-    style A6 fill:#2196f3
-    style A7 fill:#9c27b0
-`;
 
-const graph9 = `
-graph TD
-    A[AR] --> B[Calculate Base Factors]
-    
-    B --> C1[Aging Days<br/>Weight: 30%]
-    B --> C2[Claim Amount<br/>Weight: 25%]
-    B --> C3[Payer Score<br/>Weight: 20%]
-    B --> C4[Status Urgency<br/>Weight: 15%]
-    B --> C5[Denial Flag<br/>Weight: 10%]
-    
-    C1 --> D[Weighted Sum Calculator]
-    C2 --> D
-    C3 --> D
-    C4 --> D
-    C5 --> D
-    
-    D --> E{Apply Multipliers}
-    E --> F1[Client Weight<br/>1.0 - 2.0]
-    E --> F2[Workflow Weight<br/>1.0 - 1.5]
-    E --> F3[SOW Priority<br/>1.0 - 1.3]
-    
-    F1 --> G[Final Priority Score]
-    F2 --> G
-    F3 --> G
-    
-    G --> H{Score Range}
-    H -->|0-25| I[Low Priority]
-    H -->|26-50| J[Normal Priority]
-    H -->|51-75| K[High Priority]
-    H -->|76-100| L[Critical Priority]
-    
-    style G fill:#ff5722
-    style I fill:#4caf50
-    style J fill:#ffeb3b
-    style K fill:#ff9800
-    style L fill:#f44336
-`;
+    %% === RESOURCE MANAGEMENT PHASE ===
+    subgraph "⚖️ RESOURCE ALLOCATION & OPTIMIZATION"
+        G1[Workload Analysis] --> G2[Capacity Planning]
+        G2 --> G3[Skill Gap Identification]
+        G3 --> G4[Resource Reallocation]
+        G4 --> G5[Floating Pool Management]
+        G5 --> G6[Cross-training Needs]
+        G6 --> G7[Optimization Recommendations]
+    end
 
-const graph10 = `
-sequenceDiagram
-    participant U as User/System
-    participant B as Batch Manager
-    participant V as Validator
-    participant W as Workflow Engine
-    participant C as Clearinghouse
-    participant P as Payer
-    participant N as Notification System
+    %% === REPORTING & ANALYTICS PHASE ===
+    subgraph "📈 REPORTING & BUSINESS INTELLIGENCE"
+        H1[Data Collection] --> H2[Executive Dashboards]
+        H2 --> H3[Operational Reports]
+        H3 --> H4[Financial Analytics]
+        H4 --> H5[Client Performance Reports]
+        H5 --> H6[Employee Productivity Reports]
+        H6 --> H7[Compliance Reporting]
+        H7 --> H8[Strategic Insights]
+    end
+
+    %% === SYSTEM ADMINISTRATION PHASE ===
+    subgraph "🔧 PLATFORM ADMINISTRATION"
+        I1[Master Admin Dashboard] --> I2[Platform Monitoring]
+        I2 --> I3[Company Management]
+        I3 --> I4[User Management]
+        I4 --> I5[Security Management]
+        I5 --> I6[System Configuration]
+        I6 --> I7[Audit & Compliance]
+        I7 --> I8[Platform Optimization]
+    end
+
+    %% === CONNECTIONS BETWEEN PHASES ===
+    A8 --> B1
+    B7 --> C1
+    C8 --> D1
+    D9 --> E1
+    E8 --> F1
+    F8 --> G1
+    G7 --> H1
     
-    U->>B: Initiate Batch Creation
-    B->>B: Group Claims by Rules
-    B->>V: Validate Batch Contents
+    %% Admin oversight connections
+    A1 --> I1
+    B1 --> I2
+    C1 --> I3
+    D1 --> I4
+    E1 --> I5
     
-    alt Validation Successful
-        V-->>B: Validation Passed
-        B->>W: Trigger Batch Workflow
-        W->>B: Workflow Created
-        B->>C: Submit to Clearinghouse
+    %% Continuous feedback loops
+    H8 --> G1
+    H8 --> F1
+    H8 --> E1
+    
+    %% -- Node Styling --
+    classDef onboardingPhase 	fill:#eef6ff,stroke:#5c9ae5,color:#0b3b6f,font-weight:bold,rx:8,ry:8
+    classDef orgPhase 		fill:#f6eefc,stroke:#a66fd1,color:#4a1b6d,font-weight:bold,rx:8,ry:8
+    classDef employeePhase 	fill:#eef9ee,stroke:#66b96a,color:#1b5e20,font-weight:bold,rx:8,ry:8
+    classDef clientPhase 		fill:#fff8e9,stroke:#e5b55c,color:#7a530b,font-weight:bold,rx:8,ry:8
+    classDef taskPhase 		fill:#feeaef,stroke:#e56d8d,color:#880e4f,font-weight:bold,rx:8,ry:8
+    classDef performancePhase 	fill:#e9f7f6,stroke:#5cb4a8,color:#004d40,font-weight:bold,rx:8,ry:8
+    classDef resourcePhase 	fill:#f7fae9,stroke:#abc25f,color:#33691e,font-weight:bold,rx:8,ry:8
+    classDef reportingPhase 	fill:#f0eef9,stroke:#8066c6,color:#311b92,font-weight:bold,rx:8,ry:8
+    classDef adminPhase 		fill:#feebee,stroke:#e57373,color:#c62828,font-weight:bold,rx:8,ry:8
+
+    %% -- Class Assignments --
+    class A1,A2,A3,A4,A5,A6,A7,A8 onboardingPhase
+    class B1,B2,B3,B4,B5,B6,B7 orgPhase
+    class C1,C2,C3,C4,C5,C6,C7,C8 employeePhase
+    class D1,D2,D3,D4,D5,D6,D7,D8,D9 clientPhase
+    class E1,E2,E3,E4,E5,E6,E7,E8 taskPhase
+    class F1,F2,F3,F4,F5,F6,F7,F8 performancePhase
+    class G1,G2,G3,G4,G5,G6,G7 resourcePhase
+    class H1,H2,H3,H4,H5,H6,H7,H8 reportingPhase
+    class I1,I2,I3,I4,I5,I6,I7,I8 adminPhase
+
+`,
+  },
+  {
+    id: "graph2",
+    title: "Employee Task Assignment & Workflow Management",
+    chart: `
+    sequenceDiagram
+    participant C as Client/Healthcare Provider
+    participant CS as Company System
+    participant AM as Assignment Manager
+    participant FP as Floating Pool
+    participant E as Employee
+    participant QA as QA Manager
+    participant PM as Performance Manager
+    participant NS as Notification System
+
+    Note over C,NS: 📋 TASK ASSIGNMENT & MANAGEMENT WORKFLOW
+
+    %% TASK CREATION
+    C->>CS: Submit Work Request/Task
+    CS->>CS: Validate Task Requirements
+    CS->>AM: Create Task with Priority & Skills Needed
+    
+    %% ASSIGNMENT LOGIC
+    AM->>AM: Analyze Task Requirements
+    AM->>AM: Calculate Priority Score
+    
+    alt Auto-Assignment Available ✅
+        AM->>AM: Find Available Employee with Matching Skills
+        AM->>E: Assign Task Directly
+        AM->>NS: Notify Employee of Assignment
+        NS-->>E: Task Assignment Notification
+    else No Direct Match ❌
+        AM->>FP: Add Task to Floating Pool
+        FP->>FP: Queue Task by Priority
         
-        alt Clearinghouse Accepts
-            C-->>B: Acknowledgment (997/999)
-            B->>N: Notify Success
-            C->>P: Forward to Payer
-            P-->>C: Status Updates (277)
-            C-->>B: Relay Status Updates
-            B->>W: Update Workflow Status
-        else Clearinghouse Rejects
-            C-->>B: Rejection Notice
-            B->>W: Mark Workflow Failed
-            B->>N: Notify Failure
+        alt Employee Becomes Available ✅
+            FP->>AM: Employee Available
+            AM->>AM: Match Employee to Highest Priority Task
+            AM->>E: Assign Task from Pool
+            AM->>NS: Notify Employee
+            NS-->>E: Task Assignment Notification
+        else Manual Assignment Required 🔄
+            AM->>CS: Escalate to Supervisor
+            CS->>AM: Manual Assignment Decision
+            AM->>E: Assign Task Manually
+            AM->>NS: Notify Employee
+            NS-->>E: Task Assignment Notification
         end
+    end
+
+    %% TASK EXECUTION
+    E->>CS: Start Task
+    CS->>PM: Log Task Start Time
+    
+    loop Task Progress Updates
+        E->>CS: Update Task Progress
+        CS->>PM: Track Time & Progress
+        CS->>AM: Update Task Status
         
-    else Validation Failed
-        V-->>B: Validation Errors
-        B->>U: Return Error Report
-        B->>N: Notify Validation Failure
+        alt Quality Check Required 📊
+            CS->>QA: Trigger Quality Review
+            QA->>QA: Perform Quality Assessment
+            
+            alt Quality Passed ✅
+                QA-->>CS: Approve Task
+                CS->>E: Continue Task
+            else Quality Failed ❌
+                QA-->>CS: Reject with Feedback
+                CS->>E: Return for Correction
+                E->>CS: Resubmit Corrected Work
+            end
+        end
     end
-    
-    Note over B,P: Continuous monitoring for<br/>status updates and responses
-`;
 
-const graph11 = `
-graph TB
-    subgraph "QA Selection Criteria"
-        A1[Random Sampling<br/>10% of claims]
-        A2[High-Value Claims<br/>>$5,000]
-        A3[New Employee Claims<br/>First 90 days]
-        A4[Error-Prone Payers<br/>Historical data]
-        A5[Client-Specific Rules<br/>Contract requirements]
+    %% TASK COMPLETION
+    E->>CS: Submit Completed Task
+    CS->>QA: Final Quality Review
+    
+    alt Final Quality Approved ✅
+        QA-->>CS: Final Approval
+        CS->>PM: Log Task Completion
+        PM->>PM: Update Employee Performance Metrics
+        CS->>C: Deliver Completed Work
+        C-->>CS: Client Acknowledgment
+        
+        %% PERFORMANCE UPDATES
+        PM->>PM: Calculate Productivity Score
+        PM->>PM: Update SLA Compliance
+        PM->>PM: Update Gamification Points
+        PM->>NS: Send Performance Update
+        NS-->>E: Performance Achievement Notification
+        
+    else Final Quality Failed ❌
+        QA-->>CS: Final Rejection
+        CS->>AM: Reassign Task
+        AM->>FP: Return to Floating Pool
+        AM->>NS: Notify Original Employee
+        NS-->>E: Task Reassignment Notification
     end
-    
-    A1 --> B[QA Queue]
-    A2 --> B
-    A3 --> B
-    A4 --> B
-    A5 --> B
-    
-    B --> C{QA Review Type}
-    
-    C -->|Pre-Submission| D1[Coding Accuracy]
-    C -->|Post-Submission| D2[Process Compliance]
-    C -->|Denial Analysis| D3[Root Cause Review]
-    C -->|Random Audit| D4[Quality Sampling]
-    
-    D1 --> E[Scoring Engine]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    
-    E --> F{Score Threshold}
-    F -->|90-100| G[Pass - Release]
-    F -->|70-89| H[Pass with Notes]
-    F -->|50-69| I[Needs Correction]
-    F -->|<50| J[Fail - Rework Required]
-    
-    G --> K[Update Metrics]
-    H --> L[Add Improvement Notes]
-    I --> M[Create Action Items]
-    J --> N[Reassign for Correction]
-    
-    L --> K
-    M --> O[Track Corrections]
-    N --> P[Manager Escalation]
-    
-    O --> K
-    P --> Q[Training Assignment]
-    Q --> K
-    
-    style E fill:#2196f3
-    style F fill:#ff9800
-    style G fill:#4caf50
-    style J fill:#f44336
-`;
 
-const graph12 = `
-graph TD
-    A[System Event/Error] --> B{Error Type Classification}
-    
-    B -->|Data Validation| C1[Validation Error Handler]
-    B -->|Network/API| C2[Network Error Handler]
-    B -->|Business Logic| C3[Business Rule Handler]
-    B -->|System/Database| C4[System Error Handler]
-    
-    C1 --> D1[Log Error Details]
-    C2 --> D2[Retry with Backoff]
-    C3 --> D3[Route to Exception Queue]
-    C4 --> D4[Alert System Admin]
-    
-    D1 --> E1[Return to User with Details]
-    D2 --> F{Retry Count}
-    D3 --> E3[Manager Review Queue]
-    D4 --> E4[Emergency Response]
-    
-    F -->|<3 Attempts| G[Exponential Backoff]
-    F -->|>=3 Attempts| H[Dead Letter Queue]
-    
-    G --> I[Retry Operation]
-    H --> J[Manual Intervention Required]
-    
-    I --> K{Success?}
-    K -->|Yes| L[Continue Processing]
-    K -->|No| D2
-    
-    E1 --> M[User Correction]
-    E3 --> N[Management Decision]
-    E4 --> O[System Recovery]
-    J --> P[Technical Review]
-    
-    M --> A
-    N --> Q[Process Override/Correction]
-    O --> R[Service Restoration]
-    P --> S[Root Cause Analysis]
-    
-    style C4 fill:#f44336
-    style E4 fill:#ff5722
-    style H fill:#ff9800
-    style L fill:#4caf50
-`
-const graph13 = `
-graph LR
-    subgraph "Data Collection Layer"
-        A1[Database Metrics]
-        A2[Application Logs]
-        A3[User Activity]
-        A4[System Resources]
-        A5[Business KPIs]
+    Note over C,NS: 🔄 Continuous monitoring for SLA compliance and performance optimization
+    `,
+  },
+  {
+    id: "graph3",
+    title: "EMPLOYEE PERFORMANCE & GAMIFICATION MANAGEMENT",
+    chart: `
+    graph TB
+    %% PERFORMANCE DATA COLLECTION
+    subgraph "📊 PERFORMANCE DATA COLLECTION"
+        A1[Task Completion Time] --> B1[Performance Calculator]
+        A2[Quality Scores] --> B1
+        A3[SLA Compliance] --> B1
+        A4[Productivity Metrics] --> B1
+        A5[Client Feedback] --> B1
+        A6[Attendance Data] --> B1
     end
-    
-    subgraph "Processing Layer"
-        B1[Data Aggregator]
-        B2[Real-time Analytics]
-        B3[Batch Processors]
-        B4[Alert Engine]
+
+    %% PERFORMANCE CALCULATION ENGINE
+    subgraph "⚙️ PERFORMANCE CALCULATION ENGINE"
+        B1 --> C1[Weighted Score Calculation]
+        C1 --> C2[Productivity Index = 30%]
+        C1 --> C3[Quality Score = 25%]
+        C1 --> C4[SLA Compliance = 20%]
+        C1 --> C5[Task Complexity = 15%]
+        C1 --> C6[Client Satisfaction = 10%]
+        
+        C2 --> D1[Final Performance Score]
+        C3 --> D1
+        C4 --> D1
+        C5 --> D1
+        C6 --> D1
     end
-    
-    subgraph "Storage Layer"
-        C1[Time Series DB<br/>InfluxDB]
-        C2[Cache Layer<br/>Redis]
-        C3[Data Warehouse<br/>PostgreSQL]
+
+    %% GAMIFICATION ENGINE
+    subgraph "🎮 GAMIFICATION ENGINE"
+        D1 --> E1{Performance Tier Evaluation}
+        E1 -->|90-100| E2[🏆 Platinum Tier]
+        E1 -->|80-89| E3[🥇 Gold Tier]
+        E1 -->|70-79| E4[🥈 Silver Tier]
+        E1 -->|60-69| E5[🥉 Bronze Tier]
+        E1 -->|<60| E6[📈 Improvement Needed]
+        
+        E2 --> F1[Award Bonus Points]
+        E3 --> F2[Award Standard Points]
+        E4 --> F3[Award Basic Points]
+        E5 --> F4[Award Minimal Points]
+        E6 --> F5[Coaching Assignment]
     end
-    
-    subgraph "Visualization Layer"
-        D1[Executive Dashboard]
-        D2[Operational Dashboard]
-        D3[Technical Dashboard]
-        D4[Custom Reports]
+
+    %% ACHIEVEMENT SYSTEM
+    subgraph "🏅 ACHIEVEMENT & REWARDS SYSTEM"
+        F1 --> G1[Unlock Premium Badges]
+        F2 --> G2[Unlock Standard Badges]
+        F3 --> G3[Unlock Basic Badges]
+        F4 --> G4[Motivational Badges]
+        F5 --> G5[Training Recommendations]
+        
+        G1 --> H1[Leaderboard Update]
+        G2 --> H1
+        G3 --> H1
+        G4 --> H1
+        
+        H1 --> H2[Team Rankings]
+        H2 --> H3[Department Rankings]
+        H3 --> H4[Company-wide Rankings]
     end
+
+    %% FEEDBACK & DEVELOPMENT
+    subgraph "📈 FEEDBACK & DEVELOPMENT"
+        H4 --> I1[Performance Dashboard Update]
+        I1 --> I2[Individual Scorecards]
+        I2 --> I3[Manager Reports]
+        I3 --> I4[Development Plans]
+        I4 --> I5[Skill Gap Analysis]
+        I5 --> I6[Training Assignments]
+        
+        G5 --> J1[Coaching Sessions]
+        J1 --> J2[Skill Development]
+        J2 --> J3[Performance Improvement Plans]
+        J3 --> J4[Progress Monitoring]
+    end
+
+    %% NOTIFICATION SYSTEM
+    subgraph "🔔 NOTIFICATION & COMMUNICATION"
+        H1 --> K1[Achievement Notifications]
+        I2 --> K2[Performance Alerts]
+        J4 --> K3[Progress Updates]
+        
+        K1 --> L1[Employee Dashboard]
+        K2 --> L2[Manager Dashboard]
+        K3 --> L3[HR Dashboard]
+        
+        L1 --> M1[Mobile App Notifications]
+        L2 --> M2[Email Reports]
+        L3 --> M3[System Alerts]
+    end
+
+    %% CONTINUOUS IMPROVEMENT LOOP
+    subgraph "🔄 CONTINUOUS IMPROVEMENT"
+        M1 --> N1[Employee Engagement Metrics]
+        M2 --> N2[Manager Satisfaction Scores]
+        M3 --> N3[System Performance Analytics]
+        
+        N1 --> O1[Feedback Collection]
+        N2 --> O1
+        N3 --> O1
+        
+        O1 --> O2[System Optimization]
+        O2 --> O3[Algorithm Refinement]
+        O3 --> B1
+    end
+
+    %% Styling
+    classDef dataCollection fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef calculation fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef gamification fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef achievement fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef feedback fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef notification fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef improvement fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
     
-    A1 --> B1
-    A2 --> B2
-    A3 --> B3
-    A4 --> B4
-    A5 --> B1
-    
-    B1 --> C1
-    B2 --> C2
-    B3 --> C3
-    B4 --> C2
-    
-    C1 --> D1
-    C2 --> D2
-    C3 --> D3
-    C1 --> D4
-    
-    style D1 fill:#e1f5fe
-    style D2 fill:#f3e5f5
-    style D3 fill:#e8f5e8
-    style D4 fill:#fff3e0
-`;
+    class A1,A2,A3,A4,A5,A6 dataCollection
+    class B1,C1,C2,C3,C4,C5,C6,D1 calculation
+    class E1,E2,E3,E4,E5,E6,F1,F2,F3,F4,F5 gamification
+    class G1,G2,G3,G4,G5,H1,H2,H3,H4 achievement
+    class I1,I2,I3,I4,I5,I6,J1,J2,J3,J4 feedback
+    class K1,K2,K3,L1,L2,L3,M1,M2,M3 notification
+    class N1,N2,N3,O1,O2,O3 improvement
+    `,
+  },
+];
 
 export default function GraphDashboard() {
+  const [selectedGraphId, setSelectedGraphId] = useState("graph1");
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const hiddenGraphRefs = useRef({});
+
+  const selectedGraph = graphs.find((g) => g.id === selectedGraphId);
+
+  /**
+   * Professional PDF Generation Function
+   * Captures each graph by switching views and taking screenshots
+   */
+  const generatePDF = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      
+      // Store original selected graph
+      const originalGraphId = selectedGraphId;
+      
+      // Initialize PDF document with A4 size
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // PDF page dimensions (A4 landscape)
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      const contentHeight = pageHeight - (margin * 2);
+
+      // Add cover page
+      pdf.setFontSize(24);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('GetMax WFM', pageWidth / 2, 40, { align: 'center' });
+      
+      pdf.setFontSize(18);
+      pdf.text('Workflow Documentation', pageWidth / 2, 55, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 70, { align: 'center' });
+      pdf.text(`Total Diagrams: ${graphs.length}`, pageWidth / 2, 80, { align: 'center' });
+
+      // Process each graph by switching to it and capturing
+      for (let i = 0; i < graphs.length; i++) {
+        const graph = graphs[i];
+        
+        // Switch to this graph and wait for it to render
+        setSelectedGraphId(graph.id);
+        
+        // Wait for state update and mermaid rendering
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Add new page for each graph (except first iteration since cover page exists)
+        if (i === 0) {
+          pdf.addPage();
+        }
+
+        try {
+          // Find the main content area that contains the graph
+          const mainContent = document.querySelector('main .bg-white.p-8.rounded-xl.shadow-md');
+          
+          if (!mainContent) {
+            throw new Error('Could not find main content area');
+          }
+
+          console.log(`📸 Capturing graph ${i + 1}: ${graph.title}`);
+
+          // Capture the main content area
+          const canvas = await html2canvas(mainContent, {
+            scale: 2, // Higher resolution
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: 'white',
+            logging: false,
+            onclone: (clonedDoc) => {
+              // Ensure all SVG elements are visible in the clone
+              const svgElements = clonedDoc.querySelectorAll('svg');
+              svgElements.forEach(svg => {
+                svg.style.display = 'block';
+                svg.style.visibility = 'visible';
+              });
+            }
+          });
+
+          console.log(`✅ Canvas captured for ${graph.title}: ${canvas.width}x${canvas.height}`);
+
+          // Calculate image dimensions to fit in PDF page
+          const imgWidth = canvas.width;
+          const imgHeight = canvas.height;
+          const ratio = Math.min(contentWidth / (imgWidth * 0.264583), contentHeight / (imgHeight * 0.264583));
+          const scaledWidth = imgWidth * 0.264583 * ratio;
+          const scaledHeight = imgHeight * 0.264583 * ratio;
+
+          // Center the image on the page
+          const x = (pageWidth - scaledWidth) / 2;
+          const y = (pageHeight - scaledHeight) / 2;
+
+          // Convert canvas to image and add to PDF
+          const imgData = canvas.toDataURL('image/png', 1.0);
+          pdf.addImage(
+            imgData,
+            'PNG',
+            x,
+            y,
+            scaledWidth,
+            scaledHeight
+          );
+
+          // Add page number
+          pdf.setFontSize(10);
+          pdf.text(`Page ${i + 2} of ${graphs.length + 1}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+
+          console.log(`✅ Added ${graph.title} to PDF`);
+
+        } catch (captureError) {
+          console.error(`❌ Error capturing graph ${graph.id}:`, captureError);
+          
+          // Add error message to PDF
+          pdf.setFontSize(16);
+          pdf.text(`Error capturing: ${graph.title}`, pageWidth / 2, pageHeight / 2, { align: 'center' });
+          pdf.setFontSize(12);
+          pdf.text('Graph failed to render properly', pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
+          pdf.text('Please try refreshing the page', pageWidth / 2, pageHeight / 2 + 20, { align: 'center' });
+        }
+
+        // Add new page for next graph (if not last)
+        if (i < graphs.length - 1) {
+          pdf.addPage();
+        }
+      }
+
+      // Restore original selected graph
+      setSelectedGraphId(originalGraphId);
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `GetMax-WFM-Workflows-${timestamp}.pdf`;
+
+      // Save the PDF
+      pdf.save(filename);
+
+      console.log(`🎉 PDF generated successfully: ${filename}`);
+      alert(`✅ PDF downloaded successfully!\nFilename: ${filename}`);
+
+    } catch (error) {
+      console.error('💥 Error generating PDF:', error);
+      alert(`❌ Error generating PDF: ${error.message}\n\nPlease check the console for more details.`);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6">Claim Workflow Visuals</h1>
-      <div className="flex flex-wrap gap-6 justify-start">
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            1. End-to-End Claims Flow
+    <div className="flex h-screen bg-slate-100 font-sans">
+      {/* Sidebar Navigation */}
+      <aside className="w-60 flex-shrink-0 bg-white shadow-lg overflow-y-auto">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-slate-800">
+            Workflow Visuals
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Select a diagram to view
           </p>
-          <MermaidGraph chart={graph1} />
         </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">2. Auto-Progress Logic</p>
-          <MermaidGraph chart={graph2} />
+        
+        {/* PDF Export Button */}
+        <div className="px-4 mb-4">
+          <button
+            onClick={generatePDF}
+            disabled={isGeneratingPdf}
+            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 ${
+              isGeneratingPdf
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-xl'
+            }`}
+          >
+            {isGeneratingPdf ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <span>Generating PDF...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Export to PDF</span>
+              </>
+            )}
+          </button>
         </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            3. Batch Submission Sequence
-          </p>
-          <MermaidGraph chart={graph3} />
+
+        <nav className="px-4">
+          <ul>
+            {graphs.map((graph) => (
+              <li key={graph.id} className="mb-2">
+                <button
+                  onClick={() => setSelectedGraphId(graph.id)}
+                  className={`w-full text-left px-4 py-3 rounded-md transition-colors duration-200 ${
+                    selectedGraphId === graph.id
+                      ? "bg-blue-500 text-white font-semibold shadow"
+                      : "text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {graph.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="bg-white p-8 rounded-xl shadow-md">
+          {selectedGraph ? (
+            <>
+              <div className="flex justify-between items-start mb-4">
+                <h1 className="text-3xl font-bold text-slate-900">
+                  {selectedGraph.title}
+                </h1>
+                <div className="text-sm text-slate-500">
+                  Graph {graphs.findIndex(g => g.id === selectedGraphId) + 1} of {graphs.length}
+                </div>
+              </div>
+              <div className="border-t border-slate-200 pt-6 w-full">
+                <MermaidGraph chart={selectedGraph.chart} />
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-slate-500">
+              Please select a graph to display.
+            </p>
+          )}
         </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            4. Audit Workflow & Thresholds
-          </p>
-          <MermaidGraph chart={graph4} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            5. Claim State Transitions
-          </p>
-          <MermaidGraph chart={graph5} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            6. System-Wide Architecture
-          </p>
-          <MermaidGraph chart={graph6} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            7. Claim Lifecycle State Machine
-          </p>
-          <MermaidGraph chart={graph7} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            8. Data Integration Methods Comparison
-          </p>
-          <MermaidGraph chart={graph8} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            9. Claim Priority Scoring Algorithm
-          </p>
-          <MermaidGraph chart={graph9} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            10. Batch Processing Workflow
-          </p>
-          <MermaidGraph chart={graph10} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            11. QA and Audit Workflow
-          </p>
-          <MermaidGraph chart={graph11} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            12. Error Handling Workflow
-          </p>
-          <MermaidGraph chart={graph12} />
-        </div>
-        <div className="w-[500px]">
-          <p className="text-lg font-semibold mb-2">
-            13. Performance Monitoring Dashboard Architecture
-          </p>
-          <MermaidGraph chart={graph13} />
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
