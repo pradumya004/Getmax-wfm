@@ -2,8 +2,8 @@
 
 import MermaidGraph from "../mermaid/MermaidGraph.jsx";
 import { useState, useRef } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+// import jsPDF from "jspdf";
+// import html2canvas from "html2canvas";
 
 const graphs = [
   {
@@ -409,149 +409,149 @@ export default function GraphDashboard() {
    * Professional PDF Generation Function
    * Captures each graph by switching views and taking screenshots
    */
-  const generatePDF = async () => {
-    try {
-      setIsGeneratingPdf(true);
+  // const generatePDF = async () => {
+  //   try {
+  //     setIsGeneratingPdf(true);
       
-      // Store original selected graph
-      const originalGraphId = selectedGraphId;
+  //     // Store original selected graph
+  //     const originalGraphId = selectedGraphId;
       
-      // Initialize PDF document with A4 size
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+  //     // Initialize PDF document with A4 size
+  //     // const pdf = new jsPDF({
+  //     //   orientation: 'landscape',
+  //     //   unit: 'mm',
+  //     //   format: 'a4'
+  //     // });
 
-      // PDF page dimensions (A4 landscape)
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 15;
-      const contentWidth = pageWidth - (margin * 2);
-      const contentHeight = pageHeight - (margin * 2);
+  //     // PDF page dimensions (A4 landscape)
+  //     const pageWidth = pdf.internal.pageSize.getWidth();
+  //     const pageHeight = pdf.internal.pageSize.getHeight();
+  //     const margin = 15;
+  //     const contentWidth = pageWidth - (margin * 2);
+  //     const contentHeight = pageHeight - (margin * 2);
 
-      // Add cover page
-      pdf.setFontSize(24);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('GetMax WFM', pageWidth / 2, 40, { align: 'center' });
+  //     // Add cover page
+  //     pdf.setFontSize(24);
+  //     pdf.setFont(undefined, 'bold');
+  //     pdf.text('GetMax WFM', pageWidth / 2, 40, { align: 'center' });
       
-      pdf.setFontSize(18);
-      pdf.text('Workflow Documentation', pageWidth / 2, 55, { align: 'center' });
+  //     pdf.setFontSize(18);
+  //     pdf.text('Workflow Documentation', pageWidth / 2, 55, { align: 'center' });
       
-      pdf.setFontSize(12);
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 70, { align: 'center' });
-      pdf.text(`Total Diagrams: ${graphs.length}`, pageWidth / 2, 80, { align: 'center' });
+  //     pdf.setFontSize(12);
+  //     pdf.setFont(undefined, 'normal');
+  //     pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 70, { align: 'center' });
+  //     pdf.text(`Total Diagrams: ${graphs.length}`, pageWidth / 2, 80, { align: 'center' });
 
-      // Process each graph by switching to it and capturing
-      for (let i = 0; i < graphs.length; i++) {
-        const graph = graphs[i];
+  //     // Process each graph by switching to it and capturing
+  //     for (let i = 0; i < graphs.length; i++) {
+  //       const graph = graphs[i];
         
-        // Switch to this graph and wait for it to render
-        setSelectedGraphId(graph.id);
+  //       // Switch to this graph and wait for it to render
+  //       setSelectedGraphId(graph.id);
         
-        // Wait for state update and mermaid rendering
-        await new Promise(resolve => setTimeout(resolve, 2000));
+  //       // Wait for state update and mermaid rendering
+  //       await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Add new page for each graph (except first iteration since cover page exists)
-        if (i === 0) {
-          pdf.addPage();
-        }
+  //       // Add new page for each graph (except first iteration since cover page exists)
+  //       if (i === 0) {
+  //         pdf.addPage();
+  //       }
 
-        try {
-          // Find the main content area that contains the graph
-          const mainContent = document.querySelector('main .bg-white.p-8.rounded-xl.shadow-md');
+  //       try {
+  //         // Find the main content area that contains the graph
+  //         const mainContent = document.querySelector('main .bg-white.p-8.rounded-xl.shadow-md');
           
-          if (!mainContent) {
-            throw new Error('Could not find main content area');
-          }
+  //         if (!mainContent) {
+  //           throw new Error('Could not find main content area');
+  //         }
 
-          console.log(`📸 Capturing graph ${i + 1}: ${graph.title}`);
+  //         console.log(`📸 Capturing graph ${i + 1}: ${graph.title}`);
 
-          // Capture the main content area
-          const canvas = await html2canvas(mainContent, {
-            scale: 2, // Higher resolution
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: 'white',
-            logging: false,
-            onclone: (clonedDoc) => {
-              // Ensure all SVG elements are visible in the clone
-              const svgElements = clonedDoc.querySelectorAll('svg');
-              svgElements.forEach(svg => {
-                svg.style.display = 'block';
-                svg.style.visibility = 'visible';
-              });
-            }
-          });
+  //         // Capture the main content area
+  //         // const canvas = await html2canvas(mainContent, {
+  //         //   scale: 2, // Higher resolution
+  //         //   useCORS: true,
+  //         //   allowTaint: true,
+  //         //   backgroundColor: 'white',
+  //         //   logging: false,
+  //         //   onclone: (clonedDoc) => {
+  //         //     // Ensure all SVG elements are visible in the clone
+  //         //     const svgElements = clonedDoc.querySelectorAll('svg');
+  //         //     svgElements.forEach(svg => {
+  //         //       svg.style.display = 'block';
+  //         //       svg.style.visibility = 'visible';
+  //         //     });
+  //         //   }
+  //         // });
 
-          console.log(`✅ Canvas captured for ${graph.title}: ${canvas.width}x${canvas.height}`);
+  //         console.log(`✅ Canvas captured for ${graph.title}: ${canvas.width}x${canvas.height}`);
 
-          // Calculate image dimensions to fit in PDF page
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(contentWidth / (imgWidth * 0.264583), contentHeight / (imgHeight * 0.264583));
-          const scaledWidth = imgWidth * 0.264583 * ratio;
-          const scaledHeight = imgHeight * 0.264583 * ratio;
+  //         // Calculate image dimensions to fit in PDF page
+  //         const imgWidth = canvas.width;
+  //         const imgHeight = canvas.height;
+  //         const ratio = Math.min(contentWidth / (imgWidth * 0.264583), contentHeight / (imgHeight * 0.264583));
+  //         const scaledWidth = imgWidth * 0.264583 * ratio;
+  //         const scaledHeight = imgHeight * 0.264583 * ratio;
 
-          // Center the image on the page
-          const x = (pageWidth - scaledWidth) / 2;
-          const y = (pageHeight - scaledHeight) / 2;
+  //         // Center the image on the page
+  //         const x = (pageWidth - scaledWidth) / 2;
+  //         const y = (pageHeight - scaledHeight) / 2;
 
-          // Convert canvas to image and add to PDF
-          const imgData = canvas.toDataURL('image/png', 1.0);
-          pdf.addImage(
-            imgData,
-            'PNG',
-            x,
-            y,
-            scaledWidth,
-            scaledHeight
-          );
+  //         // Convert canvas to image and add to PDF
+  //         const imgData = canvas.toDataURL('image/png', 1.0);
+  //         pdf.addImage(
+  //           imgData,
+  //           'PNG',
+  //           x,
+  //           y,
+  //           scaledWidth,
+  //           scaledHeight
+  //         );
 
-          // Add page number
-          pdf.setFontSize(10);
-          pdf.text(`Page ${i + 2} of ${graphs.length + 1}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+  //         // Add page number
+  //         pdf.setFontSize(10);
+  //         pdf.text(`Page ${i + 2} of ${graphs.length + 1}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
 
-          console.log(`✅ Added ${graph.title} to PDF`);
+  //         console.log(`✅ Added ${graph.title} to PDF`);
 
-        } catch (captureError) {
-          console.error(`❌ Error capturing graph ${graph.id}:`, captureError);
+  //       } catch (captureError) {
+  //         console.error(`❌ Error capturing graph ${graph.id}:`, captureError);
           
-          // Add error message to PDF
-          pdf.setFontSize(16);
-          pdf.text(`Error capturing: ${graph.title}`, pageWidth / 2, pageHeight / 2, { align: 'center' });
-          pdf.setFontSize(12);
-          pdf.text('Graph failed to render properly', pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
-          pdf.text('Please try refreshing the page', pageWidth / 2, pageHeight / 2 + 20, { align: 'center' });
-        }
+  //         // Add error message to PDF
+  //         pdf.setFontSize(16);
+  //         pdf.text(`Error capturing: ${graph.title}`, pageWidth / 2, pageHeight / 2, { align: 'center' });
+  //         pdf.setFontSize(12);
+  //         pdf.text('Graph failed to render properly', pageWidth / 2, pageHeight / 2 + 10, { align: 'center' });
+  //         pdf.text('Please try refreshing the page', pageWidth / 2, pageHeight / 2 + 20, { align: 'center' });
+  //       }
 
-        // Add new page for next graph (if not last)
-        if (i < graphs.length - 1) {
-          pdf.addPage();
-        }
-      }
+  //       // Add new page for next graph (if not last)
+  //       if (i < graphs.length - 1) {
+  //         pdf.addPage();
+  //       }
+  //     }
 
-      // Restore original selected graph
-      setSelectedGraphId(originalGraphId);
+  //     // Restore original selected graph
+  //     setSelectedGraphId(originalGraphId);
 
-      // Generate filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      const filename = `GetMax-WFM-Workflows-${timestamp}.pdf`;
+  //     // Generate filename with timestamp
+  //     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  //     const filename = `GetMax-WFM-Workflows-${timestamp}.pdf`;
 
-      // Save the PDF
-      pdf.save(filename);
+  //     // Save the PDF
+  //     pdf.save(filename);
 
-      console.log(`🎉 PDF generated successfully: ${filename}`);
-      alert(`✅ PDF downloaded successfully!\nFilename: ${filename}`);
+  //     console.log(`🎉 PDF generated successfully: ${filename}`);
+  //     alert(`✅ PDF downloaded successfully!\nFilename: ${filename}`);
 
-    } catch (error) {
-      console.error('💥 Error generating PDF:', error);
-      alert(`❌ Error generating PDF: ${error.message}\n\nPlease check the console for more details.`);
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
+  //   } catch (error) {
+  //     console.error('💥 Error generating PDF:', error);
+  //     alert(`❌ Error generating PDF: ${error.message}\n\nPlease check the console for more details.`);
+  //   } finally {
+  //     setIsGeneratingPdf(false);
+  //   }
+  // };
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans">
@@ -569,7 +569,7 @@ export default function GraphDashboard() {
         {/* PDF Export Button */}
         <div className="px-4 mb-4">
           <button
-            onClick={generatePDF}
+            // onClick={generatePDF}
             disabled={isGeneratingPdf}
             className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 ${
               isGeneratingPdf
