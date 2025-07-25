@@ -122,7 +122,7 @@ function App() {
       <Router>
         <Routes>
           {/* PUBLIC ROUTES */}
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<GraphDashboard />} />
           <Route path="/claimintake" element={<ClaimIntake />} />
 
           {/* MERMAID GRAPHS */}
