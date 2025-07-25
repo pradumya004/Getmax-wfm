@@ -1,4 +1,4 @@
-// frontend/src/pages/auth/signup/signupStep2.jsx
+// frontend/src/pages/auth/signup/SignupStep2.jsx
 
 // UPDATED - Address and Billing Information
 

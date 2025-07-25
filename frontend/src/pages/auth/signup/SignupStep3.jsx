@@ -1,4 +1,4 @@
-// frontend/src/pages/auth/signup/signupStep3.jsx
+// frontend/src/pages/auth/signup/SignupStep3.jsx
 
 // UPDATED - Business Details and Company Information
 

@@ -1,4 +1,4 @@
-// backend/src/models/company.model.js
+// backend/src/models/core/company.model.js
 
 import mongoose from "mongoose";
 import crypto from 'crypto';
@@ -6,23 +6,25 @@ import { v4 as uuidv4 } from 'uuid';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { validate as validatePostalCode } from 'postal-codes-js';
 import bcrypt from 'bcryptjs';
+import {
+    COMPANY_CONSTANTS,
+    VALIDATION_MESSAGES,
+    VALIDATION_PATTERNS
+} from "../../../../shared/constants/modelConstants";
 
 // Address Schema
 const addressSchema = new mongoose.Schema({
     street: {
         type: String,
         trim: true,
-        maxlength: [200, 'Street address cannot exceed 200 characters']
     },
     city: {
         type: String,
         trim: true,
-        maxlength: [100, 'City name cannot exceed 100 characters']
     },
     state: {
         type: String,
         trim: true,
-        maxlength: [50, 'State name cannot exceed 200 characters']
     },
     zipCode: {
         type: String,
@@ -40,7 +42,10 @@ const addressSchema = new mongoose.Schema({
         type: String,
         trim: true,
         default: 'India',
-        enum: ['India', 'United States', 'Canada', 'United Kingdom']
+        enum: {
+            values: COMPANY_CONSTANTS.COUNTRIES,
+            message: '{VALUE} is not a supported country'
+        }
     },
 }, { _id: false });
 
@@ -48,24 +53,21 @@ const addressSchema = new mongoose.Schema({
 const revenueSchema = new mongoose.Schema({
     // Monthly Revenue Data
     monthlyRevenue: [{
-        month: {
-            type: String,
-            // required: true // Format: "2024-01"
-        },
+        month: String,
         totalRevenue: {
             type: Number,
             default: 0,
-            min: [0, 'Revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Total revenue', 0)]
         },
         recurringRevenue: {
             type: Number,
             default: 0,
-            min: [0, 'Recurring revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Recurring revenue', 0)]
         },
         oneTimeRevenue: {
             type: Number,
             default: 0,
-            min: [0, 'One-time revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('One-time revenue', 0)]
         },
         clientBreakdown: [{
             clientId: String,
@@ -89,12 +91,12 @@ const revenueSchema = new mongoose.Schema({
         targetRevenue: {
             type: Number,
             default: 0,
-            min: [0, 'Target revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Target revenue', 0)]
         },
         achievedRevenue: {
             type: Number,
             default: 0,
-            min: [0, 'Achieved revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Achieved revenue', 0)]
         },
         growthRate: {
             type: Number,
@@ -107,28 +109,28 @@ const revenueSchema = new mongoose.Schema({
         totalActiveClients: {
             type: Number,
             default: 0,
-            min: [0, 'Client count cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Total active clients', 0)]
         },
         newClientsThisMonth: {
             type: Number,
             default: 0,
-            min: [0, 'New client count cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('New clients this month', 0)]
         },
         churnedClientsThisMonth: {
             type: Number,
             default: 0,
-            min: [0, 'Churned client count cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Churned clients this month', 0)]
         },
         averageRevenuePerClient: {
             type: Number,
             default: 0,
-            min: [0, 'Average revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Average revenue per client', 0)]
         },
         clientRetentionRate: {
             type: Number,
             default: 0,
-            min: [0, 'Retention rate cannot be negative'],
-            max: [100, 'Retention rate cannot exceed 100%']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Client retention rate', 0)],
+            max: [100, VALIDATION_MESSAGES.MAX_VALUE('Client retention rate', 100)]
         }
     },
 
@@ -141,12 +143,12 @@ const revenueSchema = new mongoose.Schema({
         costPerEmployee: {
             type: Number,
             default: 0,
-            min: [0, 'Cost cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Cost per employee', 0)]
         },
         revenuePerEmployee: {
             type: Number,
             default: 0,
-            min: [0, 'Revenue cannot be negative']
+            min: [0, VALIDATION_MESSAGES.MIN_VALUE('Revenue per employee', 0)]
         },
         operationalEfficiency: {
             type: Number,
@@ -158,7 +160,10 @@ const revenueSchema = new mongoose.Schema({
     currency: {
         type: String,
         default: 'INR',
-        enum: ['USD', 'INR', 'EUR', 'GBP', 'CAD']
+        enum: {
+            values: COMPANY_CONSTANTS.CURRENCIES,
+            message: '{VALUE} is not a supported currency'
+        }
     },
 
     // Last Updated
@@ -205,16 +210,15 @@ const companySchema = new mongoose.Schema({
         lowercase: true,
         validate: {
             validator: function (v) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                return emailRegex.test(v);
+                return VALIDATION_PATTERNS.EMAIL.test(v);
             },
-            message: 'Please enter a valid email address'
+            message: VALIDATION_MESSAGES.EMAIL_INVALID
         }
     },
     companyPassword: {
         type: String,
         required: [true, 'Password is required'],
-        minlength: [8, 'Password must be at least 8 characters'],
+        minlength: [8, VALIDATION_MESSAGES.MIN_LENGTH('Password', 8)],
         select: false,
         trim: true,
     },
@@ -270,13 +274,13 @@ const companySchema = new mongoose.Schema({
     // Subscription Details
     subscriptionPlan: {
         type: String,
-        enum: ['Trial', 'Basic', 'Professional', 'Enterprise'],
+        enum: COMPANY_CONSTANTS.SUBSCRIPTION_PLANS,
         default: 'Trial'
     },
 
     subscriptionStatus: {
         type: String,
-        enum: ['Active', 'Suspended', 'Inactive', 'Terminated'],
+        enum: COMPANY_CONSTANTS.SUBSCRIPTION_STATUS,
         default: 'Active'
     },
     subscriptionStartDate: {
@@ -294,14 +298,14 @@ const companySchema = new mongoose.Schema({
     },
     paymentStatus: {
         type: String,
-        enum: ['Paid', 'Pending', 'Overdue', 'Failed'],
+        enum: COMPANY_CONSTANTS.PAYMENT_STATUS,
         default: 'Pending'
     },
 
     // Business Details
     timeZone: {
         type: String,
-        enum: ['IST', 'EST', 'CST', 'MST', 'PST', 'GMT'],
+        enum: COMPANY_CONSTANTS.TIME_ZONES,
         default: 'IST'
     },
 
@@ -309,37 +313,26 @@ const companySchema = new mongoose.Schema({
     contractSettings: {
         specialtyType: {
             type: [String],
-            // enum: ["Primary Care", "Specialty Care", "Dental", "Vision", "Mental Health", "Surgery Centers", "Hospitals", "Labs", "Multi Specialty", "DME"],
-            // default: ["Primary Care"]
+            required: true
         },
         clientType: {
             type: [String],
-            // enum: ['Billing Company', 'Provider', 'Others'],
             required: true,
-            // default: 'Provider'
         },
         contractType: {
             type: [String],
-            // enum: ['End to End', 'Transactional', 'FTE', 'Hybrid', 'Consulting'],
             required: true,
-            // validate: {
-            //     validator: function (v) {
-            //         return v !== 'Select Contract Type';
-            //     },
-            //     message: 'Please select a valid contract type'
-            // }
         },
         scopeFormatID: {
             type: [String],
-            // enum: ['ClaimMD', 'Medisoft', 'Custom'],
-            default: 'ClaimMD'
+            required: true
         },
     },
 
     companySize: {
         type: String,
-        enum: ['1-10', '10-50', '50-200', '200-500', '500+'],
-        default: '1-10'
+        enum: COMPANY_CONSTANTS.COMPANY_SIZES,
+        default: COMPANY_CONSTANTS.COMPANY_SIZES[0]
     },
 
     // Revenue Tracking
@@ -468,32 +461,32 @@ companySchema.methods.revokeApiKey = function () {
 };
 
 companySchema.methods.updateMonthlyRevenue = function (month, revenueData) {
-    const existingMonth = this.revenueInfo.monthlyRevenue.find(m => m.month === month);
+    const existingMonth = this.revenueTracking.monthlyRevenue.find(m => m.month === month);
 
     if (existingMonth) {
         Object.assign(existingMonth, revenueData);
     } else {
-        this.revenueInfo.monthlyRevenue.push({
+        this.revenueTracking.monthlyRevenue.push({
             month,
             ...revenueData
         });
     }
 
-    this.revenueInfo.lastUpdated = new Date();
+    this.revenueTracking.lastUpdated = new Date();
 };
 
-companySchema.methods.calculateMetrics = function () {
-    const totalEmployees = this.employeeCount || 0;
+companySchema.methods.calculateMetrics = async function () {
+    const totalEmployees = await Employee.countDocuments({ companyRef: this._id });
     const currentRevenue = this.currentMonthRevenue;
 
     if (totalEmployees > 0) {
-        this.revenueInfo.performanceMetrics.revenuePerEmployee = currentRevenue / totalEmployees;
+        this.revenueTracking.performanceMetrics.revenuePerEmployee = currentRevenue / totalEmployees;
     }
 
     // Update client metrics
-    this.revenueInfo.clientMetrics.averageRevenuePerClient =
-        this.revenueInfo.clientMetrics.totalActiveClients > 0
-            ? currentRevenue / this.revenueInfo.clientMetrics.totalActiveClients
+    this.revenueTracking.clientMetrics.averageRevenuePerClient =
+        this.revenueTracking.clientMetrics.totalActiveClients > 0
+            ? currentRevenue / this.revenueTracking.clientMetrics.totalActiveClients
             : 0;
 };
 
@@ -513,11 +506,11 @@ companySchema.statics.findByApiKey = function (apiKey) {
 
 companySchema.statics.getRevenueReport = function (companyId, startMonth, endMonth) {
     return this.findOne({ companyId })
-        .select('revenueInfo.monthlyRevenue')
+        .select('revenueTracking.monthlyRevenue')
         .then(company => {
             if (!company) return null;
 
-            return company.revenueInfo.monthlyRevenue.filter(m =>
+            return company.revenueTracking.monthlyRevenue.filter(m =>
                 m.month >= startMonth && m.month <= endMonth
             );
         });
@@ -560,7 +553,7 @@ companySchema.pre('save', async function (next) {
     }
 
     // Calculate metrics if revenue data exists
-    if (this.isModified('revenueInfo.monthlyRevenue')) {
+    if (this.isModified('revenueTracking.monthlyRevenue')) {
         this.calculateMetrics();
     }
 

@@ -20,150 +20,8 @@ import {
 import { toast } from "react-hot-toast";
 import { authAPI } from "../../../api/auth.api.js";
 import { useAuth } from "../../../hooks/useAuth.jsx";
-import { MultiSelectField } from './../../../components/ui/MultiSelectField.jsx';
-
-// Contract configuration options
-const clientTypes = [
-  {
-    value: "Billing Company",
-    label: "🏢 Billing Company",
-    description: "Direct billing services",
-  },
-  {
-    value: "Provider",
-    label: "🏥 Healthcare Provider",
-    description: "Medical service provider",
-  },
-  {
-    value: "Insurance",
-    label: "🛡️ Insurance Company",
-    description: "Insurance services",
-  },
-  {
-    value: "Third Party",
-    label: "🤝 Third Party",
-    description: "Third-party services",
-  },
-  { value: "Others", label: "📦 Others", description: "Other client types" },
-];
-
-const contractTypes = [
-  {
-    value: "End to End",
-    label: "🔄 End to End",
-    description: "Complete service delivery",
-  },
-  {
-    value: "Transactional",
-    label: "💸 Transactional",
-    description: "Per-transaction basis",
-  },
-  {
-    value: "FTE",
-    label: "👥 Full-Time Equivalent",
-    description: "Dedicated resources",
-  },
-  { value: "Hybrid", label: "🔀 Hybrid", description: "Mixed service model" },
-  {
-    value: "Consulting",
-    label: "💼 Consulting",
-    description: "Advisory services",
-  },
-  {
-    value: "Project Based",
-    label: "📋 Project Based",
-    description: "Specific project delivery",
-  },
-];
-
-const specialtyTypes = [
-  {
-    value: "Primary Care",
-    label: "🏥 Primary Care",
-    description: "General healthcare",
-  },
-  {
-    value: "Specialty Care",
-    label: "⚕️ Specialty Care",
-    description: "Specialized medical care",
-  },
-  { value: "Dental", label: "🦷 Dental", description: "Dental services" },
-  { value: "Vision", label: "👁️ Vision", description: "Eye care services" },
-  {
-    value: "Mental Health",
-    label: "🧠 Mental Health",
-    description: "Psychological services",
-  },
-  {
-    value: "Surgery Centers",
-    label: "🏥 Surgery Centers",
-    description: "Surgical procedures",
-  },
-  {
-    value: "Hospitals",
-    label: "🏥 Hospitals",
-    description: "Hospital services",
-  },
-  { value: "Labs", label: "🔬 Labs", description: "Laboratory services" },
-  {
-    value: "Multi Specialty",
-    label: "🏥 Multi Specialty",
-    description: "Multiple specialties",
-  },
-  { value: "DME", label: "🦽 DME", description: "Durable Medical Equipment" },
-];
-
-const scopeFormats = [
-  { value: "ClaimMD", label: "📋 ClaimMD", description: "ClaimMD format" },
-  { value: "Medisoft", label: "💻 Medisoft", description: "Medisoft system" },
-  { value: "Epic", label: "🏥 Epic", description: "Epic EHR system" },
-  { value: "Cerner", label: "📊 Cerner", description: "Cerner platform" },
-  { value: "Custom", label: "⚙️ Custom", description: "Custom format" },
-  { value: "HL7", label: "🔄 HL7", description: "HL7 standards" },
-];
-
-const serviceAreas = [
-  {
-    value: "Claims Processing",
-    label: "📄 Claims Processing",
-    description: "Medical claims processing",
-  },
-  {
-    value: "Prior Authorization",
-    label: "✅ Prior Authorization",
-    description: "Pre-approval services",
-  },
-  {
-    value: "Eligibility Verification",
-    label: "🔍 Eligibility Verification",
-    description: "Insurance verification",
-  },
-  {
-    value: "Denial Management",
-    label: "❌ Denial Management",
-    description: "Claim denial handling",
-  },
-  {
-    value: "Payment Posting",
-    label: "💰 Payment Posting",
-    description: "Payment processing",
-  },
-  {
-    value: "AR Follow-up",
-    label: "📞 AR Follow-up",
-    description: "Accounts receivable",
-  },
-  {
-    value: "Credentialing",
-    label: "📜 Credentialing",
-    description: "Provider credentialing",
-  },
-  {
-    value: "Coding Services",
-    label: "🔢 Coding Services",
-    description: "Medical coding",
-  },
-];
+import { MultiSelectField } from "./../../../components/ui/MultiSelectField.jsx";
+import { COMPANY_CONSTANTS } from "../../../../../shared/constants/modelConstants.js";
 
 export default function SignupStep4({
   data,
@@ -390,7 +248,7 @@ export default function SignupStep4({
                 <MultiSelectField
                   label="Client Types"
                   description="Types of clients you work with"
-                  options={clientTypes}
+                  options={COMPANY_CONSTANTS.CLIENT_TYPES}
                   selected={data.contractSettings.clientTypes || []}
                   onChange={(selected) =>
                     updateContractSettings({ clientTypes: selected })
@@ -401,7 +259,7 @@ export default function SignupStep4({
                 <MultiSelectField
                   label="Contract Types"
                   description="Types of contracts you offer"
-                  options={contractTypes}
+                  options={COMPANY_CONSTANTS.CONTRACT_TYPES}
                   selected={data.contractSettings.contractTypes || []}
                   onChange={(selected) =>
                     updateContractSettings({ contractTypes: selected })
@@ -412,7 +270,7 @@ export default function SignupStep4({
                 <MultiSelectField
                   label="Specialty Types"
                   description="Medical specialties you handle"
-                  options={specialtyTypes}
+                  options={COMPANY_CONSTANTS.SPECIALTY_TYPES}
                   selected={data.contractSettings.specialtyTypes || []}
                   onChange={(selected) =>
                     updateContractSettings({ specialtyTypes: selected })
@@ -423,7 +281,7 @@ export default function SignupStep4({
                 <MultiSelectField
                   label="Scope Formats"
                   description="Systems and formats you work with"
-                  options={scopeFormats}
+                  options={COMPANY_CONSTANTS.SCOPE_FORMATS}
                   selected={data.contractSettings.scopeFormats || []}
                   onChange={(selected) =>
                     updateContractSettings({ scopeFormats: selected })
@@ -436,7 +294,7 @@ export default function SignupStep4({
               <MultiSelectField
                 label="Service Areas"
                 description="Areas of service you provide"
-                options={serviceAreas}
+                options={COMPANY_CONSTANTS.SERVICE_AREAS}
                 selected={data.contractSettings.serviceAreas || []}
                 onChange={(selected) =>
                   updateContractSettings({ serviceAreas: selected })

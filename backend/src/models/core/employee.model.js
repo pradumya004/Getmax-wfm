@@ -1,4 +1,4 @@
-// backend/src/models/employee.model.js
+// backend/src/models/core/employee.model.js
 
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -6,11 +6,7 @@ import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import performanceMetricsSchema from "../performance.model.js";
 import gamificationSchema from "../gamification.model.js";
-
-// rank - 4 diff (rank 1 guardian(5,4,3,2,1), rank 2 elite, rank 3 pro, rank 4 master) {affecting ranks}
-// level - 
-// exp
-// coins
+import { EMPLOYEE_CONSTANTS } from "../../../../shared/constants/modelConstants.js";
 
 const employeeSchema = new mongoose.Schema({
     employeeId: {
@@ -91,12 +87,12 @@ const employeeSchema = new mongoose.Schema({
         },
         gender: {
             type: String,
-            enum: ["Male", "Female", "Other", "Prefer not to say"],
+            enum: EMPLOYEE_CONSTANTS.GENDER_OPTIONS,
             default: "Prefer not to say"
         },
         bloodGroup: {
             type: String,
-            enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+            enum: EMPLOYEE_CONSTANTS.BLOOD_GROUPS,
             trim: true,
         },
     },

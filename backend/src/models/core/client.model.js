@@ -1,4 +1,4 @@
-// backend/src/models/client-model.js
+// backend/src/models/core/client.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
