@@ -1,7 +1,7 @@
 // backend/src/controllers/payer.controller.js
 
 import axios from 'axios';
-import { Payer } from '../../models/payer-model.js';
+import { Payer } from '../../models/data/payer.model.js';
 import { transformClaimMDPayer } from '../../scripts/adapters/claimmdAdapter.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";

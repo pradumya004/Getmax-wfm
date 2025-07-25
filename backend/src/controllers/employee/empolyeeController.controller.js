@@ -3,12 +3,12 @@
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { Employee } from "../../models/employee.model.js";
-import { Company } from "../../models/company.model.js";
-import { Role } from "../../models/role.model.js";
-import { Department } from "../../models/department.model.js";
-import { Designation } from "../../models/designation.model.js";
-import { SubDepartment } from "../../models/subdepartment.model.js";
+import { Employee } from "../../models/core/employee.model.js";
+import { Company } from "../../models/core/company.model.js";
+import { Role } from "../../models/organization/role.model.js";
+import { Department } from "../../models/organization/department.model.js";
+import { Designation } from "../../models/organization/designation.model.js";
+import { SubDepartment } from "../../models/organization/subdepartment.model.js";
 import { EMAIL_TEMPLATES } from "../../constants.js";
 import { generateEmployeeToken, generateCompanyToken } from "../../utils/jwtHelper.js";
 import { getClientIP } from "../../utils/helpers.js";

@@ -10,7 +10,7 @@ import {
     COMPANY_CONSTANTS,
     VALIDATION_MESSAGES,
     VALIDATION_PATTERNS
-} from "../../../../shared/constants/modelConstants";
+} from "../../../../shared/constants/modelConstants.js";
 
 // Address Schema
 const addressSchema = new mongoose.Schema({

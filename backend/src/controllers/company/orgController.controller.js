@@ -3,10 +3,10 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { Department } from "../../models/department.model.js";
-import { Role } from "../../models/role.model.js";
-import { Designation } from "../../models/designation.model.js";
-import { SubDepartment } from "../../models/subdepartment.model.js";
+import { Department } from "../../models/organization/department.model.js";
+import { Role } from "../../models/organization/role.model.js";
+import { Designation } from "../../models/organization/designation.model.js";
+import { SubDepartment } from "../../models/organization/subdepartment.model.js";
 import xlsx from 'xlsx';
 
 const getOrganizationalData = asyncHandler(async (req, res) => {

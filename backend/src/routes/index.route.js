@@ -9,6 +9,8 @@ import clientRoutes from './client.route.js';
 import sowRoutes from './sow.route.js';
 import patientRoutes from './patient.route.js';
 import payerRoutes from './payer.route.js';
+import claimTaskRoutes from './claimTask.route.js';
+import adminRoutes from './admin.route.js';
 
 const router = express.Router();
 
@@ -29,10 +31,12 @@ router.get('/', (req, res) => {
 router.use('/company', companyRoutes);
 router.use('/employees', employeeRoutes);
 router.use('/master-admin', masterAdminRoutes);
+router.use('/admin', adminRoutes);
 router.use('/org-data', organizationRoutes);
 router.use('/clients', clientRoutes);
 router.use('/sows', sowRoutes);
 router.use('/patients', patientRoutes);
 router.use('/payers', payerRoutes);
+router.use('/claim-tasks', claimTaskRoutes);
 
 export default router;

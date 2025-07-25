@@ -3,8 +3,8 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
-import { Company } from "../../models/company.model.js";
-import { Employee } from "../../models/employee.model.js";
+import { Company } from "../../models/core/company.model.js";
+import { Employee } from "../../models/core/employee.model.js";
 
 const getAllCompanies = asyncHandler(async (req, res) => {
     const companies = await Company.find({}).select('-companyPassword');

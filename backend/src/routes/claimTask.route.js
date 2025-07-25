@@ -8,7 +8,7 @@ import {
   updateClaimTask,
   deactivateClaimTask,
   bulkUploadClaims
-} from '../controllers/claimtasks.controller.js';
+} from '../controllers/claimtask/claimTaskController.controller.js';
 
 import {
   verifyEmployeeToken,

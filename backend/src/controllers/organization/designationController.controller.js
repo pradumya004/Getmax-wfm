@@ -1,6 +1,6 @@
 // backend/src/controllers/organization/designationController.controller.js
 
-import { Designation } from "../../models/designation.model.js";
+import { Designation } from "../../models/organization/designation.model.js";
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';

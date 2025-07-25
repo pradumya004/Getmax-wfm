@@ -1,13 +1,13 @@
 // backend/src/controllers/claimtask/claimTaskController.controller.js
 
-import { asyncHandler } from '../utils/asyncHandler.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import xlsx from 'xlsx';
-import { ClaimTasks } from '../models/claimTasks.model.js';
-import { SOW } from '../models/sow.model.js';
-import { Patient } from '../models/patient-model.js';
-import { Client } from '../models/client-model.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
+import { ClaimTasks } from '../../models/workflow/claimtasks.model.js';
+import { SOW } from '../../models/core/sow.model.js';
+import { Patient } from '../../models/data/patient.model.js';
+import { Client } from '../../models/core/client.model.js';
+import { ApiError } from '../../utils/ApiError.js';
+import { ApiResponse } from '../../utils/ApiResponse.js';
 
 // 1. Create a single claim task
 export const createClaimTask = asyncHandler(async (req, res) => {

@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
-import performanceMetricsSchema from "../performance.model.js";
-import gamificationSchema from "../gamification.model.js";
+import performanceMetricsSchema from "../performance/performance.model.js";
+import gamificationSchema from "../performance/gamification.model.js";
 import { EMPLOYEE_CONSTANTS } from "../../../../shared/constants/modelConstants.js";
 
 const employeeSchema = new mongoose.Schema({
