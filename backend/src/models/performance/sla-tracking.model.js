@@ -1,4 +1,4 @@
-// backend/src/models/slaTracking.model.js
+// backend/src/models/performance/sla-tracking.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';

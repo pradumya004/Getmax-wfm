@@ -1,4 +1,4 @@
-// backend/src/controllers/claimtasks.controller.js
+// backend/src/controllers/claimtask/claimTaskController.controller.js
 
 import { asyncHandler } from '../utils/asyncHandler.js';
 import xlsx from 'xlsx';

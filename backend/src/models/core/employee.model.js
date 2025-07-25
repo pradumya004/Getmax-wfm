@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
-import performanceMetricsSchema from "./performance.model.js";
-import gamificationSchema from "./gamification.model.js";
+import performanceMetricsSchema from "../performance.model.js";
+import gamificationSchema from "../gamification.model.js";
 
 // rank - 4 diff (rank 1 guardian(5,4,3,2,1), rank 2 elite, rank 3 pro, rank 4 master) {affecting ranks}
 // level - 

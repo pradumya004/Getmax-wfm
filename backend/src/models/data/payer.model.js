@@ -1,4 +1,4 @@
-// backend/src/models/payer.model.js
+// backend/src/models/data/payer.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';

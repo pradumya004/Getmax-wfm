@@ -1,4 +1,4 @@
-// backend/src/models/claimTasks.model.js
+// backend/src/models/workflow/claimtasks.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -315,10 +315,10 @@ const claimTasksSchema = new mongoose.Schema({
             default: 'New',
             index: true
         },
-        subStatus: {
+        subStatus: [{
             type: String,
             trim: true
-        },
+        }],
         actionCode: {
             type: String,
             enum: [
