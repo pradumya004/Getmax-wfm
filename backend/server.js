@@ -43,12 +43,18 @@ const startServer = async () => {
     createUploadDirs();
 
     console.log(`🔃 Connecting to MongoDB...`);
-    await connectDB();
+    await Promise.race([
+      connectDB(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('MongoDB connection timeout')), 10000))
+    ]);
     console.log(`🟢 MongoDB Connected Successfully!`);
 
     // Test Email Service
     console.log(`📧 Testing email service...`);
-    const emailTest = await testEmailConnection();
+    const emailTest = await Promise.race([
+      testEmailConnection(),
+      new Promise(resolve => setTimeout(() => resolve({ success: false, message: 'Email test timeout' }), 5000))
+    ]);
     if (emailTest.success) {
       console.log('🟢 Email service configured and working');
     } else {
@@ -57,7 +63,10 @@ const startServer = async () => {
 
     // Test Cloudinary
     console.log(`☁️ Testing Cloudinary service...`);
-    const cloudinaryTest = await validateCloudinaryConnection();
+    const cloudinaryTest = await Promise.race([
+      validateCloudinaryConnection(),
+      new Promise(resolve => setTimeout(() => resolve(false), 5000))
+    ]);
     if (cloudinaryTest) {
       console.log('🟢 Cloudinary service configured and working');
     } else {
