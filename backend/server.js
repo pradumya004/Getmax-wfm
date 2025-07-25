@@ -6,6 +6,7 @@ import { app } from './src/app.js';
 import connectDB from './src/config/connection.config.js';
 import { testEmailConnection } from './src/config/email.config.js';
 import { validateCloudinaryConnection } from './src/config/cloudinary.config.js';
+import { initializeRedis } from './src/config/redis.config.js';
 import {
   MULTER_AVATAR_PATH,
   MULTER_DOCUMENT_PATH,
@@ -64,6 +65,15 @@ const startServer = async () => {
       console.warn('🟡 Cloudinary service issue - file uploads may not work');
     }
 
+    // Test Redis (Optional)
+    console.log(`🔴 Testing Redis service...`);
+    const redisTest = await initializeRedis();
+    if (redisTest.success) {
+      console.log('🟢 Redis service configured and working');
+    } else {
+      console.warn('🟡 Redis service issue:', redisTest.message || 'Running without cache');
+    }
+
     app.listen(port, () => {
       console.log(`🚀 GetMax WFM Backend Server`);
       console.log(`🚀 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -73,6 +83,7 @@ const startServer = async () => {
       console.log(`🚀 MongoDB: Connected`);
       console.log(`🚀 Email Service: ${emailTest.success ? 'Ready' : 'Limited'}`);
       console.log(`🚀 Cloudinary: ${cloudinaryTest ? 'Ready' : 'Limited'}`);
+      console.log(`🚀 Redis: ${redisTest.success ? 'Ready' : 'Disabled'}`);
     });
 
     app.on('error', (error) => {
@@ -87,3 +98,18 @@ const startServer = async () => {
 };
 
 startServer();
+
+import { closeRedisConnection } from './src/config/redis.config.js';
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🔴 SIGTERM received, shutting down gracefully...');
+  await closeRedisConnection();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🔴 SIGINT received, shutting down gracefully...');
+  await closeRedisConnection();
+  process.exit(0);
+});
