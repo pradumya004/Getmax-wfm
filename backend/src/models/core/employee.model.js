@@ -4,8 +4,6 @@ import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
-import performanceMetricsSchema from "../performance.model.js";
-import gamificationSchema from "../gamification.model.js";
 import { EMPLOYEE_CONSTANTS } from "../../../../shared/constants/modelConstants.js";
 
 const employeeSchema = new mongoose.Schema({
@@ -299,18 +297,6 @@ const employeeSchema = new mongoose.Schema({
         }
     },
 
-    // WFM Performance Tracking
-    performanceMetrics: {
-        type: performanceMetricsSchema,
-        default: () => ({})
-    },
-
-    // WFM Gamification System
-    gamification: {
-        type: gamificationSchema,
-        default: () => ({})
-    },
-
     // WFM Specific Performance Targets
     performanceTargets: {
         dailyClaimTarget: {
@@ -330,14 +316,6 @@ const employeeSchema = new mongoose.Schema({
             max: [100, 'SLA target cannot exceed 100%'],
             default: 95
         },
-        currentPerformanceRating: {
-            type: String,
-            enum: {
-                values: ["Outstanding", "Exceeds Expectations", "Meets Expectations", "Could be better", "Need to Improve"],
-                message: 'Performance rating must be a valid rating'
-            },
-            default: null
-        }
     },
 
     // SOW Assignments - Key for WFM
@@ -355,7 +333,7 @@ const employeeSchema = new mongoose.Schema({
             default: true
         },
     }],
-    
+
     // rampPercentage shifted from sow to employee...
     rampPercentage: {
         type: Number,
@@ -543,7 +521,15 @@ employeeSchema.virtual('fullName').get(function () {
 
 employeeSchema.virtual('avatarUrl').get(function () {
     if (this.personalInfo.profilePicture) {
-        return this.personalInfo.profilePicture.startsWith('http') ? this.personalInfo.profilePicture : `${process.env.BASE_URL || 'http://localhost:3000'}${this.personalInfo.profilePicture}`
+        // If the path is already a full URL, return it directly.
+        if (this.personalInfo.profilePicture.startsWith('http')) {
+            return this.personalInfo.profilePicture;
+        }
+        // Otherwise, prepend the base URL from environment variables.
+        // If BASE_URL is not set, it defaults to an empty string, returning a 
+        // relative path, which is safer than a hardcoded, incorrect domain.
+        const baseUrl = process.env.BASE_URL || '';
+        return `${baseUrl}${this.personalInfo.profilePicture}`;
     }
 
     // Return default avatar based on name initials
@@ -562,22 +548,6 @@ employeeSchema.virtual('age').get(function () {
     }
     return age;
 });
-
-// employeeSchema.virtual('activeSowAssignments').get(function () {
-//     return this.sowAssignments.filter(assignment => assignment.isActive);
-// });
-
-employeeSchema.virtual('currentPerformanceLevel').get(function () {
-    return this.gamification?.experience?.currentLevel ?? null;
-});
-
-employeeSchema.virtual('todaysMetrics').get(function () {
-    const today = new Date().toDateString();
-    return this.performanceMetrics?.dailyMetrics?.find(metric =>
-        new Date(metric.date).toDateString() === today
-    ) || null;
-});
-
 
 // Instance Methods
 employeeSchema.methods.comparePassword = async function (candidatePassword) {
@@ -632,42 +602,6 @@ employeeSchema.methods.updateProfileCompletion = function () {
     this.systemInfo.profileCompletionPercentage = Math.round((completedFields / totalFields) * 100);
 };
 
-employeeSchema.methods.awardExperience = function (points, reason) {
-    this.gamification.experience.totalXP += points;
-
-    // Calculate level progression
-    const newLevel = Math.floor(this.gamification.experience.totalXP / 100) + 1;
-    if (newLevel > this.gamification.experience.currentLevel) {
-        this.gamification.experience.levelUpHistory.push({
-            level: newLevel,
-            achievedDate: new Date(),
-            xpRequired: newLevel * 100
-        });
-        this.gamification.experience.currentLevel = newLevel;
-    }
-
-    this.gamification.experience.xpToNextLevel =
-        (this.gamification.experience.currentLevel * 100) - this.gamification.experience.totalXP;
-};
-
-// change rampPercentage
-// employeeSchema.methods.assignToSOW = function (sowRef, rampPercentage = 100) {
-//     const existingAssignment = this.sowAssignments.find(
-//         assignment => assignment.sowRef.equals(sowRef) && assignment.isActive
-//     );
-
-//     if (existingAssignment) {
-//         existingAssignment.rampPercentage = rampPercentage;
-//     } else {
-//         this.sowAssignments.push({
-//             sowRef,
-//             rampPercentage,
-//             isActive: true,
-//             assignedDate: new Date()
-//         });
-//     }
-// };
-
 employeeSchema.methods.removeFromSOW = function (sowRef) {
     const assignment = this.sowAssignments.find(
         assignment => assignment.sowRef.equals(sowRef) && assignment.isActive
@@ -721,35 +655,6 @@ employeeSchema.statics.findByRole = function (roleRef, companyRef) {
         companyRef,
         'status.employeeStatus': 'Active'
     }).sort({ 'personalInfo.firstName': 1 });
-};
-
-employeeSchema.statics.getPerformanceLeaderboard = function (companyRef, period = 'weekly') {
-    const matchStage = {
-        companyRef: new mongoose.Types.ObjectId(companyRef),
-        'status.employeeStatus': 'Active'
-    };
-
-    return this.aggregate([
-        { $match: matchStage },
-        {
-            $addFields: {
-                currentPeriodScore: period === 'weekly'
-                    ? '$performanceMetrics.weeklyMetrics.averageQualityScore'
-                    : '$performanceMetrics.monthlyMetrics.averageQualityScore'
-            }
-        },
-        { $sort: { currentPeriodScore: -1 } },
-        { $limit: 10 },
-        {
-            $project: {
-                employeeId: 1,
-                fullName: { $concat: ['$personalInfo.firstName', ' ', '$personalInfo.lastName'] },
-                currentPeriodScore: 1,
-                gamificationLevel: '$gamification.experience.currentLevel',
-                totalXP: '$gamification.experience.totalXP'
-            }
-        }
-    ]);
 };
 
 // Pre-save middleware

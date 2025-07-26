@@ -1,4 +1,4 @@
-// backend/src/models/floatingPool.model.js
+// backend/src/models/workflow/floating-pool.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';

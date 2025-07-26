@@ -1,4 +1,5 @@
-// ===== backend/src/models/workflow/workflow-audit.model.js =====
+// backend/src/models/workflow/workflow-audit.model.js
+
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
