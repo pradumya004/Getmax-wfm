@@ -22,7 +22,7 @@ const notesSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks', // Claim this note is associated with
+        ref: 'ClaimTask', // Claim this note is associated with
         required: [true, 'Claim reference is required'],
         index: true
     },
@@ -612,7 +612,7 @@ notesSchema.virtual('hasOutstandingActions').get(function() {
 });
 
 notesSchema.virtual('claim', {
-    ref: 'ClaimTasks',
+    ref: 'ClaimTask',
     localField: 'claimRef',
     foreignField: '_id',
     justOne: true

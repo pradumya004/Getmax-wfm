@@ -1,4 +1,5 @@
-// ===== backend/src/models/workflow/workflow-batch.model.js =====
+// backend/src/models/workflow/workflow-batch.model.js
+
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -94,7 +95,7 @@ const workflowBatchSchema = new mongoose.Schema({
     batchContents: {
         claimRefs: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'ClaimTasks',
+            ref: 'ClaimTask',
             required: true
         }],
         totalItems: {
@@ -231,7 +232,7 @@ const workflowBatchSchema = new mongoose.Schema({
         errors: [{
             claimRef: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'ClaimTasks'
+                ref: 'ClaimTask'
             },
             errorType: {
                 type: String,

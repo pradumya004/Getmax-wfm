@@ -22,7 +22,7 @@ const slaTrackingSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks', // Claim being tracked
+        ref: 'ClaimTask', // Claim being tracked
         required: [true, 'Claim reference is required'],
         index: true
     },
@@ -646,7 +646,7 @@ slaTrackingSchema.virtual('performanceCategory').get(function() {
 });
 
 slaTrackingSchema.virtual('claim', {
-    ref: 'ClaimTasks',
+    ref: 'ClaimTask',
     localField: 'claimRef',
     foreignField: '_id',
     justOne: true

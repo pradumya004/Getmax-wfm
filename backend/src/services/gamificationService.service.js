@@ -1,5 +1,6 @@
 // backend/src/services/gamificationService.service.js
 
+import mongoose from 'mongoose';
 import { ApiError } from '../utils/ApiError.js';
 import { Gamification } from '../models/gamification.model.js';
 import { Employee } from '../models/employee.model.js';
@@ -22,93 +23,98 @@ import { getDateRange } from './../utils/dateUtils';
 
 // Award Points
 export const awardPoints = async (employeeId, points, reason, taskId = null, priority = 'MEDIUM_PRIORITY') => {
+    const session = await mongoose.startSession();
     try {
-        const employee = await Employee.findById(employeeId);
-        if (!employee) {
-            throw new ApiError(404, 'Employee not found');
-        }
+        let result;
+        await session.withTransaction(async () => {
+            const employee = await Employee.findById(employeeId).session(session);
+            if (!employee) {
+                throw new ApiError(404, 'Employee not found');
+            }
 
-        // Get or create gamification record
-        let gamification = await Gamification.findOne({ employeeRef: employeeId });
+            // Get or create gamification record
+            let gamification = await Gamification.findOne({ employeeRef: employeeId }).session(session);
+            if (!gamification) {
+                gamification = await createInitialGamificationRecord(employeeId, employee.companyRef, session);
+            }
 
-        if (!gamification) {
-            gamification = await createInitialGamificationRecord(employeeId, employee.companyRef);
-        }
+            // Calculate old level
+            const oldLevel = calculateLevel(gamification.points.totalPoints);
 
-        // Calculate old level
-        const oldLevel = calculateLevel(gamification.points.totalPoints);
+            // Apply daily points limit
+            const today = new Date();
+            const dailyPoints = getDailyPoints(gamification, today);
+            let awardedPoints = points;
 
-        // Apply daily points limit
-        const today = new Date();
-        const dailyPoints = getDailyPoints(gamification, today);
+            if (dailyPoints + awardedPoints > GAMIFICATION_SETTINGS.MAX_DAILY_POINTS) {
+                awardedPoints = Math.max(0, GAMIFICATION_SETTINGS.MAX_DAILY_POINTS - dailyPoints);
+            }
 
-        if (dailyPoints + points > GAMIFICATION_SETTINGS.MAX_DAILY_POINTS) {
-            points = Math.max(0, GAMIFICATION_SETTINGS.MAX_DAILY_POINTS - dailyPoints);
-        }
+            if (awardedPoints <= 0) {
+                result = {
+                    pointsAwarded: 0,
+                    totalPoints: gamification.points.totalPoints,
+                    currentLevel: oldLevel,
+                    leveledUp: false,
+                    message: 'Daily points limit reached.'
+                };
+                return;
+            }
 
-        if (points <= 0) {
-            return {
-                pointsAwarded: 0,
+            // Add points
+            gamification.points.totalPoints += awardedPoints;
+            gamification.points.currentMonthPoints += awardedPoints;
+            gamification.points.pointsHistory.push({
+                points: awardedPoints,
+                reason,
+                taskRef: taskId,
+                earnedAt: new Date(),
+                category: getPointCategory(reason)
+            });
+
+            // Keep only last POINT_HISTORY_LIMIT point history entries
+            if (gamification.points.pointsHistory.length > GAMIFICATION_SETTINGS.POINT_HISTORY_LIMIT) {
+                gamification.points.pointsHistory.splice(0, gamification.points.pointsHistory.length - GAMIFICATION_SETTINGS.POINT_HISTORY_LIMIT);
+            }
+
+            // Update level
+            const newLevel = calculateLevel(gamification.points.totalPoints);
+            gamification.level.currentLevel = newLevel.level;
+            gamification.level.currentLevelPoints = newLevel.pointsInLevel;
+
+            // Check for level up
+            if (newLevel.level > oldLevel.level) {
+                await handleLevelUp(gamification, employee, newLevel, oldLevel, session);
+            }
+
+            await gamification.save({ session });
+
+            // Check for new achievements
+            const newAchievements = await checkAchievements(employeeId, session);
+            await updateStreaks(employeeId, session);
+
+            result = {
+                pointsAwarded: awardedPoints,
                 totalPoints: gamification.points.totalPoints,
-                currentLevel: oldLevel,
-                leveledUp: false,
-                message: 'Daily points limit reached.'
+                currentLevel: newLevel,
+                leveledUp: newLevel.level > oldLevel.level,
+                oldLevel: oldLevel.level,
+                newLevel: newLevel.level,
+                newAchievements
             };
-        }
-
-        // Add points
-        gamification.points.totalPoints += points;
-        gamification.points.currentMonthPoints += points;
-        gamification.points.pointsHistory.push({
-            points,
-            reason,
-            taskRef: taskId,
-            earnedAt: new Date(),
-            category: getPointCategory(reason)
-        });
-
-        // Keep only last POINT_HISTORY_LIMIT point history entries
-        if (gamification.points.pointsHistory.length > GAMIFICATION_SETTINGS.POINT_HISTORY_LIMIT) {
-            gamification.points.pointsHistory = gamification.points.pointsHistory.slice(-GAMIFICATION_SETTINGS.POINT_HISTORY_LIMIT);
-        }
-
-        // Update level
-        const newLevel = calculateLevel(gamification.points.totalPoints);
-        gamification.level.currentLevel = newLevel.level;
-        gamification.level.currentLevelPoints = newLevel.pointsInLevel;
-
-        // Check for level up
-        if (newLevel.level > oldLevel.level) {
-            await handleLevelUp(gamification, employee, newLevel, oldLevel);
-        }
-
-        await gamification.save();
-
-        // Check for new achievements
-        const newAchievements = await checkAchievements(employeeId);
-
-        // Update streaks
-        await updateStreak(employeeId);
-
-        return {
-            pointsAwarded: points,
-            totalPoints: gamification.points.totalPoints,
-            currentLevel: newLevel,
-            leveledUp: newLevel.level > oldLevel.level,
-            oldLevel: oldLevel.level,
-            newLevel: newLevel.level,
-            newAchievements
-        };
-
+        })
+        return result;
     } catch (error) {
         if (error instanceof ApiError) throw error;
         throw new ApiError(500, `Failed to award points: ${error.message}`);
+    } finally {
+        await session.endSession();
     }
 };
 
 // Create Initial Gamification Record
-const createInitialGamificationRecord = async (employeeId, companyId) => {
-    return await Gamification.create({
+const createInitialGamificationRecord = async (employeeId, companyId, session) => {
+    const records = await Gamification.create([{
         employeeRef: employeeId,
         companyRef: companyId,
         points: {
@@ -139,11 +145,13 @@ const createInitialGamificationRecord = async (employeeId, companyId) => {
             slaCompliance: 0,
             lastActivity: new Date()
         }
-    });
+    }], { session });
+
+    return records[0];
 };
 
 // Handle Level Up
-const handleLevelUp = async (gamification, employee, newLevel, oldLevel) => {
+const handleLevelUp = async (gamification, employee, newLevel, oldLevel, session) => {
     gamification.level.levelHistory.push({
         level: newLevel.level,
         achievedAt: new Date(),
@@ -166,7 +174,7 @@ const handleLevelUp = async (gamification, employee, newLevel, oldLevel) => {
             newLevel: newLevel.level,
             totalPoints: gamification.points.totalPoints
         }
-    });
+    }, { session });
 };
 
 // Calculate Level
@@ -198,12 +206,12 @@ const calculateLevel = (totalPoints) => {
 };
 
 // Check Achievements
-export const checkAchievements = async (employeeId) => {
+export const checkAchievements = async (employeeId, session) => {
     try {
-        const employee = await Employee.findById(employeeId);
+        const employee = await Employee.findById(employeeId).session(session);
         if (!employee) return [];
 
-        const gamification = await Gamification.findOne({ employeeRef: employeeId });
+        const gamification = await Gamification.findOne({ employeeRef: employeeId }).session(session);
         if (!gamification) return [];
 
         const newAchievements = [];
@@ -215,8 +223,7 @@ export const checkAchievements = async (employeeId) => {
                 continue;
             }
 
-            const isUnlocked = await checkAchievementCriteria(employeeId, achievement);
-
+            const isUnlocked = await checkAchievementCriteria(employeeId, achievement, gamification, session);
             if (isUnlocked) {
                 // Calculate final points with rarity multiplier
                 const rarity = ACHIEVEMENT_RARITY[achievement.rarity.toLowerCase()] || ACHIEVEMENT_RARITY.COMMON;
@@ -276,12 +283,12 @@ export const checkAchievements = async (employeeId) => {
                         points: finalPoints,
                         rarity: achievement.rarity
                     }
-                });
+                }, { session });
             }
         }
 
         if (newAchievements.length > 0) {
-            await gamification.save();
+            await gamification.save({ session });
         }
 
         return newAchievements;
@@ -293,57 +300,57 @@ export const checkAchievements = async (employeeId) => {
 };
 
 // Check Achievement Criteria
-const checkAchievementCriteria = async (employeeId, achievement) => {
+const checkAchievementCriteria = async (employeeId, achievement, gamification, session) => {
     try {
         const criteria = achievement.criteria;
 
         switch (achievement.id) {
-            case 'task_master':
-                return await checkTaskCount(employeeId, criteria.taskCount, criteria.period);
+            case ACHIEVEMENTS[0].id:
+                return await checkTaskCount(employeeId, criteria.taskCount, criteria.period, session);
 
-            case 'speed_demon':
-                return await checkTaskCount(employeeId, criteria.taskCount, criteria.period);
+            case ACHIEVEMENTS[1].id:
+                return await checkTaskCount(employeeId, criteria.taskCount, criteria.period, session);
 
-            case 'consistency_king':
-                return await checkConsecutiveDays(employeeId, criteria.consecutiveDays);
+            case ACHIEVEMENTS[2].id:
+                return await checkConsecutiveDays(employeeId, criteria.consecutiveDays, session);
 
-            case 'early_bird':
-                return await checkTimeBasedTasks(employeeId, criteria.earlyTaskCount, 'before', criteria.timeBefore);
+            case ACHIEVEMENTS[3].id:
+                return await checkTimeBasedTasks(employeeId, criteria.earlyTaskCount, 'before', criteria.timeBefore, session);
 
-            case 'night_owl':
-                return await checkTimeBasedTasks(employeeId, criteria.lateTaskCount, 'after', criteria.timeAfter);
+            case ACHIEVEMENTS[4].id:
+                return await checkTimeBasedTasks(employeeId, criteria.lateTaskCount, 'after', criteria.timeAfter, session);
 
-            case 'perfectionist':
-                return await checkConsecutiveAccuracy(employeeId, criteria.accuracyRate, criteria.consecutiveTasks);
+            case ACHIEVEMENTS[5].id:
+                return await checkConsecutiveAccuracy(employeeId, criteria.accuracyRate, criteria.consecutiveTasks, session);
 
-            case 'quality_guardian':
-                return await checkPeriodAccuracy(employeeId, criteria.accuracyRate, criteria.period);
+            case ACHIEVEMENTS[6].id:
+                return await checkPeriodAccuracy(employeeId, criteria.accuracyRate, criteria.period, session);
 
-            case 'error_free':
-                return await checkErrorFree(employeeId, criteria.period);
+            case ACHIEVEMENTS[7].id:
+                return await checkErrorFree(employeeId, criteria.period, session);
 
-            case 'detail_oriented':
-                return await checkPerfectTasks(employeeId, criteria.perfectTasks);
+            case ACHIEVEMENTS[8].id:
+                return await checkPerfectTasks(employeeId, criteria.perfectTasks, session);
 
-            case 'sla_champion':
-                return await checkSLACompliance(employeeId, criteria.slaCompliance, criteria.period);
+            case ACHIEVEMENTS[9].id:
+                return await checkSLACompliance(employeeId, criteria.slaCompliance, criteria.period, session);
 
-            case 'deadline_warrior':
-                return await checkEarlySubmissions(employeeId, criteria.earlySubmissions);
+            case ACHIEVEMENTS[10].id:
+                return await checkEarlySubmissions(employeeId, criteria.earlySubmissions, session);
 
-            case 'time_master':
-                return await checkTimeEfficiency(employeeId, criteria.timeEfficiencyTasks, criteria.timeEfficiency);
+            case ACHIEVEMENTS[11].id:
+                return await checkTimeEfficiency(employeeId, criteria.timeEfficiencyTasks, criteria.timeEfficiency, session);
 
-            case 'never_late':
-                return await checkOnTimeTasks(employeeId, criteria.onTimeTasks);
+            case ACHIEVEMENTS[12].id:
+                return await checkOnTimeTasks(employeeId, criteria.onTimeTasks, session);
 
-            case 'first_task':
-            case 'getting_started':
-            case 'on_a_roll':
-            case 'century_club':
-            case 'half_k_hero':
-            case 'veteran':
-                return await checkTotalTasks(employeeId, criteria.totalTasks);
+            case ACHIEVEMENTS[13].id:
+            case ACHIEVEMENTS[14].id:
+            case ACHIEVEMENTS[15].id:
+            case ACHIEVEMENTS[16].id:
+            case ACHIEVEMENTS[17].id:
+            case ACHIEVEMENTS[18].id:
+                return await checkTotalTasks(employeeId, criteria.totalTasks, session);
 
             default:
                 return false;
@@ -359,22 +366,22 @@ const checkAchievementCriteria = async (employeeId, achievement) => {
 // Achievement Check Functions
 // =========================================================================
 
-const checkTaskCount = async (employeeId, targetCount, period) => {
+const checkTaskCount = async (employeeId, targetCount, period, session) => {
     const dateRange = getDateRange(period);
     const count = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $gte: dateRange.start, $lte: dateRange.end }
-    });
+    }).session(session);
     return count >= targetCount;
 };
 
-const checkTimeBasedTasks = async (employeeId, targetCount, timeComparison, timeString) => {
+const checkTimeBasedTasks = async (employeeId, targetCount, timeComparison, timeString, session) => {
     const tasks = await ClaimTask.find({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $exists: true }
-    });
+    }).session(session);
 
     const timeBasedTasks = tasks.filter(task => {
         const completedAt = new Date(task.timeTracking.completedAt);
@@ -387,28 +394,32 @@ const checkTimeBasedTasks = async (employeeId, targetCount, timeComparison, time
     return timeBasedTasks.length >= targetCount;
 };
 
-const checkTotalTasks = async (employeeId, targetCount) => {
+const checkTotalTasks = async (employeeId, targetCount, session) => {
     const count = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed'
-    });
+    }).session(session);
     return count >= targetCount;
 };
 
-const checkConsecutiveDays = async (employeeId, targetDays) => {
-    // This would need more complex logic to check actual consecutive working days
-    // For now, simplified version
-    const gamification = await Gamification.findOne({ employeeRef: employeeId });
-    return gamification?.streaks?.currentStreak >= targetDays;
+const checkConsecutiveDays = async (employeeId, targetDays, session) => {
+    // Get the gamification record for the employee
+    const gamification = await Gamification.findOne({ employeeRef: employeeId }).session(session);
+    if (!gamification) return false;
+
+    // Use the dailyTask streak for consecutive days
+    const currentStreak = gamification.streaks?.dailyTask?.current || 0;
+    return currentStreak >= targetDays;
 };
 
-const checkConsecutiveAccuracy = async (employeeId, targetAccuracy, taskCount) => {
+const checkConsecutiveAccuracy = async (employeeId, targetAccuracy, taskCount, session) => {
     const recentTasks = await ClaimTask.find({
         assignedTo: employeeId,
         status: 'Completed'
     })
         .sort({ 'timeTracking.completedAt': -1 })
-        .limit(taskCount);
+        .limit(taskCount)
+        .session(session);
 
     if (recentTasks.length < taskCount) return false;
 
@@ -420,13 +431,13 @@ const checkConsecutiveAccuracy = async (employeeId, targetAccuracy, taskCount) =
     return accuracy >= targetAccuracy;
 };
 
-const checkPeriodAccuracy = async (employeeId, targetAccuracy, period) => {
+const checkPeriodAccuracy = async (employeeId, targetAccuracy, period, session) => {
     const dateRange = getDateRange(period);
     const tasks = await ClaimTask.find({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $gte: dateRange.start, $lte: dateRange.end }
-    });
+    }).session(session);
 
     if (tasks.length === 0) return false;
 
@@ -438,34 +449,34 @@ const checkPeriodAccuracy = async (employeeId, targetAccuracy, period) => {
     return accuracy >= targetAccuracy;
 };
 
-const checkErrorFree = async (employeeId, period) => {
+const checkErrorFree = async (employeeId, period, session) => {
     const dateRange = getDateRange(period);
     const errorCount = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $gte: dateRange.start, $lte: dateRange.end },
         'qualityAssurance.hasErrors': true
-    });
+    }).session(session);
     return errorCount === 0;
 };
 
-const checkPerfectTasks = async (employeeId, targetCount) => {
+const checkPerfectTasks = async (employeeId, targetCount, session) => {
     const perfectTasks = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed',
         'qualityAssurance.hasErrors': false,
         'qualityAssurance.qualityScore': { $gte: 100 }
-    });
+    }).session(session);
     return perfectTasks >= targetCount;
 };
 
-const checkSLACompliance = async (employeeId, targetCompliance, period) => {
+const checkSLACompliance = async (employeeId, targetCompliance, period, session) => {
     const dateRange = getDateRange(period);
     const tasks = await ClaimTask.find({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $gte: dateRange.start, $lte: dateRange.end }
-    });
+    }).session(session);
 
     if (tasks.length === 0) return false;
 
@@ -477,24 +488,24 @@ const checkSLACompliance = async (employeeId, targetCompliance, period) => {
     return compliance >= targetCompliance;
 };
 
-const checkEarlySubmissions = async (employeeId, targetCount) => {
+const checkEarlySubmissions = async (employeeId, targetCount, session) => {
     const earlySubmissions = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed',
         $expr: {
             $lt: ['$timeTracking.completedAt', '$dueDate']
         }
-    });
+    }).session(session);
     return earlySubmissions >= targetCount;
 };
 
-const checkTimeEfficiency = async (employeeId, targetTasks, efficiencyPercentage) => {
+const checkTimeEfficiency = async (employeeId, targetTasks, efficiencyPercentage, session) => {
     const tasks = await ClaimTask.find({
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.totalTime': { $exists: true },
         'estimatedTime': { $exists: true }
-    }).limit(targetTasks);
+    }).limit(targetTasks).session(session);
 
     if (tasks.length < targetTasks) return false;
 
@@ -508,14 +519,14 @@ const checkTimeEfficiency = async (employeeId, targetTasks, efficiencyPercentage
     return efficientTasks.length >= targetTasks;
 };
 
-const checkOnTimeTasks = async (employeeId, targetCount) => {
+const checkOnTimeTasks = async (employeeId, targetCount, session) => {
     const onTimeTasks = await ClaimTask.countDocuments({
         assignedTo: employeeId,
         status: 'Completed',
         $expr: {
             $lte: ['$timeTracking.completedAt', '$dueDate']
         }
-    });
+    }).session(session);
     return onTimeTasks >= targetCount;
 };
 
@@ -687,9 +698,9 @@ export const getEmployeeGamificationStats = async (employeeId) => {
 };
 
 // Update Streaks
-export const updateStreaks = async (employeeId) => {
+export const updateStreaks = async (employeeId, session) => {
     try {
-        const gamification = await Gamification.findOne({ employeeRef: employeeId });
+        const gamification = await Gamification.findOne({ employeeRef: employeeId }).session(session);
         if (!gamification) return;
 
         const today = new Date();
@@ -702,7 +713,7 @@ export const updateStreaks = async (employeeId) => {
             assignedTo: employeeId,
             status: 'Completed',
             'timeTracking.completedAt': { $gte: today, $lt: tomorrow }
-        });
+        }).session(session);
 
         if (tasksToday > 0) {
             await updateSpecificStreak(gamification, 'dailyTask', today);
@@ -726,7 +737,7 @@ export const updateStreaks = async (employeeId) => {
             status: 'Completed',
             'timeTracking.completedAt': { $gte: today, $lt: tomorrow },
             $expr: { $lte: ['$timeTracking.completedAt', '$dueDate'] }
-        });
+        }).session(session);
 
         if (slaCompliantTasksToday > 0 && tasksToday === slaCompliantTasksToday) {
             await updateSpecificStreak(gamification, 'slaStreak', today);

@@ -960,4 +960,4 @@ claimTasksSchema.post('save', function(doc, next) {
     next();
 });
 
-export const ClaimTasks = mongoose.model('ClaimTasks', claimTasksSchema, 'claimtasks');
+export const ClaimTask = mongoose.model('ClaimTask', claimTasksSchema, 'claimtasks');

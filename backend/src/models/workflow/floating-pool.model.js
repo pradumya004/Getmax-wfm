@@ -22,7 +22,7 @@ const floatingPoolSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks', // Claim in floating pool
+        ref: 'ClaimTask', // Claim in floating pool
         required: [true, 'Claim reference is required'],
         index: true,
         unique: true // A claim can only be in floating pool once
@@ -760,7 +760,7 @@ floatingPoolSchema.virtual('urgencyScore').get(function() {
 });
 
 floatingPoolSchema.virtual('claim', {
-    ref: 'ClaimTasks',
+    ref: 'ClaimTask',
     localField: 'claimRef',
     foreignField: '_id',
     justOne: true

@@ -22,7 +22,7 @@ const workflowAuditSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks',
+        ref: '',
         required: [true, 'Claim reference is required'],
         index: true
     },
@@ -271,7 +271,7 @@ const workflowAuditSchema = new mongoose.Schema({
         relatedRecords: [{
             recordType: {
                 type: String,
-                enum: ['ClaimTasks', 'Patient', 'Client', 'SOW', 'Employee', 'Payer', 'Other'],
+                enum: ['ClaimTask', 'Patient', 'Client', 'SOW', 'Employee', 'Payer', 'Other'],
                 required: true
             },
             recordId: {
@@ -851,7 +851,7 @@ const auditLogSchema = new mongoose.Schema({
         entityType: {
             type: String,
             enum: [
-                'Company', 'Employee', 'Client', 'ClaimTasks', 'SOW', 'Patient',
+                'Company', 'Employee', 'Client', 'ClaimTask', 'SOW', 'Patient',
                 'Payer', 'Department', 'Role', 'Designation', 'User', 'System',
                 'Configuration', 'Report', 'Integration', 'API', 'File'
             ],

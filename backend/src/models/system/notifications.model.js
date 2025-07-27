@@ -1,4 +1,4 @@
-// backend/src/models/notifications.model.js
+// backend/src/models/system/notifications.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -78,7 +78,7 @@ const notificationsSchema = new mongoose.Schema({
         sourceModule: {
             type: String,
             enum: [
-                'SLA_Tracking', 'ClaimTasks', 'QA_Audit', 'FloatingPool', 
+                'SLA_Tracking', 'ClaimTask', 'QA_Audit', 'FloatingPool', 
                 'Employee', 'Client', 'SOW', 'Payer', 'Patient', 'Notes',
                 'Company', 'Role', 'Department', 'Performance', 'System',
                 'API', 'Scheduler', 'Reports', 'Dashboard', 'Integration'

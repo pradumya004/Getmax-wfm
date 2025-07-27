@@ -2,7 +2,7 @@
 
 import { ApiError } from "../utils/ApiError.js";
 import { Employee } from "../models/core/employee.model.js";
-import { ClaimTasks } from "../models/workflow/claimtasks.model.js";
+import { ClaimTask } from "../models/workflow/claimtasks.model.js";
 import { Performance } from "../models/performance/performance.model.js";
 import { FloatingPool } from './../models/workflow/floating-pool.model.js';
 import { createNotification } from "./notificationService.service.js";
@@ -97,7 +97,7 @@ export const autoAssignTasks = async (companyId, algorithm = ASSIGNMENT_ALGORITH
 
         // Bulk update tasks
         if (bulkOps.length > 0) {
-            await ClaimTasks.bulkWrite(bulkOps);
+            await ClaimTask.bulkWrite(bulkOps);
         }
 
         // Send notifications
@@ -149,7 +149,7 @@ const getAvailableEmployees = async (companyId, options = {}) => {
         // Calculate current workload for each employee
         const employeesWithWorkload = await Promise.all(
             employees.map(async (employee) => {
-                const currentTasks = await ClaimTasks.countDocuments({
+                const currentTasks = await ClaimTask.countDocuments({
                     assignedTo: employee._id,
                     status: { $in: [TASK_STATUSES.ASSIGNED, TASK_STATUSES.IN_PROGRESS] }
                 });
@@ -378,7 +378,7 @@ const getAssignmentReason = (employee, task, algorithm) => {
 export const manualAssignTask = async (taskId, employeeId, assignedBy, reason = '') => {
     try {
         const [task, employee] = await Promise.all([
-            ClaimTasks.findById(taskId).lean(),
+            ClaimTask.findById(taskId).lean(),
             Employee.findById(employeeId)
                 .select('personalInfo performanceTargets')
                 .lean()
@@ -392,7 +392,7 @@ export const manualAssignTask = async (taskId, employeeId, assignedBy, reason = 
         }
 
         // Check capacity
-        const currentTasks = await ClaimTasks.countDocuments({
+        const currentTasks = await ClaimTask.countDocuments({
             assignedTo: employeeId,
             status: { $in: [TASK_STATUSES.ASSIGNED, TASK_STATUSES.IN_PROGRESS] }
         });
@@ -414,7 +414,7 @@ export const manualAssignTask = async (taskId, employeeId, assignedBy, reason = 
         };
 
         await Promise.all([
-            ClaimTasks.findByIdAndUpdate(taskId, { $set: updateData }),
+            ClaimTask.findByIdAndUpdate(taskId, { $set: updateData }),
             Employee.findByIdAndUpdate(employeeId, { $set: { lastAssignmentAt: new Date() } }),
             createNotification({
                 companyRef: task.companyRef,
@@ -448,7 +448,7 @@ export const manualAssignTask = async (taskId, employeeId, assignedBy, reason = 
 export const reassignTask = async (taskId, newEmployeeId, reassignedBy, reason = '') => {
     try {
         const [task, newEmployee] = await Promise.all([
-            ClaimTasks.findById(taskId).lean(),
+            ClaimTask.findById(taskId).lean(),
             Employee.findById(newEmployeeId)
                 .select('personalInfo performanceTargets')
                 .lean()
@@ -464,7 +464,7 @@ export const reassignTask = async (taskId, newEmployeeId, reassignedBy, reason =
         const oldEmployeeId = task.assignedTo;
 
         // Check new employee capacity
-        const currentTasks = await ClaimTasks.countDocuments({
+        const currentTasks = await ClaimTask.countDocuments({
             assignedTo: newEmployeeId,
             status: { $in: [TASK_STATUSES.ASSIGNED, TASK_STATUSES.IN_PROGRESS] }
         });
@@ -518,7 +518,7 @@ export const reassignTask = async (taskId, newEmployeeId, reassignedBy, reason =
         }
 
         await Promise.all([
-            ClaimTasks.findByIdAndUpdate(taskId, { $set: updateData }),
+            ClaimTask.findByIdAndUpdate(taskId, { $set: updateData }),
             Employee.findByIdAndUpdate(newEmployeeId, { $set: { lastAssignmentAt: new Date() } }),
             ...notifications
         ]);
@@ -586,7 +586,7 @@ export const getAssignmentStatistics = async (companyId, period = 'current_month
 
         const [assignmentStats, workloadStats] = await Promise.all([
             // Assignment method statistics
-            ClaimTasks.aggregate([
+            ClaimTask.aggregate([
                 {
                     $match: {
                         companyRef: companyId,
@@ -662,7 +662,7 @@ export const getAssignmentStatistics = async (companyId, period = 'current_month
 // Unassign Task
 export const unassignTask = async (taskId, unassignedBy, reason = '') => {
     try {
-        const task = await ClaimTasks.findById(taskId).lean();
+        const task = await ClaimTask.findById(taskId).lean();
         if (!task) {
             throw new ApiError(404, ASSIGNMENT_MESSAGES.TASK_NOT_FOUND);
         }
@@ -682,7 +682,7 @@ export const unassignTask = async (taskId, unassignedBy, reason = '') => {
         };
 
         await Promise.all([
-            ClaimTasks.findByIdAndUpdate(taskId, updateData),
+            ClaimTask.findByIdAndUpdate(taskId, updateData),
             createNotification({
                 companyRef: task.companyRef,
                 recipients: [{ type: 'Employee', id: task.assignedTo }],
@@ -719,7 +719,7 @@ export const getEmployeeWorkload = async (employeeId, period = 'current_month') 
                 .select('personalInfo performanceTargets')
                 .lean(),
 
-            ClaimTasks.aggregate([
+            ClaimTask.aggregate([
                 {
                     $match: {
                         assignedTo: employeeId,
@@ -749,7 +749,7 @@ export const getEmployeeWorkload = async (employeeId, period = 'current_month') 
         }
 
         const maxCapacity = employee.performanceTargets?.dailyTargets?.tasksPerDay || DEFAULT_VALUES.MAX_CAPACITY;
-        const currentTasks = await ClaimTasks.countDocuments({
+        const currentTasks = await ClaimTask.countDocuments({
             assignedTo: employeeId,
             status: { $in: [TASK_STATUSES.ASSIGNED, TASK_STATUSES.IN_PROGRESS] }
         });

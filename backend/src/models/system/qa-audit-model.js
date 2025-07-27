@@ -1,4 +1,4 @@
-// backend/src/models/qaAudit.model.js
+// backend/src/models/system/qa-audit-model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,7 +22,7 @@ const qaAuditSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClaimTasks', // Claim being audited
+        ref: 'ClaimTask', // Claim being audited
         required: [true, 'Claim reference is required'],
         index: true
     },
@@ -785,7 +785,7 @@ qaAuditSchema.virtual('qaReviewer', {
 });
 
 qaAuditSchema.virtual('claim', {
-    ref: 'ClaimTasks',
+    ref: 'ClaimTask',
     localField: 'claimRef',
     foreignField: '_id',
     justOne: true

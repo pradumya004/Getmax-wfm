@@ -1,13 +1,13 @@
 // backend/src/controllers/claimtask/claimTaskController.controller.js
 
-import { asyncHandler } from '../utils/asyncHandler.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import xlsx from 'xlsx';
-import { ClaimTasks } from '../models/claimTasks.model.js';
-import { SOW } from '../models/sow.model.js';
-import { Patient } from '../models/patient-model.js';
-import { Client } from '../models/client-model.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
+import { ClaimTask } from '../../models/workflow/claimtasks.model.js';
+import { SOW } from '../../models/core/sow.model.js';
+import { Patient } from '../../models/data/patient.model.js';
+import { Client } from '../../models/core/client.model.js';
+import { ApiError } from '../../utils/ApiError.js';
+import { ApiResponse } from '../../utils/ApiResponse.js';
 
 // 1. Create a single claim task
 export const createClaimTask = asyncHandler(async (req, res) => {
@@ -23,7 +23,7 @@ export const createClaimTask = asyncHandler(async (req, res) => {
   const patient = await Patient.findOne({ _id: patientRef, clientRef, companyRef: companyId });
   if (!patient) throw new ApiError(404, "Patient not found or does not belong to the specified client.");
 
-  const claim = await ClaimTasks.create({
+  const claim = await ClaimTask.create({
     ...req.body,
     companyRef: companyId,
     auditInfo: {
@@ -57,7 +57,7 @@ export const getAllClaimTasks = asyncHandler(async (req, res) => {
 
 // 3. Get one claim
 export const getClaimTaskById = asyncHandler(async (req, res) => {
-  const claim = await ClaimTasks.findOne({
+  const claim = await ClaimTask.findOne({
     _id: req.params.id,
     companyRef: req.company._id
   }).populate([
@@ -76,7 +76,7 @@ export const getClaimTaskById = asyncHandler(async (req, res) => {
 export const updateClaimTask = asyncHandler(async (req, res) => {
   const { auditInfo, companyRef, ...updateData } = req.body;
 
-  const claim = await ClaimTasks.findOne({ _id: req.params.id, companyRef: req.company._id });
+  const claim = await ClaimTask.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!claim) throw new ApiError(404, "Claim not found");
 
   Object.assign(claim, updateData);
@@ -88,7 +88,7 @@ export const updateClaimTask = asyncHandler(async (req, res) => {
 
 // 5. Soft delete claim
 export const deactivateClaimTask = asyncHandler(async (req, res) => {
-  const claim = await ClaimTasks.findOne({ _id: req.params.id, companyRef: req.company._id });
+  const claim = await ClaimTask.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!claim) throw new ApiError(404, "Claim not found");
 
   claim.systemInfo.isActive = false;
