@@ -22,6 +22,7 @@ export const usePatients = () => {
   const { execute: remove } = useApi(patientAPI.deletePatient);
   const { execute: bulkUpload } = useApi(patientAPI.bulkUpload);
   const { execute: getById } = useApi(patientAPI.getPatientById);
+  const { execute: fetchByClient } = useApi(patientAPI.getPatientsByClient);
 
   // --- MODIFIED: Wrap in useCallback and update both patient and pagination state ---
   const loadPatients = useCallback(async (params = {}) => {
@@ -43,6 +44,23 @@ export const usePatients = () => {
       setLoading(false);
     }
   }, [fetchAll]); // fetchAll from useApi is stable
+
+  const getClientPatients = useCallback(async (clientId) => {
+    if (!clientId) return [];
+    
+    setLoading(true);
+    try {
+      const res = await fetchByClient(clientId);
+      console.log("Client Patients Data.......", res);
+      const data = res?.data?.data ?? res?.data ?? [];
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      toast.error(err.message || "Failed to fetch patients for this client.");
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchByClient]);
 
   const addPatient = async (data) => {
     const res = await create(data);
@@ -106,5 +124,6 @@ export const usePatients = () => {
     deletePatient,
     uploadBulkPatients,
     fetchPatientById,
+    getClientPatients,
   };
 };

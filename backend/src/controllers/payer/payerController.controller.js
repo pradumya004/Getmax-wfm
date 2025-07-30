@@ -62,7 +62,6 @@ export const syncClaimMDPayers = async (req, res) => {
   }
 };
 
-
 export const getAllPayers = asyncHandler(async (req, res) => {
   const companyRef = req.company?._id;
   const { page = 1, limit = 50, sortBy = 'payerInfo.payerName', sortOrder = 'asc', ...queryParams } = req.query;
@@ -82,8 +81,8 @@ export const getAllPayers = asyncHandler(async (req, res) => {
     .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
-    .select('payerInfo.payerName payerInfo.payerType performanceMetrics.priorityScore systemConfig.isPreferred') // Select only needed fields
-    .lean(); // Use .lean() for faster read-only queries
+    // .select('...') // <-- THIS LINE HAS BEEN REMOVED
+    .lean();
 
   const totalPayers = await Payer.countDocuments(filter);
 

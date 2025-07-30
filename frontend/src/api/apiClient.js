@@ -8,13 +8,19 @@ import { toast } from 'react-hot-toast';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // Create axios instance
+// const apiClient = axios.create({
+//     baseURL: API_BASE_URL,
+//     timeout: 10000,
+//     withCredentials: true,
+//     headers: {
+//         'Content-Type': 'application/json'
+//     }
+// });
+
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 30000, // Increased for file uploads
     withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json'
-    }
 });
 
 // Request interceptor - add auth token
@@ -63,20 +69,52 @@ apiClient.interceptors.request.use(
 export default apiClient;
 
 // Helper function for API calls
-export const apiCall = async (method, url, data = null) => {
-    try {
-        const config = { method, url };
-        if (data) config.data = data;
+// export const apiCall = async (method, url, data = null) => {
+//     try {
+//         const config = { method, url };
+//         if (data) config.data = data;
 
-        const response = await apiClient(config);
+//         const response = await apiClient(config);
+//         console.log("API Response:......", response);
+//         return { success: true, data: response };
+//     } catch (error) {
+//         return {
+//             success: false,
+//             error:
+//                 error.response?.data?.message ||
+//                 error.response?.data?.error || // 👈 add this
+//                 'Request failed'
+//         };
+//     }
+// };
+
+
+export const apiCall = async (method, url, data = null, config = {}) => {
+    try {
+        const requestConfig = { ...config, method, url };
+
+        if (data) {
+            requestConfig.data = data;
+        }
+
+        // 💡 This is the crucial logic:
+        // If data is FormData, we DO NOT set a Content-Type header.
+        // The browser will add the correct 'multipart/form-data' with a boundary.
+        if (!(data instanceof FormData)) {
+            requestConfig.headers = {
+                ...requestConfig.headers,
+                'Content-Type': 'application/json',
+            };
+        }
+        
+        const response = await apiClient(requestConfig);
         return { success: true, data: response };
+
     } catch (error) {
+        console.error("API call failed:", error.response?.data || error.message);
         return {
             success: false,
-            error:
-                error.response?.data?.message ||
-                error.response?.data?.error || // 👈 add this
-                'Request failed'
+            error: error.response?.data?.message || error.message || 'Request failed'
         };
     }
 };

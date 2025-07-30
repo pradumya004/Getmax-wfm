@@ -8,6 +8,9 @@ export const patientAPI = {
     const queryString = new URLSearchParams(params).toString();
     return apiCall('get', `/patients${queryString ? `?${queryString}` : ''}`);
   },
+  getPatientsByClient: (clientId) => {
+    return apiCall('get', `/patients?clientRef=${clientId}`);
+  },
   getPatientById: (id) => apiCall('get', `/patients/${id}`),
   updatePatient: (id, data) => apiCall('put', `/patients/${id}`, data),
   deletePatient: (id) => apiCall('delete', `/patients/${id}`),

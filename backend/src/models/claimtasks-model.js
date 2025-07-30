@@ -2,6 +2,7 @@
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const claimTasksSchema = new mongoose.Schema({
     claimId: {
@@ -940,7 +941,7 @@ claimTasksSchema.pre('save', function(next) {
     // Generate duplicate checksum for duplicate detection
     if (!this.systemInfo.duplicateCheckSum) {
         const checksumData = `${this.claimInfo.externalClaimId}-${this.patientRef}-${this.claimInfo.dateOfService}-${this.financialInfo.grossCharges}`;
-        this.systemInfo.duplicateCheckSum = require('crypto')
+        this.systemInfo.duplicateCheckSum = crypto
             .createHash('md5')
             .update(checksumData)
             .digest('hex');

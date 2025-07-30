@@ -78,6 +78,12 @@ import EmployeePerformance from "./pages/employee/EmployeePerformance.jsx";
 import EditProfile from "./pages/employee/EditProfile.jsx";
 import UploadAvatar from "./pages/employee/UploadAvatar.jsx";
 import MyPerformance from "./pages/employee/MyPerformance.jsx";
+import DenialManagement from "./pages/employee/work queues/DenialManagement.jsx";
+import ARFollowUp from "./pages/employee/work queues/ARFollowup.jsx";
+import PaymentPosting from "./pages/employee/work queues/PaymentPosting.jsx";
+import QAFeedback from "./pages/employee/work queues/QAFeedback.jsx";
+import ChargeEntry from "./pages/employee/work queues/ChargeEntry.jsx";
+import EmployeePayerList from "./pages/employee/resources/PayerList.jsx";
 
 // Client Pages
 import ClientDashboard from "./pages/client/ClientDashboard.jsx";
@@ -101,6 +107,10 @@ import PatientList from "./pages/patient/PatientList.jsx";
 // Payer Pages
 // import PayerIntake from "./pages/payer/PayerIntake.jsx";
 import PayerList from "./pages/payer/PayerList.jsx";
+
+// Claim Pages
+import ClaimBulkUpload from "./pages/claim/ClaimBulkUpload.jsx";
+
 
 // Public Pages
 import HomePage from "./pages/HomePage.jsx";
@@ -278,6 +288,12 @@ function App() {
               {/* <Route path="create" element={<PayerIntake />} /> */}
               <Route path="list" element={<PayerList />} />
             </Route>
+
+            {/* CLAIM ROUTES */}
+            <Route path="claims">
+              {/* <Route path="intake" element={<ClaimIntake />} /> */}
+              <Route path="bulk" element={<ClaimBulkUpload />} />
+            </Route>
           </Route>
 
           {/* EMPLOYEE ROUTES */}
@@ -297,6 +313,12 @@ function App() {
             <Route path="profile/edit" element={<EditProfile />} />
             <Route path="profile/avatar" element={<UploadAvatar />} />
             <Route path="performance" element={<MyPerformance />} />
+            <Route path="queues/denials" element={<DenialManagement />} />
+            <Route path="queues/ar-followup" element={<ARFollowUp />} />
+            <Route path="queues/payment-posting" element={<PaymentPosting />} />
+            <Route path="queues/qa-feedback" element={<QAFeedback />} />
+            <Route path="queues/charge-entry" element={<ChargeEntry />} />
+            <Route path="resources/payers" element={<EmployeePayerList />} />
           </Route>
 
           {/* 404 */}

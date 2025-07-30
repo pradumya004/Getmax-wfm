@@ -15,7 +15,5 @@ export const claimAPI = {
 
   // Bulk Upload
   bulkUploadClaims: (formData) =>
-    apiCall("post", "/claims/upload/bulk", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }),
+    apiCall("post", "/claims/upload/bulk", formData),
 };

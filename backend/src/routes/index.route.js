@@ -9,6 +9,7 @@ import clientRoutes from './client.route.js';
 import sowRoutes from './sow.route.js';
 import patientRoutes from './patient.route.js';
 import payerRoutes from './payer.route.js';
+import claimRoutes from './claimTask.route.js'
 
 const router = express.Router();
 
@@ -34,5 +35,6 @@ router.use('/clients', clientRoutes);
 router.use('/sows', sowRoutes);
 router.use('/patients', patientRoutes);
 router.use('/payers', payerRoutes);
+router.use('/claims', claimRoutes);
 
 export default router;

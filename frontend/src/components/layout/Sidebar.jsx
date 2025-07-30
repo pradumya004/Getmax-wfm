@@ -65,10 +65,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { getTheme } from "../../lib/theme.js";
-import { getLoginUrl, getStoredToken } from "../../lib/auth.js";
-import { Button } from "../ui/Button.jsx";
-import axios from "axios";
-import { toast } from "react-hot-toast";
+import { getLoginUrl } from "../../lib/auth.js";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -77,7 +74,6 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
-  const {companyToken, employeeToken} = getStoredToken();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -88,17 +84,6 @@ const Sidebar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSync = async () => {
-    try {
-      const res = await axios.get("http://localhost:8000/api/payers/sync/claimmd", {
-        headers: { Authorization: `Bearer ${employeeToken}` }
-      });
-      toast.success(res.data.message || "Payers synced successfully");
-    } catch (err) {
-      toast.error("Sync failed: " + (err.response?.data?.message || err.message));
-    }
-  };
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
@@ -630,42 +615,97 @@ const Sidebar = () => {
             icon: LayoutDashboard,
             label: "My Dashboard",
             path: "/employee/dashboard",
-            description: "Overview of your performance and tasks",
+            description: "Overview of your KPIs, tasks, and alerts",
           },
           {
             icon: ClipboardList,
-            label: "My Tasks",
-            path: "/employee/tasks",
-            description: "View and manage your assigned tasks",
+            label: "Work Queues",
+            description: "Access your assigned work queues",
             submenu: [
               {
-                icon: Clock,
-                label: "Pending Tasks",
-                path: "/employee/tasks?status=pending",
-                description: "Tasks awaiting your attention",
+                icon: FileSpreadsheet,
+                label: "Charge Entry",
+                path: "/employee/queues/charge-entry",
+                description: "Enter and manage new charges",
               },
               {
-                icon: Activity,
-                label: "In Progress",
-                path: "/employee/tasks?status=in-progress",
-                description: "Tasks currently being worked on",
+                icon: AlertTriangle,
+                label: "Denial Management",
+                path: "/employee/queues/denials",
+                description: "Resolve and appeal denied claims",
+              },
+              {
+                icon: Clock,
+                label: "A/R Follow-up",
+                path: "/employee/queues/ar-followup",
+                description: "Work on aging and unpaid claims",
+              },
+              {
+                icon: DollarSign,
+                label: "Payment Posting",
+                path: "/employee/queues/payment-posting",
+                description: "Post payments from ERAs and EOBs",
               },
               {
                 icon: CheckCircle,
-                label: "Completed",
-                path: "/employee/tasks?status=completed",
-                description: "Recently completed tasks",
+                label: "QA Feedback",
+                path: "/employee/queues/qa-feedback",
+                description: "Review feedback from quality assurance",
               },
             ],
           },
           {
-            icon: TrendingUp,
-            label: "My Performance",
-            path: "/employee/performance",
-            description: "Track your performance metrics",
+            icon: Folder,
+            label: "Resources",
+            description: "Find helpful resources and information",
+            submenu: [
+              {
+                icon: Search,
+                label: "Patient Search",
+                path: "/employee/resources/patients",
+                description: "Search for patients and view their history",
+              },
+              {
+                icon: Building2,
+                label: "Payer List",
+                path: "/employee/resources/payers",
+                description: "View payer-specific rules and contact info",
+              },
+              {
+                icon: FileText,
+                label: "Coding Lookups",
+                path: "/employee/resources/coding",
+                description: "Look up CPT, ICD-10, and HCPCS codes",
+              },
+            ],
           },
           {
-            icon: Users,
+            icon: BarChart3,
+            label: "My Analytics",
+            description: "Track your performance and quality",
+            submenu: [
+              {
+                icon: TrendingUp,
+                label: "Productivity Report",
+                path: "/employee/analytics/productivity",
+                description: "Analyze your work volume and efficiency",
+              },
+              {
+                icon: PieChart,
+                label: "Denial Analysis",
+                path: "/employee/analytics/denials",
+                description: "Review your personal denial trends and root causes",
+              },
+              {
+                icon: Star,
+                label: "Quality Scorecard",
+                path: "/employee/analytics/quality",
+                description: "View your quality assurance scores and feedback",
+              },
+            ],
+          },
+          {
+            icon: User,
             label: "My Profile",
             path: "/employee/profile",
             description: "Manage your personal information",
@@ -851,12 +891,6 @@ const Sidebar = () => {
           ))}
         </nav>
 
-        <div>
-            <Button onClick={handleSync} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-              🔁 Sync Payers from Claim.MD
-            </Button>
-        </div>
-
         {/* User Info */}
         <div className="p-4 border-t border-white/10 relative overflow-visible z-20">
           <div className="flex items-center space-x-3 cursor-pointer relative z-10">
@@ -902,8 +936,6 @@ const Sidebar = () => {
               />
             </button>
           </div>
-
-          
 
           {/* User Menu */}
           {showUserMenu && (

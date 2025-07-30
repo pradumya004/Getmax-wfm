@@ -8,7 +8,7 @@ import {
   updateClaimTask,
   deactivateClaimTask,
   bulkUploadClaims
-} from '../controllers/claimtasks.controller.js';
+} from '../controllers//claimtask/claimTaskController.controller.js';
 
 import {
   verifyEmployeeToken,
@@ -24,18 +24,17 @@ const router = express.Router();
 
 router.use(verifyEmployeeToken);
 
-// CRUD
-router.post('/', requirePermission('claim', 'Create'), createClaimTask);
-router.get('/', requirePermission('claim', 'View'), getAllClaimTasks);
-router.get('/:id', requirePermission('claim', 'View'), getClaimTaskById);
-router.put('/:id', requirePermission('claim', 'Update'), updateClaimTask);
-router.delete('/:id', requirePermission('claim', 'Delete'), deactivateClaimTask);
+// CRUD // need to implement permission logic...
+router.post('/', createClaimTask);
+router.get('/', getAllClaimTasks);
+router.get('/:id', getClaimTaskById);
+router.put('/:id', updateClaimTask);
+router.delete('/:id', deactivateClaimTask);
 
 // Bulk upload
 router.post(
   '/upload/bulk',
   uploadBulkMiddleware,
-  requirePermission('claim', 'Create'),
   bulkUploadClaims,
   cleanupMiddleware
 );

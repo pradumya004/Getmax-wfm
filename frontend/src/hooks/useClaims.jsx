@@ -59,13 +59,29 @@ export const useClaims = () => {
     return res;
   };
 
-  const uploadBulkClaims = async (formData) => {
-    const res = await bulkUpload(formData);
-    if (res?.success) {
-      toast.success(`${res.data?.length || 0} claims uploaded`);
-      await loadClaims();
+  const uploadBulkClaims = async ({ file, mapping, clientRef, sowRef }) => {
+    setLoading(true);
+    const formData = new FormData();
+    
+    // The key "bulkFile" MUST match the backend middleware
+    formData.append("bulkFile", file);
+    formData.append("mapping", JSON.stringify(mapping));
+    formData.append("clientRef", clientRef);
+    formData.append("sowRef", sowRef);
+
+    try {
+      const res = await bulkUpload(formData);
+      if (res?.success) {
+        toast.success(res.message || "Bulk upload completed!");
+        await loadClaims();
+      }
+      return res;
+    } catch (err) {
+      toast.error(err.message || "An unexpected error occurred.");
+      throw err;
+    } finally {
+      setLoading(false);
     }
-    return res;
   };
 
   const fetchClaimById = async (id) => {

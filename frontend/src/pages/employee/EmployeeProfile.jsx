@@ -60,14 +60,14 @@ const EmployeeProfile = () => {
   useEffect(() => {
     if (employee) {
       setEditData({
-        firstName: employee.personalInfo?.firstName || "",
-        lastName: employee.personalInfo?.lastName || "",
-        middleName: employee.personalInfo?.middleName || "",
-        primaryPhone: employee.contactInfo?.primaryPhone || "",
-        dateOfBirth: employee.personalInfo?.dateOfBirth?.split("T")[0] || "",
-        gender: employee.personalInfo?.gender || "",
-        bloodGroup: employee.personalInfo?.bloodGroup || "",
-        nationality: employee.personalInfo?.nationality || "",
+        firstName: employee.data.personalInfo?.firstName || "",
+        lastName: employee.data.personalInfo?.lastName || "",
+        middleName: employee.data.personalInfo?.middleName || "",
+        primaryPhone: employee.data.contactInfo?.primaryPhone || "",
+        dateOfBirth: employee.data.personalInfo?.dateOfBirth?.split("T")[0] || "",
+        gender: employee.data.personalInfo?.gender || "",
+        bloodGroup: employee.data.personalInfo?.bloodGroup || "",
+        nationality: employee.data.personalInfo?.nationality || "",
       });
     }
   }, [employee]);
@@ -269,17 +269,31 @@ const EmployeeProfile = () => {
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Avatar Section */}
           <div className="relative">
-            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10">
+            {/* <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10">
               <img
                 src={
                   avatarPreview ||
-                  employee?.personalInfo?.profilePicture ||
-                  "/default-avatar.png"
+                  employee?.data?.personalInfo?.profilePicture
                 }
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
-            </div>
+            </div> */}
+
+            {employee?.data?.personalInfo?.profilePicture ? (
+                  <img
+                    src={employee?.data?.avatarUrl}
+                    alt={employee?.data?.fullName}
+                    className="w-24 h-24 rounded-xl object-cover border-2 border-white/20"
+                  />
+                ) : (
+                  <div
+                    className={`w-24 h-24 bg-gradient-to-br ${theme.secondary} rounded-xl flex items-center justify-center text-2xl font-bold text-white border-2 border-white/20`}
+                  >
+                    {employee?.data?.personalInfo?.firstName?.charAt(0)}
+                    {employee?.data?.personalInfo?.lastName?.charAt(0)}
+                  </div>
+                )}
 
             {/* Level Badge */}
             <div
@@ -334,15 +348,15 @@ const EmployeeProfile = () => {
           <div className="flex-1 text-center md:text-left">
             <div className="mb-4">
               <h2 className={`text-2xl font-bold text-${theme.text}`}>
-                {employee?.personalInfo?.firstName}{" "}
-                {employee?.personalInfo?.lastName}
+                {employee?.data?.personalInfo?.firstName}{" "}
+                {employee?.data?.personalInfo?.lastName}
               </h2>
               <p className={`text-${theme.textSecondary} mt-1`}>
-                {employee?.designationRef?.designationName} •{" "}
-                {employee?.departmentRef?.departmentName}
+                {employee?.data?.designationRef?.designationName} •{" "}
+                {employee?.data?.departmentRef?.departmentName}
               </p>
               <p className={`text-sm text-${theme.textSecondary} mt-1`}>
-                Employee ID: {employee?.employeeId}
+                Employee ID: {employee?.data?.employeeId}
               </p>
             </div>
 
@@ -414,7 +428,7 @@ const EmployeeProfile = () => {
                       </span>
                     </div>
                     <p className={`text-${theme.text} font-medium`}>
-                      {employee?.contactInfo?.primaryEmail}
+                      {employee?.data?.contactInfo?.primaryEmail}
                     </p>
                   </div>
 
@@ -428,7 +442,7 @@ const EmployeeProfile = () => {
                       </span>
                     </div>
                     <p className={`text-${theme.text} font-medium`}>
-                      {employee?.contactInfo?.primaryPhone || "Not provided"}
+                      {employee?.data?.contactInfo?.primaryPhone || "Not provided"}
                     </p>
                   </div>
 
@@ -442,7 +456,7 @@ const EmployeeProfile = () => {
                       </span>
                     </div>
                     <p className={`text-${theme.text} font-medium`}>
-                      {formatDate(employee?.employmentInfo?.dateOfJoining)}
+                      {formatDate(employee?.data?.employmentInfo?.dateOfJoining)}
                     </p>
                   </div>
 
@@ -456,7 +470,7 @@ const EmployeeProfile = () => {
                       </span>
                     </div>
                     <p className={`text-${theme.text} font-medium`}>
-                      {employee?.employmentInfo?.workLocation || "Office"}
+                      {employee?.data?.employmentInfo?.workLocation || "Office"}
                     </p>
                   </div>
                 </div>
@@ -476,7 +490,7 @@ const EmployeeProfile = () => {
                         </span>
                       </div>
                       <p className={`text-${theme.text} font-medium`}>
-                        {employee?.departmentRef?.departmentName}
+                        {employee?.data?.departmentRef?.departmentName}
                       </p>
                     </div>
 
@@ -490,7 +504,7 @@ const EmployeeProfile = () => {
                         </span>
                       </div>
                       <p className={`text-${theme.text} font-medium`}>
-                        {employee?.designationRef?.designationName}
+                        {employee?.data?.designationRef?.designationName}
                       </p>
                     </div>
 
@@ -504,7 +518,7 @@ const EmployeeProfile = () => {
                         </span>
                       </div>
                       <p className={`text-${theme.text} font-medium`}>
-                        {employee?.roleRef?.roleName}
+                        {employee?.data?.roleRef?.roleName}
                       </p>
                     </div>
                   </div>
@@ -581,7 +595,7 @@ const EmployeeProfile = () => {
                     value={
                       isEditing
                         ? editData.dateOfBirth
-                        : employee?.personalInfo?.dateOfBirth?.split("T")[0] ||
+                        : employee?.data?.personalInfo?.dateOfBirth?.split("T")[0] ||
                           ""
                     }
                     onChange={(e) =>
@@ -617,7 +631,7 @@ const EmployeeProfile = () => {
                     value={
                       isEditing
                         ? editData.bloodGroup
-                        : employee?.personalInfo?.bloodGroup || ""
+                        : employee?.data?.personalInfo?.bloodGroup || ""
                     }
                     onChange={(e) =>
                       handleInputChange("bloodGroup", e.target.value)
@@ -644,7 +658,7 @@ const EmployeeProfile = () => {
                     value={
                       isEditing
                         ? editData.nationality
-                        : employee?.personalInfo?.nationality || ""
+                        : employee?.data?.personalInfo?.nationality || ""
                     }
                     onChange={(e) =>
                       handleInputChange("nationality", e.target.value)
@@ -667,7 +681,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Employee ID</Label>
                   <Input
-                    value={employee?.employeeId || ""}
+                    value={employee?.data?.employeeId || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -679,7 +693,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Primary Email</Label>
                   <Input
-                    value={employee?.contactInfo?.primaryEmail || ""}
+                    value={employee?.data?.contactInfo?.primaryEmail || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -693,7 +707,7 @@ const EmployeeProfile = () => {
                   <Input
                     type="date"
                     value={
-                      employee?.employmentInfo?.dateOfJoining?.split("T")[0] ||
+                      employee?.data?.employmentInfo?.dateOfJoining?.split("T")[0] ||
                       ""
                     }
                     disabled={true}
@@ -704,7 +718,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Work Location</Label>
                   <Input
-                    value={employee?.employmentInfo?.workLocation || ""}
+                    value={employee?.data?.employmentInfo?.workLocation || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -713,7 +727,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Department</Label>
                   <Input
-                    value={employee?.departmentRef?.departmentName || ""}
+                    value={employee?.data?.departmentRef?.departmentName || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -722,7 +736,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Designation</Label>
                   <Input
-                    value={employee?.designationRef?.designationName || ""}
+                    value={employee?.data?.designationRef?.designationName || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -731,7 +745,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Role</Label>
                   <Input
-                    value={employee?.roleRef?.roleName || ""}
+                    value={employee?.data?.roleRef?.roleName || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -740,7 +754,7 @@ const EmployeeProfile = () => {
                 <div>
                   <Label>Employee Status</Label>
                   <Input
-                    value={employee?.status?.employeeStatus || ""}
+                    value={employee?.data?.status?.employeeStatus || ""}
                     disabled={true}
                     theme={userType}
                   />
@@ -926,7 +940,7 @@ const EmployeeProfile = () => {
                       Math.PI *
                       36 *
                       (1 -
-                        (employee?.systemInfo?.profileCompletionPercentage ||
+                        (employee?.data?.systemInfo?.profileCompletionPercentage ||
                           0) /
                           100)
                     }`}
@@ -935,7 +949,7 @@ const EmployeeProfile = () => {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className={`text-lg font-bold text-${theme.text}`}>
-                    {employee?.systemInfo?.profileCompletionPercentage || 0}%
+                    {employee?.data?.systemInfo?.profileCompletionPercentage || 0}%
                   </span>
                 </div>
               </div>

@@ -110,7 +110,7 @@ const ClientBulkUpload = () => {
   const navigate = useNavigate();
   const { userType } = useAuth();
   const theme = getTheme(userType);
-  const { uploadClients } = useClients();
+  const { uploadBulkClients } = useClients();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -560,7 +560,7 @@ const ClientBulkUpload = () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Step 3: Upload
-      const result = await uploadClients(transformedData);
+      const result = await uploadBulkClients(transformedData);
 
       setProcessingData((prev) => ({
         ...prev,

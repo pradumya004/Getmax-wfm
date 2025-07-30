@@ -1,13 +1,13 @@
 // backend/src/controllers/claimtasks.controller.js
 
-import { asyncHandler } from '../utils/asyncHandler.js';
+import { asyncHandler } from '../../utils/asyncHandler.js';
 import xlsx from 'xlsx';
-import { ClaimTasks } from '../models/claimTasks.model.js';
-import { SOW } from '../models/sow.model.js';
-import { Patient } from '../models/patient-model.js';
-import { Client } from '../models/client-model.js';
-import { ApiError } from '../utils/ApiError.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
+import { ClaimTasks } from '../../models/claimtasks-model.js';
+import { SOW } from '../../models/sow.model.js';
+import { Patient } from '../../models/patient-model.js';
+import { Client } from '../../models/client-model.js';
+import { ApiError } from '../../utils/ApiError.js';
+import { ApiResponse } from '../../utils/ApiResponse.js';
 
 // 1. Create a single claim task
 export const createClaimTask = asyncHandler(async (req, res) => {
@@ -44,7 +44,7 @@ export const getAllClaimTasks = asyncHandler(async (req, res) => {
   if (req.query.sowRef) filter.sowRef = req.query.sowRef;
   if (req.query.assignedTo) filter.assignedEmployeeRef = req.query.assignedTo;
 
-  const claims = await ClaimTask.find(filter)
+  const claims = await ClaimTasks.find(filter)
     .populate('patientRef', 'personalInfo.firstName personalInfo.lastName') // Corrected path
     .populate('sowRef', 'sowName')
     .populate('clientRef', 'clientInfo.clientName')
@@ -98,17 +98,31 @@ export const deactivateClaimTask = asyncHandler(async (req, res) => {
   res.status(200).json(new ApiResponse(200, { _id: claim._id }, 'Claim deactivated successfully.'));
 });
 
-// 6. Bulk upload claims via Excel
+
+// A helper function to set a value on a nested property of an object
+const setNestedValue = (obj, path, value) => {
+  const keys = path.split('.');
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!current[key] || typeof current[key] !== 'object') {
+      current[key] = {};
+    }
+    current = current[key];
+  }
+  current[keys[keys.length - 1]] = value;
+};
+
+// Bulk upload claims via Excel
 export const bulkUploadClaims = asyncHandler(async (req, res) => {
-  const { clientRef, sowRef, mapping } = req.body;
+  if (!req.file) throw new ApiError(400, "Excel file is required");
+  if (!req.body.mapping) throw new ApiError(400, "Field mapping configuration is missing.");
+
+  const parsedMapping = JSON.parse(req.body.mapping);
+  const { clientRef, sowRef } = req.body;
   const companyId = req.company._id;
   const employeeId = req.employee._id;
 
-
-  if (!req.file) throw new ApiError(400, "Excel file is required");
-  if (!mapping || typeof mapping !== 'object') throw new ApiError(400, "Field mapping configuration is missing");
-
-  // Validate ownership
   const sow = await SOW.findOne({ _id: sowRef, clientRef, companyRef: companyId }).select('_id');
   if (!sow) throw new ApiError(404, "SOW not found or not associated with the provided client.");
 
@@ -116,32 +130,83 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = xlsx.utils.sheet_to_json(sheet);
 
-  // Find all relevant patients in one go to reduce DB calls
-  const externalPatientIds = rows.map(row => row[mapping['personalInfo.externalPatientId']]).filter(id => id);
+  if (rows.length === 0) {
+    throw new ApiError(400, "The uploaded file is empty.");
+  }
+
+  const patientIdColumnName = parsedMapping['patientRef'];
+  if (!patientIdColumnName) {
+    throw new ApiError(400, "Mapping for 'Patient ID/MRN' is required.");
+  }
+  
+  const externalPatientIds = rows.map(row => String(row[patientIdColumnName])).filter(id => id);
+
   const patients = await Patient.find({
-    'personalInfo.externalPatientId': { $in: externalPatientIds },
+    'patientId': { $in: externalPatientIds },
     clientRef,
     companyRef: companyId
-  }).select('_id personalInfo.externalPatientId');
+  }).select('_id patientId');
 
-  const patientMap = new Map(patients.map(p => [p.personalInfo.externalPatientId, p._id]));
+  const patientMap = new Map(patients.map(p => [p.patientId, p._id]));
+
+  console.log("Found patients:", patientMap);
+  console.log("Found sow:", sow);
+
 
   const claimsToCreate = [];
-  for (const row of rows) {
-    const patientId = patientMap.get(row[mapping['personalInfo.externalPatientId']]);
-    if (!patientId) continue; // Skip if patient not found
+  const errors = [];
+
+  const cptRegex = /^\d{5}$|^[A-Z]\d{4}$/;
+  const icdRegex = /^[A-Z]\d{2}(\.\d{1,3})?$/;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+
+    let hasRowError = false;
+
+    const externalPatientId = String(row[patientIdColumnName]).toUpperCase();
+    const patientId = patientMap.get(externalPatientId);
+    
+    if (!patientId) {
+      errors.push({ row: i + 2, message: `Patient with ID '${externalPatientId}' not found.` });
+      continue;
+    }
 
     const claimData = {};
-    for (const [modelField, excelColumn] of Object.entries(mapping)) {
-      // Basic transformation, can be expanded
-      let value = row[excelColumn] || null;
-      if (modelField.includes('date') && value) {
-        // Handle Excel's numeric date format
-        value = xlsx.SSF.parse_date_code(value);
+    // Step 1: Process all fields from the mapping as they are
+    for (const [modelField, excelColumn] of Object.entries(parsedMapping)) {
+      const value = row[excelColumn];
+      if (value !== undefined && value !== null && value !== '') {
+        // Use the generic helper for everything initially
+        setNestedValue(claimData, modelField, value);
       }
-      // Use lodash.set or a similar utility for deep field setting
-      // For now, a simple assignment for flat fields
-      claimData[modelField] = value;
+    }
+
+    // --- ⬇️ Step 2: Rebuild the code arrays into the correct format ⬇️ ---
+
+    // Handle Procedure Codes
+    if (claimData.claimInfo?.procedureCodes?.cptCode) {
+      const cptString = String(claimData.claimInfo.procedureCodes.cptCode);
+      const codes = cptString.split(',').map(c => c.trim());
+      const grossCharges = parseFloat(String(claimData.financialInfo?.grossCharges || '0').replace(/[^0-9.-]+/g, ""));
+      const chargePerCode = codes.length > 0 && !isNaN(grossCharges) ? (grossCharges / codes.length).toFixed(2) : 0;
+      
+      // Overwrite the temporary object with the correct array of objects
+      claimData.claimInfo.procedureCodes = codes.map(code => ({ 
+        cptCode: code, 
+        chargeAmount: chargePerCode 
+      }));
+    }
+
+    // Handle Diagnosis Codes
+    if (claimData.claimInfo?.diagnosisCodes?.icdCode) {
+      const icdString = String(claimData.claimInfo.diagnosisCodes.icdCode);
+      const codes = icdString.split(',').map(c => c.trim().toUpperCase());
+      
+      // Overwrite the temporary object with the correct array of objects
+      claimData.claimInfo.diagnosisCodes = codes.map(code => ({ 
+        icdCode: code 
+      }));
     }
 
     claimsToCreate.push({
@@ -153,12 +218,29 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
       sourceInfo: { dataSource: 'Manual Upload' },
       auditInfo: { createdBy: employeeId }
     });
+
   }
 
-  if (claimsToCreate.length === 0) {
-    throw new ApiError(400, "No valid claims could be processed from the file.");
+  if (claimsToCreate.length === 0 && errors.length > 0) {
+    throw new ApiError(400, "No valid claims could be processed. Please check the errors.", errors);
   }
 
-  const inserted = await ClaimTask.insertMany(claimsToCreate, { ordered: false });
-  res.status(201).json(new ApiResponse(201, { insertedCount: inserted.length }, `${inserted.length} of ${rows.length} claims uploaded successfully.`));
+  console.log("Claims to create:", claimsToCreate);
+  
+  try {
+    const result = await ClaimTasks.insertMany(claimsToCreate, { ordered: false });
+    res.status(201).json(new ApiResponse(
+      201, 
+      { insertedCount: result.length, totalRows: rows.length, errors }, 
+      `${result.length} of ${rows.length} claims uploaded successfully.`
+    ));
+  } catch (dbError) {
+    // **FIX 2**: Provide detailed feedback on validation errors
+    const validationErrors = dbError.writeErrors?.map(err => ({
+        row: err.index + 2,
+        message: err.err.message
+    })) || [{ message: "A database error occurred. Please check data types in your file." }];
+    
+    throw new ApiError(400, "Data validation failed during database insertion.", validationErrors.concat(errors));
+  }
 });

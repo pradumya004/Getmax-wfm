@@ -78,7 +78,7 @@ const employeeSchema = new mongoose.Schema({
         },
         profilePicture: {
             type: String, // URL/path to avatar image
-            default: null
+            default: '/uploads/avatars/profileAvatar.webp',
         },
         dateOfBirth: {
             type: Date,
@@ -547,7 +547,7 @@ employeeSchema.virtual('fullName').get(function () {
 
 employeeSchema.virtual('avatarUrl').get(function () {
     if (this.personalInfo.profilePicture) {
-        return this.personalInfo.profilePicture.startsWith('http') ? this.personalInfo.profilePicture : `${process.env.BASE_URL || 'http://localhost:3000'}${this.personalInfo.profilePicture}`
+        return this.personalInfo.profilePicture.startsWith('http') ? this.personalInfo.profilePicture : `${process.env.BASE_URL || 'http://localhost:8000'}${this.personalInfo.profilePicture}`
     }
 
     // Return default avatar based on name initials

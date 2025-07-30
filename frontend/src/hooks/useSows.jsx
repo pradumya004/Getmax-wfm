@@ -237,7 +237,7 @@ export const useSOWs = () => {
 
       // Assuming your API returns { success: true, data: [...] }
       const data = response?.data?.data?.data ;
-      console.log("RAW SOWs RESPONSE:", data); 
+      console.log("RAW SOWs RESPONSE:", response); 
       
       return Array.isArray(data) ? data : [];
     } catch (err) {

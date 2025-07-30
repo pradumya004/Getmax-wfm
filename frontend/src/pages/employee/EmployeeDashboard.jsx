@@ -225,7 +225,7 @@ const EmployeeDashboard = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className={`text-3xl font-bold text-${theme.text}`}>
-            {getGreeting()}, {employee?.personalInfo?.firstName || "Employee"}!
+            {getGreeting()}, {employee?.data?.personalInfo?.firstName || "Employee"}!
           </h1>
           <p className={`text-${theme.textSecondary} mt-1`}>
             {currentTime.toLocaleDateString("en-US", {

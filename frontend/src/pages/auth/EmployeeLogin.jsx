@@ -74,6 +74,7 @@ const EmployeeLogin = () => {
         const {company, employee, companyToken, employeeToken } = response.data.data;
         await login(employee, companyToken, employeeToken, "employee");
         toast.success(response.message || "Login successful!");
+        console.log("Login successful:.....", employeeToken);
         navigate("/employee/dashboard");
       } else {
         toast.error(response.message || "Invalid login credentials");

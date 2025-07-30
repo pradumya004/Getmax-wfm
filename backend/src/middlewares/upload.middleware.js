@@ -117,6 +117,7 @@ export const uploadBulkMiddleware = [
     memoryBulkUpload.single('bulkFile'),
     handleMulterError,
     asyncHandler(async (req, res, next) => {
+        console.log('Bulk upload middleware triggered.... with file:', req);
         if (!req.file) {
             throw new ApiError(400, 'Bulk upload file is required');
         }
