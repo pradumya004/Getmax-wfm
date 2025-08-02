@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { parsePhoneNumberFromString, isValidPhoneNumber } from 'libphonenumber-js';
 import { EMPLOYEE_CONSTANTS } from "../../../../shared/constants/modelConstants.js";
+import { SYSTEM_DEFAULT_TARGETS } from "../../../../shared/constants/performanceConstants.js";
 
 const employeeSchema = new mongoose.Schema({
     employeeId: {
@@ -297,25 +298,27 @@ const employeeSchema = new mongoose.Schema({
         }
     },
 
-    // WFM Specific Performance Targets
-    performanceTargets: {
+    // Effective Targets (The single source of truth)
+    effectiveTargets: {
         dailyClaimTarget: {
-            type: Number,
-            default: 30,
-            min: [0, 'Daily claim target cannot be negative']
+            value: { type: Number, default: SYSTEM_DEFAULT_TARGETS.dailyClaimTarget },
+            source: { type: String, enum: ['SOW', 'SubDepartment', 'Employee'], default: 'Employee' },
+            sourceRef: { type: mongoose.Schema.Types.ObjectId }
         },
         qualityTarget: {
-            type: Number,
-            min: [0, 'Quality target cannot be negative'],
-            max: [100, 'Quality target cannot exceed 100%'],
-            default: 90
+            value: { type: Number, default: SYSTEM_DEFAULT_TARGETS.qualityTarget },
+            source: { type: String, enum: ['SOW', 'SubDepartment', 'Employee'], default: 'Employee' },
+            sourceRef: { type: mongoose.Schema.Types.ObjectId }
         },
         slaTarget: {
-            type: Number,
-            min: [0, 'SLA target cannot be negative'],
-            max: [100, 'SLA target cannot exceed 100%'],
-            default: 95
+            value: { type: Number, default: SYSTEM_DEFAULT_TARGETS.slaTarget },
+            source: { type: String, enum: ['SOW', 'SubDepartment', 'Employee'], default: 'Employee' },
+            sourceRef: { type: mongoose.Schema.Types.ObjectId }
         },
+        lastUpdatedAt: {
+            type: Date,
+            default: Date.now
+        }
     },
 
     // SOW Assignments - Key for WFM
@@ -343,27 +346,33 @@ const employeeSchema = new mongoose.Schema({
     },
     // Skills and Qualifications
     skillsAndQualifications: {
-        technicalSkills: [{   // changed
-            skill: {
-                type: String,
-                enum: ["Java", "JavaScript", "Python", "C#", "C++", "Ruby", "PHP", "Swift", "Kotlin", "Go", "Rust", "TypeScript", "SQL", "NoSQL", "HTML", "CSS", "React", "Angular", "Vue.js", "Node.js", "Django", "Flask", "Spring Boot", "ASP.NET Core", "Express.js", "GraphQL", "RESTful APIs", "Microservices", "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud Platform", "Machine Learning", "Data Science", "Big Data", "DevOps", "Agile Methodologies", "Scrum", "Kanban", "Project Management", "UI/UX Design", "Cybersecurity", "Blockchain", "Internet of Things (IoT)", "AR/VR Development", "Game Development", "Mobile App Development", "Web Development", "Software Testing", "Quality Assurance", "Technical Writing"],
+        technicalSkills: [{
+            skillRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Skill',
+                required: true
             },
             level: {
                 type: String,
-                enum: ["Beginner", "Intermediate", "Advanced", "Expert"]
+                enum: ["Beginner", "Intermediate", "Advanced", "Expert"],
+                required: true
             },
             certifiedDate: Date,
             expiryDate: Date,
+            _id: false
         }],
         softSkills: [{       // changed
-            skill: {
-                type: String,
-                enum: ["Communication", "Teamwork", "Problem Solving", "Time Management", "Adaptability", "Leadership", "Critical Thinking", "Creativity", "Emotional Intelligence", "Conflict Resolution", "Negotiation", "Decision Making", "Collaboration", "Interpersonal Skills", "Active Listening", "Public Speaking", "Presentation Skills", "Customer Service", "Networking", "Cultural Awareness", "Stress Management", "Work Ethic", "Attention to Detail", "Analytical Thinking", "Organizational Skills", "Project Management", "Change Management", "Mentoring", "Coaching", "Influencing", "Persuasion", "Sales Skills", "Marketing Skills", "Business Acumen", "Financial Acumen", "Strategic Thinking", "Innovation", "Agility", "Resilience", "Self-Motivation", "Goal Setting", "Visionary Thinking"],
+            skillRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Skill',
+                required: true
             },
             level: {
                 type: String,
-                enum: ["Beginner", "Intermediate", "Advanced", "Expert"]
-            }
+                enum: ["Beginner", "Intermediate", "Advanced", "Expert"],
+                required: true
+            },
+            _id: false
         }],
         certifications: [{
             name: String,
@@ -562,44 +571,54 @@ employeeSchema.methods.hashPassword = async function (password) {
 };
 
 employeeSchema.methods.updateProfileCompletion = function () {
-    let completedFields = 0;
-    const totalFields = 15; // Adjust based on required fields
+    const completionCriteria = [
+        // Personal Info
+        () => !!this.personalInfo.firstName,
+        () => !!this.personalInfo.lastName,
+        () => !!this.personalInfo.dateOfBirth,
+        () => this.personalInfo.gender !== "Prefer not to say",
 
-    // Check required personal info
-    if (this.personalInfo.firstName) completedFields++;
-    if (this.personalInfo.lastName) completedFields++;
-    if (this.personalInfo.dateOfBirth) completedFields++;
-    if (this.personalInfo.gender !== "Prefer not to say") completedFields++;
+        // Contact Info
+        () => !!this.contactInfo.primaryEmail,
+        () => !!this.contactInfo.primaryPhone,
+        () => !!this.contactInfo.emergencyContact?.name,
 
-    // Check contact info
-    if (this.contactInfo.primaryEmail) completedFields++;
-    if (this.contactInfo.primaryPhone) completedFields++;
+        // Employment Info
+        () => !!this.employmentInfo.dateOfJoining,
+        () => !!this.employmentInfo.employmentType,
+        () => !!this.employmentInfo.employeeCode,
 
-    // Check employment info
-    if (this.employmentInfo.dateOfJoining) completedFields++;
-    if (this.employmentInfo.employmentType) completedFields++;
+        // Organizational Assignments
+        () => !!this.roleRef,
+        () => !!this.departmentRef,
+        () => !!this.designationRef,
+        () => !!this.reportingStructure.directManager,
 
-    // Check organizational assignments
-    if (this.roleRef) completedFields++;
-    if (this.departmentRef) completedFields++;
-    if (this.designationRef) completedFields++;
-    if (this.compensation.baseSalary) completedFields++;
+        // Compensation
+        () => this.compensation.baseSalary > 0,
 
-    // Check skills and qualifications
-    if (this.skillsAndQualifications.technicalSkills.length > 0) completedFields++;
-    if (this.skillsAndQualifications.softSkills.length > 0) completedFields++;
-    if (this.skillsAndQualifications.languages.length > 0) completedFields++;
+        // Skills and Qualifications (at least one of each)
+        () => this.skillsAndQualifications.technicalSkills.length > 0,
+        () => this.skillsAndQualifications.softSkills.length > 0,
+        () => this.skillsAndQualifications.education.length > 0,
+        () => this.skillsAndQualifications.languages.length > 0,
 
-    // Check SOW assignments
-    if (this.sowAssignments.length > 0) completedFields++;
-    if (this.reportingStructure.directManager) completedFields++;
+        // SOW Assignments
+        () => this.sowAssignments.some(a => a.isActive),
+    ];
 
-    // Check performance targets
-    if (this.performanceTargets.dailyClaimTarget) completedFields++;
-    if (this.performanceTargets.qualityTarget) completedFields++;
-    if (this.performanceTargets.slaTarget) completedFields++;
+    // The total number of fields is now dynamic, based on the criteria list.
+    const totalFields = completionCriteria.length;
 
-    this.systemInfo.profileCompletionPercentage = Math.round((completedFields / totalFields) * 100);
+    // The number of completed fields is calculated by running each check.
+    const completedFields = completionCriteria.filter(criterion => criterion()).length;
+
+    // The calculation is now always correct and easy to update.
+    if (totalFields > 0) {
+        this.systemInfo.profileCompletionPercentage = Math.round((completedFields / totalFields) * 100);
+    } else {
+        this.systemInfo.profileCompletionPercentage = 0;
+    }
 };
 
 employeeSchema.methods.removeFromSOW = function (sowRef) {

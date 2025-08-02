@@ -211,7 +211,11 @@ export const sendNotification = async (notificationId) => {
     try {
         const notification = await Notification.findById(notificationId)
             .populate('companyRef', 'companyName')
-            .populate('recipients.recipientRef', 'personalInfo.firstName personalInfo.lastName contactInfo.primaryEmail');
+            .populate({
+                path: 'recipients.primaryRecipient.recipientRef',
+                model: 'Employee', // Explicitly state the model
+                select: 'personalInfo.firstName personalInfo.lastName contactInfo.primaryEmail' // Get only what you need
+            });
 
         if (!notification) {
             throw new ApiError(404, 'Notification not found');

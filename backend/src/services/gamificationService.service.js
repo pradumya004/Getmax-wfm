@@ -417,6 +417,7 @@ const checkConsecutiveAccuracy = async (employeeId, targetAccuracy, taskCount, s
         assignedTo: employeeId,
         status: 'Completed'
     })
+        .populate('qaAuditRef', 'scoringInfo.isPassed')
         .sort({ 'timeTracking.completedAt': -1 })
         .limit(taskCount)
         .session(session);
@@ -424,7 +425,7 @@ const checkConsecutiveAccuracy = async (employeeId, targetAccuracy, taskCount, s
     if (recentTasks.length < taskCount) return false;
 
     const accurateTasks = recentTasks.filter(task =>
-        !task.qualityAssurance?.hasErrors
+        task.qaAuditRef?.scoringInfo?.isPassed === true
     ).length;
 
     const accuracy = (accurateTasks / taskCount) * 100;
@@ -476,12 +477,12 @@ const checkSLACompliance = async (employeeId, targetCompliance, period, session)
         assignedTo: employeeId,
         status: 'Completed',
         'timeTracking.completedAt': { $gte: dateRange.start, $lte: dateRange.end }
-    }).session(session);
+    }).populate('slaTrackingRef', 'timerInfo.dueDateTime').session(session);
 
     if (tasks.length === 0) return false;
 
     const onTimeTasks = tasks.filter(task =>
-        task.timeTracking.completedAt <= task.dueDate
+        task.timeTracking.completedAt <= task.slaTrackingRef?.timerInfo?.dueDateTime
     ).length;
 
     const compliance = (onTimeTasks / tasks.length) * 100;

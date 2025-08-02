@@ -18,21 +18,29 @@ Getmax-wfm
 │     │  ├─ cloudinary.config.js
 │     │  ├─ connection.config.js
 │     │  ├─ email.config.js
-│     │  └─ multer.config.js
+│     │  ├─ multer.config.js
+│     │  └─ redis.config.js
 │     ├─ constants.js
 │     ├─ controllers
 │     │  ├─ admin
-│     │  │  ├─ adminController.controller.js
+│     │  │  ├─ companyAdminController.controller.js
 │     │  │  └─ masterAdminController.controller.js
+│     │  ├─ analytics
+│     │  │  ├─ dashboardController.controller.js
+│     │  │  └─ reportController.controller.js
+│     │  ├─ auth
+│     │  │  └─ permissionController.controller.js
 │     │  ├─ claimtask
 │     │  │  └─ claimTaskController.controller.js
 │     │  ├─ client
-│     │  │  └─ clientController.controller.js
+│     │  │  ├─ clientController.controller.js
+│     │  │  └─ onboardingController.controller.js
 │     │  ├─ company
 │     │  │  ├─ companyController.controller.js
 │     │  │  └─ orgController.controller.js
 │     │  ├─ employee
-│     │  │  └─ empolyeeController.controller.js
+│     │  │  ├─ empolyeeController.controller.js
+│     │  │  └─ performanceController.controller.js
 │     │  ├─ organization
 │     │  │  ├─ departmentContoller.controller.js
 │     │  │  ├─ designationController.controller.js
@@ -43,32 +51,46 @@ Getmax-wfm
 │     │  │  └─ patientController.controller.js
 │     │  ├─ payer
 │     │  │  └─ payerController.controller.js
-│     │  └─ sow
-│     │     └─ sowController.controller.js
+│     │  ├─ sow
+│     │  │  └─ sowController.controller.js
+│     │  └─ task
+│     │     ├─ assignmentController.controller.js
+│     │     └─ taskController.controller.js
 │     ├─ middlewares
+│     │  ├─ audit.middleware.js
 │     │  ├─ auth.middleware.js
 │     │  ├─ error.middleware.js
 │     │  ├─ masterAdminAuth.middleware.js
 │     │  └─ upload.middleware.js
 │     ├─ models
-│     │  ├─ claimtasks-model.js
-│     │  ├─ client-model.js
-│     │  ├─ company.model.js
-│     │  ├─ department.model.js
-│     │  ├─ designation.model.js
-│     │  ├─ employee.model.js
-│     │  ├─ floating-pool-model.js
-│     │  ├─ gamification.model.js
-│     │  ├─ notes-model.js
-│     │  ├─ notifications-model.js
-│     │  ├─ patient-model.js
-│     │  ├─ payer-model.js
-│     │  ├─ performance.model.js
-│     │  ├─ qa-audit-model.js
-│     │  ├─ role.model.js
-│     │  ├─ sla-tracking-model.js
-│     │  ├─ sow.model.js
-│     │  └─ subdepartment.model.js
+│     │  ├─ core
+│     │  │  ├─ client.model.js
+│     │  │  ├─ company.model.js
+│     │  │  ├─ employee.model.js
+│     │  │  └─ sow.model.js
+│     │  ├─ data
+│     │  │  ├─ patient.model.js
+│     │  │  └─ payer.model.js
+│     │  ├─ organization
+│     │  │  ├─ department.model.js
+│     │  │  ├─ designation.model.js
+│     │  │  ├─ role.model.js
+│     │  │  └─ subdepartment.model.js
+│     │  ├─ performance
+│     │  │  ├─ gamification.model.js
+│     │  │  ├─ performance.model.js
+│     │  │  └─ sla-tracking.model.js
+│     │  ├─ system
+│     │  │  ├─ audit-log.model.js
+│     │  │  ├─ notes.model.js
+│     │  │  ├─ notifications.model.js
+│     │  │  ├─ qa-audit-model.js
+│     │  │  └─ system-config.model.js
+│     │  └─ workflow
+│     │     ├─ claimtasks.model.js
+│     │     ├─ floating-pool.model.js
+│     │     ├─ workflow-audit.model.js
+│     │     └─ workflow-batch.model.js
 │     ├─ routes
 │     │  ├─ admin.route.js
 │     │  ├─ claimTask.route.js
@@ -86,13 +108,24 @@ Getmax-wfm
 │     │  │  └─ claimmdAdapter.js
 │     │  └─ payerSync.js
 │     ├─ services
-│     │  └─ emailService.service.js
+│     │  ├─ assignmentService.service.js
+│     │  ├─ emailService.service.js
+│     │  ├─ fileService.service.js
+│     │  ├─ gamificationService.service.js
+│     │  ├─ helpers
+│     │  │  └─ performanceCalculator.js
+│     │  ├─ notificationService.service.js
+│     │  ├─ performanceService.service.js
+│     │  ├─ reportService.service.js
+│     │  └─ slaService.service.js
 │     └─ utils
 │        ├─ ApiError.js
 │        ├─ ApiResponse.js
 │        ├─ asyncHandler.js
+│        ├─ dateUtils.js
 │        ├─ helpers.js
-│        └─ jwtHelper.js
+│        ├─ jwtHelper.js
+│        └─ logger.js
 ├─ frontend
 │  ├─ .env
 │  ├─ eslint.config.js
@@ -366,8 +399,15 @@ Getmax-wfm
 │  │        ├─ SowIntake.jsx
 │  │        └─ SOWList.jsx
 │  └─ vite.config.js
+├─ Getmax-WFM Beta Version - Complete Specification & Implementation Guide.pdf
 ├─ README.md
-├─ WFM Tool Development Walkthrough_.docx
-└─ WFM Tool Development Walkthrough_.pdf
+└─ shared
+   └─ constants
+      ├─ assignmentConstants.js
+      ├─ gamificationConstants.js
+      ├─ modelConstants.js
+      ├─ performanceConstants.js
+      ├─ reportConstants.js
+      └─ slaConstants.js
 
 ```

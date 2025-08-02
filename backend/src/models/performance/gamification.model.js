@@ -18,13 +18,15 @@ const levelHistorySchema = new mongoose.Schema({
 }, { _id: false });
 
 const unlockedAchievementSchema = new mongoose.Schema({
-    achievementId: { type: String, required: true },
-    name: { type: String, required: true },
-    description: { type: String },
-    icon: { type: String },
-    points: { type: Number, required: true },
-    rarity: { type: String },
-    unlockedAt: { type: Date, default: Date.now }
+    achievementRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Achievement',
+        required: true
+    },
+    unlockedAt: {
+        type: Date,
+        default: Date.now
+    }
 }, { _id: false });
 
 const streakSchema = new mongoose.Schema({

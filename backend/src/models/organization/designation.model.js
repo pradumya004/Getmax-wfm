@@ -1,4 +1,4 @@
-// backend/src/models/designation.model.js
+// backend/src/models/organization/designation.model.js
 
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -82,16 +82,18 @@ const designationSchema = new mongoose.Schema({
             default: "None"
         },
         requiredSkills: [{
-            skill: {
-                type: String,
-                trim: true,
-                // required: true
+            skillRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Skill',
+                required: true
             },
             level: {
                 type: String,
                 enum: ["Beginner", "Intermediate", "Advanced", "Expert"],
+                required: true,
                 default: "Intermediate"
-            }
+            },
+            _id: false
         }]
     },
 

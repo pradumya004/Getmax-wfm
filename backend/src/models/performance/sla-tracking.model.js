@@ -12,7 +12,7 @@ const slaTrackingSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -83,11 +83,14 @@ const slaTrackingSchema = new mongoose.Schema({
         timezone: {
             type: String,
             enum: [
-                'EST', 'CST', 'MST', 'PST', 'GMT', 'IST',
-                'America/New_York', 'America/Chicago', 'America/Denver', 
-                'America/Los_Angeles', 'UTC', 'Asia/Kolkata'
+                "America/New_York",
+                "America/Chicago",
+                "America/Denver",
+                "America/Los_Angeles",
+                "UTC",
+                "Asia/Kolkata"
             ],
-            default: 'EST'
+            default: 'America/New_York'
         }
     },
 
@@ -96,7 +99,7 @@ const slaTrackingSchema = new mongoose.Schema({
         triggerEvent: {
             type: String,
             enum: [
-                'Claim Import', 'Claim Assignment', 'Status Change', 
+                'Claim Import', 'Claim Assignment', 'Status Change',
                 'Note Addition', 'Manual Start', 'QA Assignment',
                 'Escalation', 'Appeal Filing', 'Payment Request'
             ],
@@ -139,7 +142,7 @@ const slaTrackingSchema = new mongoose.Schema({
             index: true
         },
         actualCompletionDateTime: Date,
-        
+
         // Time calculations
         totalElapsedHours: {
             type: Number,
@@ -159,7 +162,7 @@ const slaTrackingSchema = new mongoose.Schema({
             type: Number,
             default: 0 // Can be negative if breached
         },
-        
+
         // Pause functionality
         isPaused: {
             type: Boolean,
@@ -216,7 +219,7 @@ const slaTrackingSchema = new mongoose.Schema({
         currentStatus: {
             type: String,
             enum: [
-                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached', 
+                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached',
                 'Completed', 'Cancelled', 'Reset', 'Escalated'
             ],
             required: [true, 'Current status is required'],
@@ -226,11 +229,11 @@ const slaTrackingSchema = new mongoose.Schema({
         previousStatus: {
             type: String,
             enum: [
-                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached', 
+                'Not Started', 'Active', 'Paused', 'At Risk', 'Breached',
                 'Completed', 'Cancelled', 'Reset', 'Escalated'
             ]
         },
-        
+
         // Warning thresholds
         warningThresholdPercent: {
             type: Number,
@@ -244,7 +247,7 @@ const slaTrackingSchema = new mongoose.Schema({
             max: [99, 'Critical threshold cannot exceed 99%'],
             default: 90
         },
-        
+
         // Status change history
         statusHistory: [{
             status: {
@@ -273,7 +276,7 @@ const slaTrackingSchema = new mongoose.Schema({
                 default: false
             }
         }],
-        
+
         lastStatusUpdate: {
             type: Date,
             default: Date.now,
@@ -424,7 +427,7 @@ const slaTrackingSchema = new mongoose.Schema({
                 'Transferred', 'Extension Granted', 'Override Applied'
             ]
         },
-        
+
         // Performance metrics
         performanceRating: {
             type: String,
@@ -462,7 +465,7 @@ const slaTrackingSchema = new mongoose.Schema({
             default: false
         },
         breachAlertDateTime: Date,
-        
+
         notificationRecipients: [{
             recipientType: {
                 type: String,
@@ -484,7 +487,7 @@ const slaTrackingSchema = new mongoose.Schema({
                 default: 0
             }
         }],
-        
+
         suppressNotifications: {
             type: Boolean,
             default: false
@@ -556,7 +559,7 @@ const slaTrackingSchema = new mongoose.Schema({
             ref: 'Employee'
         },
         overrideDate: Date,
-        
+
         // Calculation metadata
         lastCalculationRun: {
             type: Date,
@@ -619,26 +622,26 @@ slaTrackingSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-slaTrackingSchema.virtual('isOverdue').get(function() {
-    return new Date() > this.timerInfo.dueDateTime && 
-           !['Completed', 'Cancelled'].includes(this.statusInfo.currentStatus);
+slaTrackingSchema.virtual('isOverdue').get(function () {
+    return new Date() > this.timerInfo.dueDateTime &&
+        !['Completed', 'Cancelled'].includes(this.statusInfo.currentStatus);
 });
 
-slaTrackingSchema.virtual('urgencyLevel').get(function() {
+slaTrackingSchema.virtual('urgencyLevel').get(function () {
     if (this.statusInfo.currentStatus === 'Breached') return 'Critical';
     if (this.statusInfo.currentStatus === 'At Risk') return 'High';
-    
+
     const now = new Date();
-    const timeRemainingPercent = (this.timerInfo.dueDateTime - now) / 
-                                (this.timerInfo.dueDateTime - this.timerInfo.startDateTime) * 100;
-    
+    const timeRemainingPercent = (this.timerInfo.dueDateTime - now) /
+        (this.timerInfo.dueDateTime - this.timerInfo.startDateTime) * 100;
+
     if (timeRemainingPercent <= 10) return 'Critical';
     if (timeRemainingPercent <= 25) return 'High';
     if (timeRemainingPercent <= 50) return 'Medium';
     return 'Low';
 });
 
-slaTrackingSchema.virtual('performanceCategory').get(function() {
+slaTrackingSchema.virtual('performanceCategory').get(function () {
     if (!this.resolutionInfo.isResolved) return 'In Progress';
     if (this.breachInfo.isBreached) return 'Failed';
     if (this.timerInfo.actualCompletionDateTime <= this.timerInfo.dueDateTime) return 'Met';
@@ -660,67 +663,67 @@ slaTrackingSchema.virtual('assignedEmployee', {
 });
 
 // ** STATIC METHODS **
-slaTrackingSchema.statics.findActiveByEmployee = function(employeeRef) {
+slaTrackingSchema.statics.findActiveByEmployee = function (employeeRef) {
     return this.find({
         assignedEmployeeRef: employeeRef,
         'statusInfo.currentStatus': { $in: ['Active', 'At Risk'] },
         'systemInfo.isActive': true
     })
-    .populate('claimRef', 'claimId workflowStatus.currentStatus')
-    .sort({ 'timerInfo.dueDateTime': 1 });
+        .populate('claimRef', 'claimId workflowStatus.currentStatus')
+        .sort({ 'timerInfo.dueDateTime': 1 });
 };
 
-slaTrackingSchema.statics.findBreachedSLAs = function(companyRef, fromDate = null, toDate = null) {
+slaTrackingSchema.statics.findBreachedSLAs = function (companyRef, fromDate = null, toDate = null) {
     const query = {
         companyRef,
         'breachInfo.isBreached': true,
         'systemInfo.isActive': true
     };
-    
+
     if (fromDate || toDate) {
         query['breachInfo.breachDateTime'] = {};
         if (fromDate) query['breachInfo.breachDateTime'].$gte = new Date(fromDate);
         if (toDate) query['breachInfo.breachDateTime'].$lte = new Date(toDate);
     }
-    
+
     return this.find(query)
         .populate('claimRef', 'claimId workflowStatus.currentStatus')
         .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
         .sort({ 'breachInfo.breachDateTime': -1 });
 };
 
-slaTrackingSchema.statics.findAtRiskSLAs = function(companyRef, hoursAhead = 24) {
+slaTrackingSchema.statics.findAtRiskSLAs = function (companyRef, hoursAhead = 24) {
     const cutoffDateTime = new Date();
     cutoffDateTime.setHours(cutoffDateTime.getHours() + hoursAhead);
-    
+
     return this.find({
         companyRef,
         'statusInfo.currentStatus': { $in: ['Active', 'At Risk'] },
         'timerInfo.dueDateTime': { $lte: cutoffDateTime },
         'systemInfo.isActive': true
     })
-    .populate('claimRef', 'claimId workflowStatus.currentStatus')
-    .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
-    .sort({ 'timerInfo.dueDateTime': 1 });
+        .populate('claimRef', 'claimId workflowStatus.currentStatus')
+        .populate('assignedEmployeeRef', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ 'timerInfo.dueDateTime': 1 });
 };
 
-slaTrackingSchema.statics.findBySOWAndType = function(sowRef, slaType, status = null) {
+slaTrackingSchema.statics.findBySOWAndType = function (sowRef, slaType, status = null) {
     const query = {
         sowRef,
         'slaConfig.slaType': slaType,
         'systemInfo.isActive': true
     };
-    
+
     if (status) {
         query['statusInfo.currentStatus'] = status;
     }
-    
+
     return this.find(query)
         .populate('claimRef', 'claimId workflowStatus.currentStatus')
         .sort({ 'timerInfo.startDateTime': -1 });
 };
 
-slaTrackingSchema.statics.getSLAPerformanceStats = function(companyRef, fromDate, toDate, sowRef = null) {
+slaTrackingSchema.statics.getSLAPerformanceStats = function (companyRef, fromDate, toDate, sowRef = null) {
     const matchStage = {
         companyRef: mongoose.Types.ObjectId(companyRef),
         'resolutionInfo.isResolved': true,
@@ -729,9 +732,9 @@ slaTrackingSchema.statics.getSLAPerformanceStats = function(companyRef, fromDate
             $lte: new Date(toDate)
         }
     };
-    
+
     if (sowRef) matchStage.sowRef = mongoose.Types.ObjectId(sowRef);
-    
+
     return this.aggregate([
         { $match: matchStage },
         {
@@ -767,28 +770,28 @@ slaTrackingSchema.statics.getSLAPerformanceStats = function(companyRef, fromDate
 };
 
 // ** INSTANCE METHODS **
-slaTrackingSchema.methods.calculateTimeRemaining = function() {
+slaTrackingSchema.methods.calculateTimeRemaining = function () {
     const now = new Date();
     const dueDate = this.timerInfo.dueDateTime;
-    
+
     if (this.timerInfo.isPaused) {
         // If paused, time remaining stays the same as when paused
         return this.timerInfo.timeRemaining;
     }
-    
+
     const remainingMs = dueDate.getTime() - now.getTime();
     this.timerInfo.timeRemaining = remainingMs / (1000 * 60 * 60); // Convert to hours
-    
+
     return this.timerInfo.timeRemaining;
 };
 
-slaTrackingSchema.methods.updateStatus = function(newStatus, changedBy, reason = '', notes = '') {
+slaTrackingSchema.methods.updateStatus = function (newStatus, changedBy, reason = '', notes = '') {
     const oldStatus = this.statusInfo.currentStatus;
-    
+
     this.statusInfo.previousStatus = oldStatus;
     this.statusInfo.currentStatus = newStatus;
     this.statusInfo.lastStatusUpdate = new Date();
-    
+
     // Add to status history
     this.statusInfo.statusHistory.push({
         status: newStatus,
@@ -797,28 +800,28 @@ slaTrackingSchema.methods.updateStatus = function(newStatus, changedBy, reason =
         notes,
         systemGenerated: !changedBy
     });
-    
+
     // Handle specific status changes
     if (newStatus === 'Breached' && !this.breachInfo.isBreached) {
         this.handleBreach(reason);
     }
-    
+
     if (newStatus === 'Completed') {
         this.complete(changedBy, notes);
     }
 };
 
-slaTrackingSchema.methods.handleBreach = function(reason = '') {
+slaTrackingSchema.methods.handleBreach = function (reason = '') {
     const now = new Date();
-    
+
     this.breachInfo.isBreached = true;
     this.breachInfo.breachDateTime = now;
     this.breachInfo.breachReason = reason;
-    
+
     // Calculate breach duration
     const breachDurationMs = now.getTime() - this.timerInfo.dueDateTime.getTime();
     this.breachInfo.breachDurationHours = breachDurationMs / (1000 * 60 * 60);
-    
+
     // Determine breach severity based on duration
     if (this.breachInfo.breachDurationHours <= 4) {
         this.breachInfo.breachSeverity = 'Minor';
@@ -829,22 +832,22 @@ slaTrackingSchema.methods.handleBreach = function(reason = '') {
     } else {
         this.breachInfo.breachSeverity = 'Critical';
     }
-    
+
     // Update status
     this.updateStatus('Breached', null, 'Automatic breach detection');
-    
+
     // Send breach alerts
     this.sendBreachAlert();
 };
 
-slaTrackingSchema.methods.pause = function(pausedBy, reason, notes = '') {
+slaTrackingSchema.methods.pause = function (pausedBy, reason, notes = '') {
     if (this.timerInfo.isPaused) {
         throw new Error('SLA is already paused');
     }
-    
+
     const now = new Date();
     this.timerInfo.isPaused = true;
-    
+
     // Add to pause history
     this.timerInfo.pauseHistory.push({
         pausedBy,
@@ -852,55 +855,55 @@ slaTrackingSchema.methods.pause = function(pausedBy, reason, notes = '') {
         pauseReason: reason,
         pauseNotes: notes
     });
-    
+
     this.updateStatus('Paused', pausedBy, reason, notes);
 };
 
-slaTrackingSchema.methods.resume = function(resumedBy, notes = '') {
+slaTrackingSchema.methods.resume = function (resumedBy, notes = '') {
     if (!this.timerInfo.isPaused) {
         throw new Error('SLA is not currently paused');
     }
-    
+
     const now = new Date();
     this.timerInfo.isPaused = false;
-    
+
     // Update the last pause entry
     const lastPause = this.timerInfo.pauseHistory[this.timerInfo.pauseHistory.length - 1];
     lastPause.resumedBy = resumedBy;
     lastPause.resumedAt = now;
     lastPause.resumeNotes = notes;
-    
+
     // Calculate pause duration
     const pauseDurationMs = now.getTime() - lastPause.pausedAt.getTime();
     lastPause.pauseDurationHours = pauseDurationMs / (1000 * 60 * 60);
-    
+
     // Update total paused time
     this.timerInfo.totalPausedHours += lastPause.pauseDurationHours;
-    
+
     // Extend due date by pause duration
     this.timerInfo.dueDateTime = new Date(
         this.timerInfo.dueDateTime.getTime() + pauseDurationMs
     );
-    
+
     this.updateStatus('Active', resumedBy, 'Resumed from pause', notes);
 };
 
-slaTrackingSchema.methods.complete = function(completedBy, notes = '') {
+slaTrackingSchema.methods.complete = function (completedBy, notes = '') {
     const now = new Date();
-    
+
     this.timerInfo.actualCompletionDateTime = now;
     this.timerInfo.endDateTime = now;
-    
+
     // Calculate total elapsed time
     const totalElapsedMs = now.getTime() - this.timerInfo.startDateTime.getTime();
     this.timerInfo.totalElapsedHours = (totalElapsedMs / (1000 * 60 * 60)) - this.timerInfo.totalPausedHours;
-    
+
     // Resolution info
     this.resolutionInfo.isResolved = true;
     this.resolutionInfo.resolutionDateTime = now;
     this.resolutionInfo.resolvedBy = completedBy;
     this.resolutionInfo.resolutionNotes = notes;
-    
+
     // Determine resolution method and performance
     if (now <= this.timerInfo.dueDateTime) {
         this.resolutionInfo.resolutionMethod = 'Completed On Time';
@@ -913,11 +916,11 @@ slaTrackingSchema.methods.complete = function(completedBy, notes = '') {
         this.resolutionInfo.finalOutcome = 'Partial Success';
         this.resolutionInfo.meetsExpectation = false;
     }
-    
+
     this.updateStatus('Completed', completedBy, 'SLA completed', notes);
 };
 
-slaTrackingSchema.methods.escalate = function(escalatedBy, escalatedTo, level, reason, notes = '') {
+slaTrackingSchema.methods.escalate = function (escalatedBy, escalatedTo, level, reason, notes = '') {
     this.escalationInfo.isEscalated = true;
     this.escalationInfo.escalationLevel = level;
     this.escalationInfo.escalatedTo = escalatedTo;
@@ -925,7 +928,7 @@ slaTrackingSchema.methods.escalate = function(escalatedBy, escalatedTo, level, r
     this.escalationInfo.escalationDateTime = new Date();
     this.escalationInfo.escalationReason = reason;
     this.escalationInfo.escalationNotes = notes;
-    
+
     // Add to escalation history
     this.escalationInfo.escalationHistory.push({
         level,
@@ -935,33 +938,33 @@ slaTrackingSchema.methods.escalate = function(escalatedBy, escalatedTo, level, r
         reason,
         notes
     });
-    
+
     this.updateStatus('Escalated', escalatedBy, reason, notes);
 };
 
-slaTrackingSchema.methods.sendBreachAlert = function() {
+slaTrackingSchema.methods.sendBreachAlert = function () {
     // Mark breach alert as sent
     this.notificationInfo.breachAlertSent = true;
     this.notificationInfo.breachAlertDateTime = new Date();
-    
+
     // In a real implementation, this would trigger actual notifications
     // via email, SMS, Slack, etc. based on notification recipients
     console.log(`SLA Breach Alert: ${this.slaId} - Claim ${this.claimRef}`);
 };
 
-slaTrackingSchema.methods.checkAndSendAlerts = function() {
+slaTrackingSchema.methods.checkAndSendAlerts = function () {
     const timeRemainingPercent = (this.timerInfo.timeRemaining / this.slaConfig.targetHours) * 100;
-    
+
     // Send warning alert
-    if (timeRemainingPercent <= this.statusInfo.warningThresholdPercent && 
+    if (timeRemainingPercent <= this.statusInfo.warningThresholdPercent &&
         !this.notificationInfo.warningAlertSent) {
         this.notificationInfo.warningAlertSent = true;
         this.notificationInfo.warningAlertDateTime = new Date();
         this.updateStatus('At Risk', null, 'Automatic warning threshold reached');
     }
-    
+
     // Send critical alert
-    if (timeRemainingPercent <= this.statusInfo.criticalThresholdPercent && 
+    if (timeRemainingPercent <= this.statusInfo.criticalThresholdPercent &&
         !this.notificationInfo.criticalAlertSent) {
         this.notificationInfo.criticalAlertSent = true;
         this.notificationInfo.criticalAlertDateTime = new Date();
@@ -969,27 +972,27 @@ slaTrackingSchema.methods.checkAndSendAlerts = function() {
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-slaTrackingSchema.pre('save', function(next) {
+slaTrackingSchema.pre('save', function (next) {
     // Calculate time remaining
     this.calculateTimeRemaining();
-    
+
     // Check and send alerts if needed
     if (this.statusInfo.currentStatus === 'Active' && !this.timerInfo.isPaused) {
         this.checkAndSendAlerts();
     }
-    
+
     // Auto-breach if overdue
-    if (this.timerInfo.timeRemaining < 0 && 
-        this.statusInfo.currentStatus === 'Active' && 
+    if (this.timerInfo.timeRemaining < 0 &&
+        this.statusInfo.currentStatus === 'Active' &&
         !this.breachInfo.isBreached) {
         this.handleBreach('Automatic breach detection');
     }
-    
+
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-    
+
     next();
 });
 

@@ -28,7 +28,20 @@ const auditLogSchema = new mongoose.Schema({
     },
     entityType: {
         type: String,
-        enum: ['Company', 'Employee', 'Client', 'ClaimTask', 'SOW', 'Patient', 'Payer', 'Department', 'Role'],
+        enum: [
+            // Core Models
+            'Company', 'Employee', 'Client', 'SOW', 'Patient', 'Payer',
+            // Organizational Models
+            'Department', 'SubDepartment', 'Role', 'Designation',
+            // Workflow Models
+            'ClaimTask', 'FloatingPool',
+            // Performance Models
+            'Performance', 'Gamification', 'SLATracking',
+            // System Models
+            'QAAudit', 'Notes', 'Notifications', 'AuditLog', // Can log actions on itself
+            // Configuration Models (if you add them back later)
+            'Skill', 'Achievement', 'NotesTemplate', 'QATemplate'
+        ],
         required: true
     },
     entityId: {

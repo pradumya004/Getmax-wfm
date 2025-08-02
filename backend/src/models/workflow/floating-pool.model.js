@@ -25,7 +25,6 @@ const floatingPoolSchema = new mongoose.Schema({
         ref: 'ClaimTask', // Claim in floating pool
         required: [true, 'Claim reference is required'],
         index: true,
-        unique: true // A claim can only be in floating pool once
     },
     clientRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -711,6 +710,7 @@ const floatingPoolSchema = new mongoose.Schema({
 });
 
 // ** INDEXES FOR PERFORMANCE **
+floatingPoolSchema.index({ companyRef: 1, claimRef: 1 }, { unique: true });
 floatingPoolSchema.index({ companyRef: 1, 'resolutionInfo.isResolved': 1 });
 floatingPoolSchema.index({ sowRef: 1, 'priorityInfo.priorityScore': -1 });
 floatingPoolSchema.index({ 'priorityInfo.priorityLevel': 1, 'entryInfo.entryDateTime': 1 });

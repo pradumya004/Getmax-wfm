@@ -1223,12 +1223,12 @@ export const getPerformanceRating = (score) => {
 
 export const getEmployeeTaskStats = async (employeeId, dateFilter) => {
     try {
-        const { ClaimTask } = await import('../models/index.js');
-
         const tasks = await ClaimTask.find({
             assignedTo: employeeId,
             createdAt: { $gte: dateFilter.start, $lte: dateFilter.end }
-        }).lean();
+        })
+            .populate('qaAuditRef', 'scoringInfo.isPassed')
+            .lean();
 
         const stats = {
             total: tasks.length,
@@ -1242,7 +1242,7 @@ export const getEmployeeTaskStats = async (employeeId, dateFilter) => {
         // Calculate accuracy rate based on quality assurance
         const completedTasks = tasks.filter(t => t.status === TASK_STATUS.COMPLETED);
         if (completedTasks.length > 0) {
-            const accurateTasks = completedTasks.filter(t => !t.qualityAssurance?.hasErrors);
+            const accurateTasks = completedTasks.filter(t => t.qaAuditRef?.scoringInfo?.isPassed === true);
             stats.accuracyRate = (accurateTasks.length / completedTasks.length) * 100;
         }
 
@@ -1266,8 +1266,6 @@ export const getEmployeeTaskStats = async (employeeId, dateFilter) => {
 
 export const getEmployeeSLAStats = async (employeeId, dateFilter) => {
     try {
-        const { SLATracking } = await import('../models/index.js');
-
         const slas = await SLATracking.find({
             employeeRef: employeeId,
             'slaInfo.startDate': { $gte: dateFilter.start, $lte: dateFilter.end }
@@ -1351,8 +1349,6 @@ export const calculateDepartmentBreakdown = (reportData) => {
 
 export const getClientLastActivity = async (clientId, dateFilter) => {
     try {
-        const { ClaimTask } = await import('../models/index.js');
-
         const lastTask = await ClaimTask.findOne({
             clientRef: clientId,
             createdAt: { $gte: dateFilter.start, $lte: dateFilter.end }
@@ -1370,8 +1366,6 @@ export const getClientLastActivity = async (clientId, dateFilter) => {
 
 export const getEmployeeCount = async (companyId) => {
     try {
-        const { Employee } = await import('../models/index.js');
-
         const counts = await Employee.aggregate([
             { $match: { companyRef: companyId } },
             {
@@ -1397,8 +1391,6 @@ export const getEmployeeCount = async (companyId) => {
 
 export const getTaskMetrics = async (companyId, dateRange) => {
     try {
-        const { ClaimTask } = await import('../models/index.js');
-
         const tasks = await ClaimTask.find({
             companyRef: companyId,
             createdAt: { $gte: dateRange.start, $lte: dateRange.end }
@@ -1440,8 +1432,6 @@ export const getTaskMetrics = async (companyId, dateRange) => {
 
 export const getPerformanceMetrics = async (companyId, period) => {
     try {
-        const { Performance } = await import('../models/index.js');
-
         const performances = await Performance.find({
             companyRef: companyId,
             'period.periodType': period
@@ -1470,8 +1460,6 @@ export const getPerformanceMetrics = async (companyId, period) => {
 
 export const getSLAMetrics = async (companyId, dateRange) => {
     try {
-        const { SLATracking } = await import('../models/index.js');
-
         const slas = await SLATracking.find({
             companyRef: companyId,
             'slaInfo.startDate': { $gte: dateRange.start, $lte: dateRange.end }
@@ -1502,8 +1490,6 @@ export const getSLAMetrics = async (companyId, dateRange) => {
 
 export const getClientMetrics = async (companyId, dateRange) => {
     try {
-        const { Client } = await import('../models/index.js');
-
         const clients = await Client.find({
             companyRef: companyId,
             createdAt: { $lte: dateRange.end }
@@ -1525,8 +1511,6 @@ export const getClientMetrics = async (companyId, dateRange) => {
 
 export const getDepartmentMetrics = async (companyId, dateRange) => {
     try {
-        const { Department } = await import('../models/index.js');
-
         const departments = await Department.find({ companyRef: companyId }).lean();
 
         return {
@@ -1540,8 +1524,6 @@ export const getDepartmentMetrics = async (companyId, dateRange) => {
 
 export const getFinancialMetrics = async (companyId, dateRange) => {
     try {
-        const { ClaimTask } = await import('../models/index.js');
-
         const tasks = await ClaimTask.find({
             companyRef: companyId,
             createdAt: { $gte: dateRange.start, $lte: dateRange.end },
@@ -1593,8 +1575,6 @@ export const getTrendData = async (companyId, period) => {
 
 export const getAlerts = async (companyId, dateRange) => {
     try {
-        const { SLATracking, ClaimTask } = await import('../models/index.js');
-
         const alerts = [];
 
         // SLA breach alerts
@@ -1637,8 +1617,6 @@ export const getAlerts = async (companyId, dateRange) => {
 
 export const getTopPerformers = async (companyId, period, limit = 5) => {
     try {
-        const { Performance, Employee } = await import('../models/index.js');
-
         const topPerformers = await Performance.find({
             companyRef: companyId,
             'period.periodType': period

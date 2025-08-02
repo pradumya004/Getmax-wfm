@@ -175,10 +175,17 @@ const subdepartmentSchema = new mongoose.Schema({
         timeZone: {
             type: String,
             enum: {
-                values: ["EST", "CST", "MST", "PST", "GMT", "IST"],
-                message: 'Time zone must be one of: EST, CST, MST, PST, GMT, IST'
+                values: [
+                    "America/New_York",   // EST/EDT
+                    "America/Chicago",    // CST/CDT
+                    "America/Denver",     // MST/MDT
+                    "America/Los_Angeles",// PST/PDT
+                    "Etc/GMT",            // GMT
+                    "Asia/Kolkata"        // IST
+                ],
+                message: 'Time zone must be a valid IANA name'
             },
-            default: "EST"
+            default: "America/New_York"
         }
     },
 

@@ -6,13 +6,12 @@ import { v4 as uuidv4 } from 'uuid';
 const payerSchema = new mongoose.Schema({
     payerId: {
         type: String,
-        unique: true,
         default: () => `PAY-${uuidv4().substring(0, 8).toUpperCase()}`,
         trim: true,
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -35,7 +34,7 @@ const payerSchema = new mongoose.Schema({
             enum: [
                 'Commercial Insurance',
                 'Medicare',
-                'Medicaid', 
+                'Medicaid',
                 'Medicare Advantage',
                 'Medicaid Managed Care',
                 'Workers Compensation',
@@ -64,7 +63,7 @@ const payerSchema = new mongoose.Schema({
             type: String,
             trim: true,
             validate: {
-                validator: function(v) {
+                validator: function (v) {
                     return !v || /^\d{2}-\d{7}$/.test(v);
                 },
                 message: 'Federal Tax ID must be in XX-XXXXXXX format'
@@ -74,7 +73,7 @@ const payerSchema = new mongoose.Schema({
             type: String, // National Association of Insurance Commissioners code
             trim: true,
             validate: {
-                validator: function(v) {
+                validator: function (v) {
                     return !v || /^\d{5}$/.test(v);
                 },
                 message: 'NAIC code must be 5 digits'
@@ -92,7 +91,7 @@ const payerSchema = new mongoose.Schema({
                 trim: true,
                 lowercase: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
                     },
                     message: 'Invalid email format'
@@ -102,7 +101,7 @@ const payerSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\+?[\d\s\-\(\)]{10,15}$/.test(v);
                     },
                     message: 'Invalid phone number format'
@@ -167,7 +166,7 @@ const payerSchema = new mongoose.Schema({
                 type: String,
                 trim: true,
                 validate: {
-                    validator: function(v) {
+                    validator: function (v) {
                         return !v || /^\d{5}(-\d{4})?$/.test(v);
                     },
                     message: 'Invalid ZIP code format'
@@ -241,7 +240,7 @@ const payerSchema = new mongoose.Schema({
             type: String,
             enum: [
                 'Individual Health',
-                'Group Health', 
+                'Group Health',
                 'Medicare Supplement',
                 'Medicare Advantage',
                 'Medicaid',
@@ -580,10 +579,9 @@ const payerSchema = new mongoose.Schema({
 });
 
 // ** INDEXES FOR PERFORMANCE **
+payerSchema.index({ companyRef: 1, 'identifiers.payerIdNumber': 1 }, { unique: true });
 payerSchema.index({ companyRef: 1, 'payerInfo.payerType': 1 });
 payerSchema.index({ 'payerInfo.payerName': 'text' });
-payerSchema.index({ 'identifiers.payerIdNumber': 1 });
-payerSchema.index({ 'identifiers.x12PayerId': 1 });
 payerSchema.index({ 'performanceMetrics.priorityScore': -1 });
 payerSchema.index({ 'systemConfig.isActive': 1, 'systemConfig.isPreferred': 1 });
 
@@ -600,34 +598,34 @@ payerSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-payerSchema.virtual('totalActivePlans').get(function() {
+payerSchema.virtual('totalActivePlans').get(function () {
     return this.coverageInfo.planTypes.filter(plan => plan.isActive).length;
 });
 
-payerSchema.virtual('totalServiceStates').get(function() {
+payerSchema.virtual('totalServiceStates').get(function () {
     return this.coverageInfo.serviceAreas.length;
 });
 
-payerSchema.virtual('isContractCurrent').get(function() {
+payerSchema.virtual('isContractCurrent').get(function () {
     if (!this.contractInfo.hasContract || !this.contractInfo.contractExpirationDate) {
         return false;
     }
     return this.contractInfo.contractExpirationDate > new Date();
 });
 
-payerSchema.virtual('paymentScore').get(function() {
+payerSchema.virtual('paymentScore').get(function () {
     // Calculate payment score based on metrics
     let score = 5; // Base score
-    
+
     if (this.performanceMetrics.avgDaysToPayment <= 15) score += 2;
     else if (this.performanceMetrics.avgDaysToPayment <= 30) score += 1;
     else if (this.performanceMetrics.avgDaysToPayment > 60) score -= 2;
-    
+
     if (this.performanceMetrics.denialRate <= 5) score += 1;
     else if (this.performanceMetrics.denialRate > 20) score -= 2;
-    
+
     if (this.performanceMetrics.appealSuccessRate >= 80) score += 1;
-    
+
     return Math.max(1, Math.min(10, score));
 });
 
@@ -636,15 +634,15 @@ payerSchema.virtual('totalActivePatients', {
     localField: '_id',
     foreignField: 'insuranceInfo.primaryInsurance.payerRef',
     count: true,
-    match: { 
+    match: {
         'insuranceInfo.primaryInsurance.isActive': true,
         'activityInfo.patientStatus': 'Active',
-        'systemInfo.isActive': true 
+        'systemInfo.isActive': true
     }
 });
 
 // ** STATIC METHODS **
-payerSchema.statics.findByPayerType = function(companyRef, payerType) {
+payerSchema.statics.findByPayerType = function (companyRef, payerType) {
     return this.find({
         companyRef,
         'payerInfo.payerType': payerType,
@@ -652,7 +650,7 @@ payerSchema.statics.findByPayerType = function(companyRef, payerType) {
     }).sort({ 'performanceMetrics.priorityScore': -1 });
 };
 
-payerSchema.statics.findByState = function(companyRef, state) {
+payerSchema.statics.findByState = function (companyRef, state) {
     return this.find({
         companyRef,
         'coverageInfo.serviceAreas.state': state,
@@ -660,7 +658,7 @@ payerSchema.statics.findByState = function(companyRef, state) {
     });
 };
 
-payerSchema.statics.findPreferredPayers = function(companyRef) {
+payerSchema.statics.findPreferredPayers = function (companyRef) {
     return this.find({
         companyRef,
         'systemConfig.isPreferred': true,
@@ -668,7 +666,7 @@ payerSchema.statics.findPreferredPayers = function(companyRef) {
     }).sort({ 'performanceMetrics.priorityScore': -1 });
 };
 
-payerSchema.statics.findHighPerformancePayers = function(companyRef, minScore = 7) {
+payerSchema.statics.findHighPerformancePayers = function (companyRef, minScore = 7) {
     return this.find({
         companyRef,
         'performanceMetrics.priorityScore': { $gte: minScore },
@@ -676,10 +674,10 @@ payerSchema.statics.findHighPerformancePayers = function(companyRef, minScore = 
     });
 };
 
-payerSchema.statics.findPayersNeedingReview = function(companyRef, daysSinceLastReview = 365) {
+payerSchema.statics.findPayersNeedingReview = function (companyRef, daysSinceLastReview = 365) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysSinceLastReview);
-    
+
     return this.find({
         companyRef,
         $or: [
@@ -691,7 +689,7 @@ payerSchema.statics.findPayersNeedingReview = function(companyRef, daysSinceLast
     });
 };
 
-payerSchema.statics.findByClearinghouse = function(companyRef, clearinghouseName, payerId) {
+payerSchema.statics.findByClearinghouse = function (companyRef, clearinghouseName, payerId) {
     return this.findOne({
         companyRef,
         'identifiers.clearinghouseIds': {
@@ -706,7 +704,7 @@ payerSchema.statics.findByClearinghouse = function(companyRef, clearinghouseName
 };
 
 // ** INSTANCE METHODS **
-payerSchema.methods.updatePerformanceMetrics = function(metricsData) {
+payerSchema.methods.updatePerformanceMetrics = function (metricsData) {
     if (metricsData.avgDaysToPayment !== undefined) {
         this.performanceMetrics.avgDaysToPayment = metricsData.avgDaysToPayment;
     }
@@ -722,48 +720,48 @@ payerSchema.methods.updatePerformanceMetrics = function(metricsData) {
     if (metricsData.totalAmountPaid !== undefined) {
         this.performanceMetrics.totalAmountPaid = metricsData.totalAmountPaid;
     }
-    
+
     // Recalculate priority score based on performance
     this.calculatePriorityScore();
-    
+
     this.performanceMetrics.lastPerformanceUpdate = new Date();
     this.activityMetrics.lastPaymentDate = new Date();
 };
 
-payerSchema.methods.calculatePriorityScore = function() {
+payerSchema.methods.calculatePriorityScore = function () {
     let score = 5; // Base score
-    
+
     // Payment speed (40% weight)
     if (this.performanceMetrics.avgDaysToPayment <= 15) score += 2;
     else if (this.performanceMetrics.avgDaysToPayment <= 30) score += 1;
     else if (this.performanceMetrics.avgDaysToPayment > 45) score -= 1;
     else if (this.performanceMetrics.avgDaysToPayment > 60) score -= 2;
-    
+
     // Denial rate (30% weight)
     if (this.performanceMetrics.denialRate <= 5) score += 1.5;
     else if (this.performanceMetrics.denialRate <= 10) score += 0.5;
     else if (this.performanceMetrics.denialRate > 20) score -= 1.5;
-    
+
     // Appeal success rate (20% weight)
     if (this.performanceMetrics.appealSuccessRate >= 80) score += 1;
     else if (this.performanceMetrics.appealSuccessRate >= 60) score += 0.5;
     else if (this.performanceMetrics.appealSuccessRate < 40) score -= 1;
-    
+
     // Contract status (10% weight)
     if (this.contractInfo.contractType === 'In-Network') score += 0.5;
     else if (this.contractInfo.contractType === 'Out-of-Network') score -= 0.5;
-    
+
     // Ensure score is within valid range
     this.performanceMetrics.priorityScore = Math.max(1, Math.min(10, Math.round(score * 10) / 10));
-    
+
     return this.performanceMetrics.priorityScore;
 };
 
-payerSchema.methods.addClearinghouseId = function(clearinghouseName, payerId) {
+payerSchema.methods.addClearinghouseId = function (clearinghouseName, payerId) {
     const existingId = this.identifiers.clearinghouseIds.find(
         id => id.clearinghouseName === clearinghouseName
     );
-    
+
     if (existingId) {
         existingId.payerId = payerId;
         existingId.isActive = true;
@@ -776,9 +774,9 @@ payerSchema.methods.addClearinghouseId = function(clearinghouseName, payerId) {
     }
 };
 
-payerSchema.methods.addServiceArea = function(state, counties = [], zipCodes = [], isStatewide = false) {
+payerSchema.methods.addServiceArea = function (state, counties = [], zipCodes = [], isStatewide = false) {
     const existingArea = this.coverageInfo.serviceAreas.find(area => area.state === state);
-    
+
     if (existingArea) {
         existingArea.counties = [...new Set([...existingArea.counties, ...counties])];
         existingArea.zipCodes = [...new Set([...existingArea.zipCodes, ...zipCodes])];
@@ -793,39 +791,39 @@ payerSchema.methods.addServiceArea = function(state, counties = [], zipCodes = [
     }
 };
 
-payerSchema.methods.isEligibleForServices = function(state, zipCode = null) {
+payerSchema.methods.isEligibleForServices = function (state, zipCode = null) {
     const serviceArea = this.coverageInfo.serviceAreas.find(area => area.state === state);
-    
+
     if (!serviceArea) return false;
     if (serviceArea.isStatewide) return true;
     if (zipCode && serviceArea.zipCodes.includes(zipCode)) return true;
-    
+
     return false;
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-payerSchema.pre('save', function(next) {
+payerSchema.pre('save', function (next) {
     // Calculate priority score if performance metrics changed
     if (this.isModified('performanceMetrics')) {
         this.calculatePriorityScore();
     }
-    
+
     // Update YTD stats if activity metrics changed
     if (this.isModified('activityMetrics')) {
         // This would typically be done by a background job
         // that processes actual claim data
     }
-    
+
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-    
+
     next();
 });
 
 // ** POST-SAVE MIDDLEWARE **
-payerSchema.post('save', function(doc, next) {
+payerSchema.post('save', function (doc, next) {
     // Could trigger cache updates, notifications, etc.
     next();
 });

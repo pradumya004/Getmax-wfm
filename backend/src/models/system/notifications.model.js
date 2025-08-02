@@ -12,7 +12,7 @@ const notificationsSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -55,7 +55,7 @@ const notificationsSchema = new mongoose.Schema({
         notificationCategory: {
             type: String,
             enum: [
-                'Critical', 'Warning', 'Info', 'Success', 'Error', 
+                'Critical', 'Warning', 'Info', 'Success', 'Error',
                 'Reminder', 'Update', 'Alert', 'Report', 'Announcement'
             ],
             required: [true, 'Notification category is required'],
@@ -73,12 +73,12 @@ const notificationsSchema = new mongoose.Schema({
             enum: ['Info', 'Warning', 'Error', 'Critical', 'Fatal'],
             default: 'Info'
         },
-        
+
         // Source tracking
         sourceModule: {
             type: String,
             enum: [
-                'SLA_Tracking', 'ClaimTask', 'QA_Audit', 'FloatingPool', 
+                'SLA_Tracking', 'ClaimTask', 'QA_Audit', 'FloatingPool',
                 'Employee', 'Client', 'SOW', 'Payer', 'Patient', 'Notes',
                 'Company', 'Role', 'Department', 'Performance', 'System',
                 'API', 'Scheduler', 'Reports', 'Dashboard', 'Integration'
@@ -94,7 +94,7 @@ const notificationsSchema = new mongoose.Schema({
             type: String,
             trim: true // Action that triggered notification (e.g., 'SLA_BREACH', 'TASK_ASSIGNED')
         },
-        
+
         // Related entities for context
         relatedEntities: [{
             entityType: {
@@ -143,7 +143,7 @@ const notificationsSchema = new mongoose.Schema({
             url: String,
             action: String // Frontend action to trigger
         },
-        
+
         // Rich content support
         htmlContent: {
             type: String,
@@ -155,7 +155,7 @@ const notificationsSchema = new mongoose.Schema({
             fileUrl: String,
             fileSize: Number
         }],
-        
+
         // Template information
         templateId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -171,38 +171,31 @@ const notificationsSchema = new mongoose.Schema({
     recipients: {
         // Primary recipient
         primaryRecipient: {
-            recipientType: {
-                type: String,
-                enum: ['Employee', 'Client Contact', 'Manager', 'Admin', 'System', 'External'],
-                required: true
-            },
             recipientRef: {
                 type: mongoose.Schema.Types.ObjectId,
-                refPath: 'recipients.primaryRecipient.recipientType'
+                ref: 'Employee',
+                required: true
             },
             recipientEmail: String,
             recipientName: String
         },
-        
+
         // Additional recipients
         additionalRecipients: [{
-            recipientType: {
-                type: String,
-                enum: ['Employee', 'Client Contact', 'Manager', 'Admin', 'System', 'External'],
+            recipientRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee', // <-- CORRECTED
                 required: true
             },
-            recipientRef: {
-                type: mongoose.Schema.Types.ObjectId
-            },
-            recipientEmail: String,
-            recipientName: String,
             notificationRole: {
                 type: String,
                 enum: ['To', 'CC', 'BCC', 'Escalation'],
                 default: 'To'
-            }
+            },
+            recipientEmail: String,
+            recipientName: String,
         }],
-        
+
         // Group targeting
         targetGroups: [{
             groupType: {
@@ -219,7 +212,7 @@ const notificationsSchema = new mongoose.Schema({
                 of: String // Additional filtering within group
             }
         }],
-        
+
         // Broadcasting options
         isBroadcast: {
             type: Boolean,
@@ -239,7 +232,7 @@ const notificationsSchema = new mongoose.Schema({
             channel: {
                 type: String,
                 enum: [
-                    'In-App', 'Email', 'SMS', 'Push', 'Slack', 'Teams', 
+                    'In-App', 'Email', 'SMS', 'Push', 'Slack', 'Teams',
                     'Webhook', 'WhatsApp', 'Phone Call', 'Portal'
                 ],
                 required: true
@@ -269,14 +262,14 @@ const notificationsSchema = new mongoose.Schema({
             deliveredAt: Date,
             failureReason: String,
             externalMessageId: String, // ID from external service (email provider, SMS, etc.)
-            
+
             // Channel-specific settings
             channelSettings: {
                 type: Map,
                 of: mongoose.Schema.Types.Mixed // Flexible settings per channel
             }
         }],
-        
+
         // Scheduling
         scheduledFor: {
             type: Date,
@@ -302,7 +295,7 @@ const notificationsSchema = new mongoose.Schema({
                 min: [1, 'Backoff multiplier must be at least 1']
             }
         },
-        
+
         // Delivery tracking
         totalRecipients: {
             type: Number,
@@ -343,7 +336,7 @@ const notificationsSchema = new mongoose.Schema({
                 default: 'In-App'
             }
         }],
-        
+
         // Acknowledgment tracking
         requiresAcknowledgment: {
             type: Boolean,
@@ -362,7 +355,7 @@ const notificationsSchema = new mongoose.Schema({
             acknowledgmentMethod: String,
             notes: String
         }],
-        
+
         // Action tracking
         actionsTaken: [{
             userId: {
@@ -383,7 +376,7 @@ const notificationsSchema = new mongoose.Schema({
                 default: Date.now
             }
         }],
-        
+
         // Engagement metrics
         clickThroughRate: {
             type: Number,
@@ -440,7 +433,7 @@ const notificationsSchema = new mongoose.Schema({
                 default: 30
             }
         }],
-        
+
         currentEscalationLevel: {
             type: Number,
             default: 0
@@ -468,7 +461,7 @@ const notificationsSchema = new mongoose.Schema({
             type: Number,
             default: 60 // Don't send same notification within 60 minutes
         },
-        
+
         // User preferences override
         respectUserPreferences: {
             type: Boolean,
@@ -478,7 +471,7 @@ const notificationsSchema = new mongoose.Schema({
             type: Boolean,
             default: true
         },
-        
+
         // Quiet hours
         respectQuietHours: {
             type: Boolean,
@@ -492,7 +485,7 @@ const notificationsSchema = new mongoose.Schema({
             type: String,
             default: '08:00'
         },
-        
+
         // Frequency limits
         maxNotificationsPerHour: {
             type: Number,
@@ -509,7 +502,7 @@ const notificationsSchema = new mongoose.Schema({
         notificationStatus: {
             type: String,
             enum: [
-                'Draft', 'Scheduled', 'Sending', 'Sent', 'Delivered', 
+                'Draft', 'Scheduled', 'Sending', 'Sent', 'Delivered',
                 'Failed', 'Cancelled', 'Archived', 'Expired'
             ],
             required: [true, 'Notification status is required'],
@@ -530,7 +523,7 @@ const notificationsSchema = new mongoose.Schema({
             index: true
         },
         archivedDate: Date,
-        
+
         // Lifecycle tracking
         statusHistory: [{
             status: {
@@ -571,7 +564,7 @@ const notificationsSchema = new mongoose.Schema({
             type: Number,
             default: 0
         },
-        
+
         // Performance metrics
         deliveryTime: {
             type: Number, // milliseconds from creation to delivery
@@ -581,7 +574,7 @@ const notificationsSchema = new mongoose.Schema({
             type: Number, // milliseconds from delivery to first response
             default: 0
         },
-        
+
         // Segmentation data
         audienceSegment: String,
         campaignId: String,
@@ -608,11 +601,11 @@ const notificationsSchema = new mongoose.Schema({
             trim: true,
             index: true // For bulk notifications
         },
-        
+
         // Processing info
         processedAt: Date,
         processingDuration: Number, // milliseconds
-        
+
         // Error tracking
         errorCount: {
             type: Number,
@@ -620,13 +613,13 @@ const notificationsSchema = new mongoose.Schema({
         },
         lastError: String,
         lastErrorAt: Date,
-        
+
         // Versioning
         version: {
             type: String,
             default: '1.0'
         },
-        
+
         // External references
         externalReferences: [{
             system: String,
@@ -647,13 +640,13 @@ const notificationsSchema = new mongoose.Schema({
             ref: 'Employee'
         },
         lastModifiedAt: Date,
-        
+
         // Detailed audit log
         auditLog: [{
             action: {
                 type: String,
                 enum: [
-                    'Created', 'Sent', 'Delivered', 'Read', 'Acknowledged', 
+                    'Created', 'Sent', 'Delivered', 'Read', 'Acknowledged',
                     'Escalated', 'Archived', 'Failed', 'Retried', 'Cancelled'
                 ],
                 required: true
@@ -711,20 +704,20 @@ notificationsSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-notificationsSchema.virtual('isUnread').get(function() {
+notificationsSchema.virtual('isUnread').get(function () {
     // Determine if notification is unread for a specific user
     // This would typically be calculated based on current user context
     return this.interaction.readStatus.length === 0;
 });
 
-notificationsSchema.virtual('isOverdue').get(function() {
+notificationsSchema.virtual('isOverdue').get(function () {
     if (!this.delivery.scheduledFor) return false;
     return new Date() > this.delivery.scheduledFor && this.status.notificationStatus === 'Scheduled';
 });
 
-notificationsSchema.virtual('urgencyScore').get(function() {
+notificationsSchema.virtual('urgencyScore').get(function () {
     let score = 0;
-    
+
     // Priority scoring
     switch (this.notificationInfo.priority) {
         case 'Emergency': score += 100; break;
@@ -733,7 +726,7 @@ notificationsSchema.virtual('urgencyScore').get(function() {
         case 'Normal': score += 25; break;
         case 'Low': score += 10; break;
     }
-    
+
     // Severity scoring
     switch (this.notificationInfo.severity) {
         case 'Fatal': score += 50; break;
@@ -742,59 +735,59 @@ notificationsSchema.virtual('urgencyScore').get(function() {
         case 'Warning': score += 20; break;
         case 'Info': score += 10; break;
     }
-    
+
     // Time sensitivity
     if (this.escalation.isEscalationEnabled && this.escalation.isEscalated) {
         score += 25;
     }
-    
+
     return score;
 });
 
 // ** STATIC METHODS **
-notificationsSchema.statics.findUnreadByUser = function(userId, limit = 50) {
+notificationsSchema.statics.findUnreadByUser = function (userId, limit = 50) {
     return this.find({
         'recipients.primaryRecipient.recipientRef': userId,
         'status.isActive': true,
         'status.isVisible': true,
         'interaction.readStatus.userId': { $ne: userId }
     })
-    .sort({ 'notificationInfo.priority': -1, createdAt: -1 })
-    .limit(limit)
-    .populate('notificationInfo.relatedEntities.entityId');
+        .sort({ 'notificationInfo.priority': -1, createdAt: -1 })
+        .limit(limit)
+        .populate('notificationInfo.relatedEntities.entityId');
 };
 
-notificationsSchema.statics.findByType = function(companyRef, notificationType, fromDate = null, toDate = null) {
+notificationsSchema.statics.findByType = function (companyRef, notificationType, fromDate = null, toDate = null) {
     const query = {
         companyRef,
         'notificationInfo.notificationType': notificationType,
         'status.isActive': true
     };
-    
+
     if (fromDate || toDate) {
         query.createdAt = {};
         if (fromDate) query.createdAt.$gte = new Date(fromDate);
         if (toDate) query.createdAt.$lte = new Date(toDate);
     }
-    
+
     return this.find(query)
         .sort({ createdAt: -1 })
         .populate('recipients.primaryRecipient.recipientRef', 'personalInfo.firstName personalInfo.lastName');
 };
 
-notificationsSchema.statics.findPendingDelivery = function(companyRef) {
+notificationsSchema.statics.findPendingDelivery = function (companyRef) {
     return this.find({
         companyRef,
         'status.notificationStatus': { $in: ['Scheduled', 'Sending'] },
         'delivery.scheduledFor': { $lte: new Date() },
         'status.isActive': true
     })
-    .sort({ 'notificationInfo.priority': -1, 'delivery.scheduledFor': 1 });
+        .sort({ 'notificationInfo.priority': -1, 'delivery.scheduledFor': 1 });
 };
 
-notificationsSchema.statics.findEscalationRequired = function(companyRef) {
+notificationsSchema.statics.findEscalationRequired = function (companyRef) {
     const now = new Date();
-    
+
     return this.find({
         companyRef,
         'escalation.isEscalationEnabled': true,
@@ -808,10 +801,10 @@ notificationsSchema.statics.findEscalationRequired = function(companyRef) {
             ]
         }
     })
-    .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 });
 };
 
-notificationsSchema.statics.getDeliveryStats = function(companyRef, fromDate, toDate) {
+notificationsSchema.statics.getDeliveryStats = function (companyRef, fromDate, toDate) {
     return this.aggregate([
         {
             $match: {
@@ -854,21 +847,21 @@ notificationsSchema.statics.getDeliveryStats = function(companyRef, fromDate, to
 };
 
 // ** INSTANCE METHODS **
-notificationsSchema.methods.markAsRead = function(userId, readMethod = 'In-App') {
+notificationsSchema.methods.markAsRead = function (userId, readMethod = 'In-App') {
     const existingRead = this.interaction.readStatus.find(
         read => read.userId.equals(userId)
     );
-    
+
     if (!existingRead) {
         this.interaction.readStatus.push({
             userId,
             readAt: new Date(),
             readMethod
         });
-        
+
         // Update analytics
         this.analytics.impressions += 1;
-        
+
         // Add to audit log
         this.auditInfo.auditLog.push({
             action: 'Read',
@@ -878,11 +871,11 @@ notificationsSchema.methods.markAsRead = function(userId, readMethod = 'In-App')
     }
 };
 
-notificationsSchema.methods.acknowledge = function(userId, notes = '', method = 'In-App') {
+notificationsSchema.methods.acknowledge = function (userId, notes = '', method = 'In-App') {
     const existingAck = this.interaction.acknowledgments.find(
         ack => ack.userId.equals(userId)
     );
-    
+
     if (!existingAck) {
         this.interaction.acknowledgments.push({
             userId,
@@ -890,7 +883,7 @@ notificationsSchema.methods.acknowledge = function(userId, notes = '', method = 
             acknowledgmentMethod: method,
             notes
         });
-        
+
         // Add to audit log
         this.auditInfo.auditLog.push({
             action: 'Acknowledged',
@@ -900,43 +893,43 @@ notificationsSchema.methods.acknowledge = function(userId, notes = '', method = 
     }
 };
 
-notificationsSchema.methods.triggerEscalation = function() {
+notificationsSchema.methods.triggerEscalation = function () {
     if (!this.escalation.isEscalationEnabled) return false;
-    
+
     this.escalation.currentEscalationLevel += 1;
     this.escalation.isEscalated = true;
     this.escalation.lastEscalationDate = new Date();
-    
+
     // Create escalation notification
     const escalationPath = this.escalation.escalationPath.find(
         path => path.level === this.escalation.currentEscalationLevel
     );
-    
+
     if (escalationPath) {
         // Create new notification for escalated recipient
         // This would typically be handled by the notification service
         console.log(`Escalating to level ${this.escalation.currentEscalationLevel}`);
     }
-    
+
     // Add to audit log
     this.auditInfo.auditLog.push({
         action: 'Escalated',
         details: `Escalated to level ${this.escalation.currentEscalationLevel}`,
         systemGenerated: true
     });
-    
+
     return true;
 };
 
-notificationsSchema.methods.updateDeliveryStatus = function(channel, status, deliveredAt = null, failureReason = null) {
+notificationsSchema.methods.updateDeliveryStatus = function (channel, status, deliveredAt = null, failureReason = null) {
     const deliveryChannel = this.delivery.deliveryChannels.find(
         ch => ch.channel === channel
     );
-    
+
     if (deliveryChannel) {
         deliveryChannel.deliveryStatus = status;
         deliveryChannel.lastAttempt = new Date();
-        
+
         if (status === 'Delivered' && deliveredAt) {
             deliveryChannel.deliveredAt = deliveredAt;
             this.delivery.successfulDeliveries += 1;
@@ -945,18 +938,18 @@ notificationsSchema.methods.updateDeliveryStatus = function(channel, status, del
             deliveryChannel.attemptCount += 1;
             this.delivery.failedDeliveries += 1;
         }
-        
+
         // Update overall delivery rate
         const totalAttempts = this.delivery.successfulDeliveries + this.delivery.failedDeliveries;
         if (totalAttempts > 0) {
             this.delivery.deliveryRate = (this.delivery.successfulDeliveries / totalAttempts) * 100;
         }
-        
+
         // Update notification status
         const allDelivered = this.delivery.deliveryChannels.every(
             ch => ch.deliveryStatus === 'Delivered' || ch.deliveryStatus === 'Failed'
         );
-        
+
         if (allDelivered) {
             const hasSuccessful = this.delivery.deliveryChannels.some(
                 ch => ch.deliveryStatus === 'Delivered'
@@ -966,11 +959,11 @@ notificationsSchema.methods.updateDeliveryStatus = function(channel, status, del
     }
 };
 
-notificationsSchema.methods.archive = function(archivedBy, reason = '') {
+notificationsSchema.methods.archive = function (archivedBy, reason = '') {
     this.status.notificationStatus = 'Archived';
     this.status.archivedDate = new Date();
     this.status.isVisible = false;
-    
+
     // Add to audit log
     this.auditInfo.auditLog.push({
         action: 'Archived',
@@ -980,35 +973,35 @@ notificationsSchema.methods.archive = function(archivedBy, reason = '') {
 };
 
 // ** PRE-SAVE MIDDLEWARE **
-notificationsSchema.pre('save', function(next) {
+notificationsSchema.pre('save', function (next) {
     // Auto-expire old notifications
     if (this.businessRules.autoArchiveAfterDays && !this.status.archivedDate) {
         const autoArchiveDate = new Date();
         autoArchiveDate.setDate(autoArchiveDate.getDate() - this.businessRules.autoArchiveAfterDays);
-        
+
         if (this.createdAt < autoArchiveDate) {
             this.status.notificationStatus = 'Archived';
             this.status.archivedDate = new Date();
             this.status.isVisible = false;
         }
     }
-    
+
     // Set expiry if not set
     if (!this.status.expiryDate && this.businessRules.autoArchiveAfterDays) {
         this.status.expiryDate = new Date();
         this.status.expiryDate.setDate(this.status.expiryDate.getDate() + this.businessRules.autoArchiveAfterDays);
     }
-    
+
     // Set default scheduled time if immediate delivery
     if (this.delivery.deliverImmediately && !this.delivery.scheduledFor) {
         this.delivery.scheduledFor = new Date();
     }
-    
+
     // Set lastModifiedAt
     if (this.isModified() && !this.isNew) {
         this.auditInfo.lastModifiedAt = new Date();
     }
-    
+
     next();
 });
 

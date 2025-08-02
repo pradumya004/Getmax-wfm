@@ -1,4 +1,4 @@
-// backend/src/models/sow.model.js
+// backend/src/models/core/sow.model.js
 
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -162,20 +162,18 @@ const sowSchema = new mongoose.Schema({
             default: 3 // Corresponds to roles in Role model
         },
         requiredSkills: [{
-            skill: {
-                type: String,
-                enum: [
-                    "Medical Coding", "ICD-10", "CPT", "HCPCS", "Prior Auth",
-                    "AR Calling", "Denial Management", "Payment Posting",
-                    "Eligibility Verification", "Insurance Knowledge", "EMR Systems",
-                    "Excel Advanced", "Data Entry", "Customer Service", "Healthcare RCM"
-                ]
+            skillRef: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Skill',
+                required: true
             },
-            proficiencyLevel: {
+            level: {
                 type: String,
                 enum: ["Beginner", "Intermediate", "Advanced", "Expert"],
+                required: true,
                 default: "Intermediate"
-            }
+            },
+            _id: false
         }],
         minExperienceYears: {
             type: Number,
@@ -406,7 +404,7 @@ const sowSchema = new mongoose.Schema({
 });
 
 // ** INDEXES FOR PERFORMANCE **
-sowSchema.index({ companyRef: 1, clientCompanyRef: 1 });
+sowSchema.index({ companyRef: 1, clientRef: 1 });
 sowSchema.index({ 'serviceDetails.serviceType': 1, 'status.sowStatus': 1 });
 sowSchema.index({ 'status.startDate': 1, 'status.endDate': 1 });
 sowSchema.index({ 'systemInfo.isActive': 1, 'systemInfo.autoAssignmentEnabled': 1 });
@@ -450,7 +448,7 @@ sowSchema.statics.findActiveSOWsByCompany = function (companyRef) {
         companyRef,
         'status.sowStatus': 'Active',
         'systemInfo.isActive': true
-    }).populate('clientCompanyRef', 'companyName companyType')
+    }).populate('clientRef', 'companyName companyType')
         .populate('auditInfo.createdBy', 'personalInfo.firstName personalInfo.lastName');
 };
 

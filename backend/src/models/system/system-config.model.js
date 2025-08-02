@@ -1,4 +1,5 @@
-// ===== backend/src/models/system/system-config.model.js =====
+// backend/src/models/system/system-config.model.js
+
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';

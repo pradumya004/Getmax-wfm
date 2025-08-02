@@ -268,7 +268,7 @@ export const IMPROVEMENT_RECOMMENDATIONS = {
 };
 
 // Export default configuration
-export const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG = { 
     weights: PERFORMANCE_WEIGHTS,
     targets: PERFORMANCE_TARGETS,
     ratings: PERFORMANCE_RATINGS,
@@ -276,6 +276,12 @@ export const DEFAULT_CONFIG = {
     trendsMonths: 6,
     workingDaysPerWeek: 5,
     workingHoursPerDay: 8
+};
+
+export const SYSTEM_DEFAULT_TARGETS = {
+    dailyClaimTarget: 30,
+    qualityTarget: 90,
+    slaTarget: 95
 };
 
 // Rating Lookup Arrays (for easy iteration in frontend)

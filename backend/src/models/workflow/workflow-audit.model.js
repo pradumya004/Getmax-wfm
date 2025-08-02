@@ -22,7 +22,7 @@ const workflowAuditSchema = new mongoose.Schema({
     },
     claimRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: '',
+        ref: 'ClaimTask',
         required: [true, 'Claim reference is required'],
         index: true
     },

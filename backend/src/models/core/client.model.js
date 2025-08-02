@@ -3,6 +3,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { ONBOARDING_STATUS_PROGRESS } from '../../../../shared/constants/clientConstants.js';
 
 const clientSchema = new mongoose.Schema({
     clientId: {
@@ -571,8 +572,14 @@ clientSchema.methods.updatePerformanceMetrics = function (newMetrics) {
 };
 
 clientSchema.methods.canStartSOW = function () {
-    const hasSignedMSA = this.serviceAgreements.masterServiceAgreement.signed;
-    const hasSignedBAA = this.serviceAgreements.hipaaBAA.signed;
+    // Helper to find a signed compliance document by its type/name
+    const findCompliance = (name) =>
+        this.serviceAgreements.compliances.find(c =>
+            c.type?.toLowerCase().includes(name.toLowerCase()) && c.signed
+        );
+
+    const hasSignedMSA = !!findCompliance('master service agreement');
+    const hasSignedBAA = !!findCompliance('hipaa'); // Check for 'hipaa' in the type
     const isOnboarded = this.status.onboardingStatus === 'Completed';
 
     return {
@@ -630,19 +637,18 @@ clientSchema.pre('save', function (next) {
         this.auditInfo.lastModifiedAt = new Date();
     }
 
-    // Update onboarding progress based on status
-    const statusProgressMap = {
-        'Not Started': 0,
-        'Documentation Pending': 20,
-        'Technical Setup': 40,
-        'Testing Phase': 60,
-        'Training Phase': 80,
-        'Go Live': 90,
-        'Completed': 100
-    };
+    // Update onboarding progress using constant file
+    if (this.isModified('status.onboardingStatus')) {
+        const progress = ONBOARDING_STATUS_PROGRESS[this.status.onboardingStatus];
 
-    if (this.status.onboardingStatus && statusProgressMap[this.status.onboardingStatus]) {
-        this.status.onboardingProgress = statusProgressMap[this.status.onboardingStatus];
+        // Check if the status is valid before assigning
+        if (progress !== undefined) {
+            this.status.onboardingProgress = progress;
+        } else {
+            // If an invalid status is somehow set, default to 0
+            this.status.onboardingProgress = 0;
+            console.warn(`Invalid onboarding status set for client ${this.clientId}: ${this.status.onboardingStatus}`);
+        }
     }
 
     next();

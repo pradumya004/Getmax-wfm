@@ -30,6 +30,89 @@ import {
 } from "./helpers/performanceCalculator.js";
 
 
+// Calculates and PERSISTS the effective performance targets for an employee based on the SOW > SubDepartment > Employee hierarchy.
+// This is the single source of truth for setting an employee's targets.
+export const updateEffectiveTargetsForEmployee = async (employeeId) => {
+    // 1. Fetch the employee and populate all necessary references
+    const employee = await Employee.findById(employeeId)
+        .populate({
+            path: 'sowAssignments',
+            populate: {
+                path: 'sowRef',
+                model: 'SOW'
+            }
+        })
+        .populate('subdepartmentRef');
+
+    if (!employee) {
+        // Don't throw an error, just log it. A missing employee shouldn't crash an assignment.
+        console.error(`Could not update targets: Employee not found with ID: ${employeeId}`);
+        return null;
+    }
+
+    const newEffectiveTargets = {
+        dailyClaimTarget: {},
+        qualityTarget: {},
+        slaTarget: {},
+    };
+
+    // HIERARCHY RULE 1: SOW (Highest Priority)
+    const activeSOWAssignment = employee.sowAssignments.find(a => a.isActive);
+    const activeSOW = activeSOWAssignment?.sowRef;
+
+    if (activeSOW?.performanceTargets) {
+        newEffectiveTargets.dailyClaimTarget = {
+            value: activeSOW.performanceTargets.dailyTargetPerEmp,
+            source: 'SOW',
+            sourceRef: activeSOW._id
+        };
+        newEffectiveTargets.qualityTarget = {
+            value: activeSOW.performanceTargets.qualityBenchmark,
+            source: 'SOW',
+            sourceRef: activeSOW._id
+        };
+    }
+
+    // HIERARCHY RULE 2: SubDepartment (Fallback)
+    if (!newEffectiveTargets.dailyClaimTarget.value && employee.subdepartmentRef?.performanceTargets) {
+        newEffectiveTargets.dailyClaimTarget = {
+            value: employee.subdepartmentRef.performanceTargets.dailyClaimTarget,
+            source: 'SubDepartment',
+            sourceRef: employee.subdepartmentRef._id
+        };
+        newEffectiveTargets.qualityTarget = {
+            value: employee.subdepartmentRef.performanceTargets.qualityTarget,
+            source: 'SubDepartment',
+            sourceRef: employee.subdepartmentRef._id
+        };
+    }
+
+    // HIERARCHY RULE 3: System Default (Lowest Priority / Final Fallback)
+    if (!newEffectiveTargets.dailyClaimTarget.value) {
+        newEffectiveTargets.dailyClaimTarget = {
+            value: SYSTEM_DEFAULT_TARGETS.dailyClaimTarget,
+            source: 'Employee',
+            sourceRef: employee._id // No specific document reference for a system default
+        };
+    }
+    if (!newEffectiveTargets.qualityTarget.value) {
+        newEffectiveTargets.qualityTarget = {
+            value: SYSTEM_DEFAULT_TARGETS.qualityTarget,
+            source: 'Employee',
+            sourceRef: employee._id
+        };
+    }
+
+    // Persist the calculated targets to the employee document
+    employee.effectiveTargets = {
+        ...employee.effectiveTargets,
+        ...newEffectiveTargets,
+        lastUpdatedAt: new Date()
+    };
+
+    return await employee.save();
+};
+
 // Performance Metrics Calculation
 export const calculatePerformanceMetrics = async (employeeId, period = TIME_PERIODS.CURRENT_MONTH, customTargets = null) => {
     try {

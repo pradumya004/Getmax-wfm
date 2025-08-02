@@ -3,6 +3,54 @@
 import mongoose from 'mongoose';
 import { PERFORMANCE_PERIODS, PERFORMANCE_RATINGS } from '../../../shared/constants/performanceConstants.js';
 
+// Sub-schema for detailed metrics
+const detailedMetricsSubSchema = new mongoose.Schema({
+    productivity: {
+        tasksCompleted: Number,
+        tasksPerDay: Number,
+        completionRate: Number,
+        score: Number,
+        rating: String
+    },
+    quality: {
+        accuracyRate: Number,
+        errorRate: Number,
+        reworkRate: Number,
+        score: Number,
+        rating: String
+    },
+    efficiency: {
+        averageCompletionTime: Number,
+        onTimeCompletionRate: Number,
+        score: Number,
+        rating: String
+    },
+    sla: {
+        totalSLAs: Number,
+        metSLAs: Number,
+        breachedSLAs: Number,
+        slaComplianceRate: Number,
+        score: Number,
+        rating: String
+    },
+}, { _id: false });
+
+// Sub-schema for targets
+const targetsSubSchema = new mongoose.Schema({
+    productivity: { tasksPerDay: Number },
+    quality: { accuracyRate: Number },
+    efficiency: { onTimeCompletionRate: Number },
+    sla: { complianceRate: Number }
+}, { _id: false });
+
+// Sub-schema for weights
+const weightsSubSchema = new mongoose.Schema({
+    productivity: Number,
+    quality: Number,
+    efficiency: Number,
+    sla: Number
+}, { _id: false });
+
 // Performance Metrics Schema
 const performanceMetricsSchema = new mongoose.Schema({
     // --- Core Links & Identifiers ---
@@ -28,10 +76,8 @@ const performanceMetricsSchema = new mongoose.Schema({
     },
 
     // --- Detailed Metric Data ---
-    // Stores the full, complex object of calculated metrics.
-    // Using Mixed type for flexibility as the structure is complex and varied.
     metrics: {
-        type: mongoose.Schema.Types.Mixed,
+        type: detailedMetricsSubSchema,
         default: {}
     },
 
@@ -61,11 +107,11 @@ const performanceMetricsSchema = new mongoose.Schema({
     // --- Contextual Data ---
     // Stores the targets and weights used for this specific calculation.
     targets: {
-        type: mongoose.Schema.Types.Mixed,
+        type: targetsSubSchema,
         default: {}
     },
     weights: {
-        type: mongoose.Schema.Types.Mixed,
+        type: mweightsSubSchema,
         default: {}
     },
 
@@ -81,6 +127,6 @@ const performanceMetricsSchema = new mongoose.Schema({
 // A compound index to ensure only one performance document exists
 // per employee for a specific time period. This is crucial for the
 // upsert logic in `calculatePerformanceMetrics`.
-performanceSchema.index({ employeeRef: 1, 'period.from': 1, 'period.to': 1 }, { unique: true });
+performanceMetricsSchema.index({ employeeRef: 1, 'period.from': 1, 'period.to': 1 }, { unique: true });
 
-export const Performance = mongoose.model('Performance', performanceSchema, 'performances');
+export const Performance = mongoose.model('Performance', performanceMetricsSchema, 'performances');

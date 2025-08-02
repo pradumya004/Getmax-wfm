@@ -6,6 +6,7 @@ import { ClaimTask } from "../models/workflow/claimtasks.model.js";
 import { Performance } from "../models/performance/performance.model.js";
 import { FloatingPool } from './../models/workflow/floating-pool.model.js';
 import { createNotification } from "./notificationService.service.js";
+import { updateEffectiveTargetsForEmployee } from "./performanceService.service.js";
 import { getDateRange } from "../utils/dateUtils.js";
 import {
     ASSIGNMENT_ALGORITHMS,
@@ -431,6 +432,9 @@ export const manualAssignTask = async (taskId, employeeId, assignedBy, reason = 
             })
         ]);
 
+        // Call the update function after a successful assignment
+        await updateEffectiveTargetsForEmployee(employeeId);
+
         return {
             success: true,
             taskId,
@@ -522,6 +526,12 @@ export const reassignTask = async (taskId, newEmployeeId, reassignedBy, reason =
             Employee.findByIdAndUpdate(newEmployeeId, { $set: { lastAssignmentAt: new Date() } }),
             ...notifications
         ]);
+
+        // Call the update function for BOTH employees involved in a reassignment
+        if (oldEmployeeId) {
+            await updateEffectiveTargetsForEmployee(oldEmployeeId);
+        }
+        await updateEffectiveTargetsForEmployee(newEmployeeId);
 
         return {
             success: true,

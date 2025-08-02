@@ -1,4 +1,4 @@
-// backend/src/models/department.model.js
+// backend/src/models/organization/department.model.js
 
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
@@ -13,7 +13,7 @@ const departmentSchema = new mongoose.Schema({
     },
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'companies',
+        ref: 'Company',
         required: [true, 'Company reference is required'],
         index: true
     },
