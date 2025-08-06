@@ -76,15 +76,20 @@ Getmax-wfm
 │     │  │  ├─ designation.model.js
 │     │  │  ├─ role.model.js
 │     │  │  └─ subdepartment.model.js
+│     │  ├─ other
+│     │  │  └─ skill.model.js
 │     │  ├─ performance
+│     │  │  ├─ achievement.model.js
 │     │  │  ├─ gamification.model.js
 │     │  │  ├─ performance.model.js
 │     │  │  └─ sla-tracking.model.js
 │     │  ├─ system
 │     │  │  ├─ audit-log.model.js
 │     │  │  ├─ notes.model.js
+│     │  │  ├─ notesTemplate.model.js
 │     │  │  ├─ notifications.model.js
 │     │  │  ├─ qa-audit-model.js
+│     │  │  ├─ qaTemplate.model.js
 │     │  │  └─ system-config.model.js
 │     │  └─ workflow
 │     │     ├─ claimtasks.model.js
@@ -404,10 +409,13 @@ Getmax-wfm
 └─ shared
    └─ constants
       ├─ assignmentConstants.js
+      ├─ clientConstants.js
       ├─ gamificationConstants.js
       ├─ modelConstants.js
+      ├─ onboardingConstants.js
       ├─ performanceConstants.js
       ├─ reportConstants.js
-      └─ slaConstants.js
+      ├─ slaConstants.js
+      └─ wfmConstants.js
 
 ```

@@ -289,12 +289,30 @@ const companySchema = new mongoose.Schema({
     },
     subscriptionEndDate: {
         type: Date,
-        validate: {
-            validator: function (v) {
-                return !v || v > this.subscriptionStartDate;
+        validate: [
+            {
+                validator: function (v) {
+                    return !v || v > this.subscriptionStartDate;
+                },
+                message: 'Subscription end date must be after start date'
             },
-            message: 'Subscription end date must be after start date'
-        }
+            {
+                validator: function (v) {
+                    if (!v) return true;
+                    const minDuration = 24 * 60 * 60 * 1000; // 24 hours minimum
+                    return v.getTime() - this.subscriptionStartDate.getTime() >= minDuration;
+                },
+                message: 'Subscription duration must be at least 24 hours'
+            },
+            {
+                validator: function (v) {
+                    if (!v) return true;
+                    const maxDuration = 5 * 365 * 24 * 60 * 60 * 1000; // 5 years maximum
+                    return v.getTime() - this.subscriptionStartDate.getTime() <= maxDuration;
+                },
+                message: 'Subscription duration cannot exceed 5 years'
+            }
+        ]
     },
     paymentStatus: {
         type: String,
@@ -390,10 +408,17 @@ const companySchema = new mongoose.Schema({
 });
 
 // Indexes
-// companySchema.index({ companyId: 1 }, { unique: true });
 companySchema.index({ contactEmail: 1 }, { unique: true });
-// companySchema.index({ apiKey: 1 }, { unique: true });
 companySchema.index({ subscriptionStatus: 1, isActive: 1 });
+companySchema.index({
+    'revenueTracking.monthlyRevenue.month': 1,
+    'revenueTracking.monthlyRevenue.totalRevenue': -1
+});
+companySchema.index({
+    subscriptionPlan: 1,
+    subscriptionStatus: 1,
+    subscriptionEndDate: 1
+});
 
 // Virtuals
 companySchema.virtual('subscriptionDaysRemaining').get(function () {
@@ -555,6 +580,32 @@ companySchema.pre('save', async function (next) {
     // Calculate metrics if revenue data exists
     if (this.isModified('revenueTracking.monthlyRevenue')) {
         this.calculateMetrics();
+    }
+
+    // Enhanced subscription validation
+    if (this.isModified('subscriptionStatus') || this.isModified('subscriptionEndDate')) {
+        // Auto-expire subscription if end date has passed
+        if (this.subscriptionEndDate && this.subscriptionEndDate < new Date() &&
+            this.subscriptionStatus === 'Active') {
+            this.subscriptionStatus = 'Inactive';
+        }
+
+        // Validate subscription plan transitions
+        if (this.isModified('subscriptionPlan')) {
+            const validTransitions = {
+                'Trial': ['Basic', 'Professional', 'Enterprise'],
+                'Basic': ['Professional', 'Enterprise', 'Trial'],
+                'Professional': ['Enterprise', 'Basic'],
+                'Enterprise': ['Professional', 'Basic']
+            };
+
+            const currentPlan = this.subscriptionPlan;
+            const previousPlan = this.isNew ? null : this.constructor.findById(this._id).subscriptionPlan;
+
+            if (previousPlan && !validTransitions[previousPlan]?.includes(currentPlan)) {
+                return next(new Error(`Invalid subscription plan transition from ${previousPlan} to ${currentPlan}`));
+            }
+        }
     }
 
     next();

@@ -114,6 +114,10 @@ const claimTasksSchema = new mongoose.Schema({
                     message: 'Invalid CPT/HCPCS code format'
                 }
             },
+            cptDescription: {
+                type: String,
+                trim: true
+            },
             modifier: {
                 type: String,
                 trim: true,

@@ -89,6 +89,11 @@ const employeeSchema = new mongoose.Schema({
             enum: EMPLOYEE_CONSTANTS.GENDER_OPTIONS,
             default: "Prefer not to say"
         },
+        maritalStatus: {
+            type: String,
+            enum: EMPLOYEE_CONSTANTS.MARITAL_STATUS,
+            default: 'Prefer not to say'
+        },
         bloodGroup: {
             type: String,
             enum: EMPLOYEE_CONSTANTS.BLOOD_GROUPS,
@@ -410,6 +415,11 @@ const employeeSchema = new mongoose.Schema({
             type: Date,
             default: Date.now
         },
+        passwordHistory: [{
+            hash: String,
+            createdAt: Date
+        }],
+        lastLoginAttempt: Date,
         failedLoginAttempts: {
             type: Number,
             default: 0
@@ -422,13 +432,6 @@ const employeeSchema = new mongoose.Schema({
             type: Date,
             default: null
         },
-        // sessionTokens: [{
-        //     token: String,
-        //     createdAt: Date,
-        //     expiresAt: Date,
-        //     ipAddress: String,
-        //     userAgent: String
-        // }]
     },
 
     // Employee Status and Lifecycle
@@ -561,13 +564,47 @@ employeeSchema.virtual('age').get(function () {
 // Instance Methods
 employeeSchema.methods.comparePassword = async function (candidatePassword) {
     if (!this.authentication.passwordHash) return false;
-    return await bcrypt.compare(candidatePassword, this.authentication.passwordHash);
+    try {
+        const isMatch = await bcrypt.compare(candidatePassword, this.authentication.passwordHash);
+
+        // Update last login attempt
+        this.authentication.lastLoginAttempt = new Date();
+
+        if (isMatch) {
+            this.authentication.lastLogin = new Date();
+            this.authentication.failedLoginAttempts = 0;
+        } else {
+            this.authentication.failedLoginAttempts = (this.authentication.failedLoginAttempts || 0) + 1;
+
+            // Lock account after 5 failed attempts
+            if (this.authentication.failedLoginAttempts >= 5) {
+                this.authentication.accountLockedUntil = new Date(Date.now() + 30 * 60 * 1000);
+            }
+        }
+
+        return isMatch;
+    } catch (error) {
+        console.error('Password comparison error:', error);
+        return false;
+    }
 };
 
 employeeSchema.methods.hashPassword = async function (password) {
     const salt = await bcrypt.genSalt(12);
     this.authentication.passwordHash = await bcrypt.hash(password, salt);
     this.authentication.lastPasswordChange = new Date();
+    this.authentication.passwordHistory = this.authentication.passwordHistory || [];
+
+    // Keep last 5 password hashes to prevent reuse
+    this.authentication.passwordHistory.push({
+        hash: this.authentication.passwordHash,
+        createdAt: new Date()
+    });
+
+    // Keep only last 5 passwords
+    if (this.authentication.passwordHistory.length > 3) {
+        this.authentication.passwordHistory = this.authentication.passwordHistory.slice(-3);
+    }
 };
 
 employeeSchema.methods.updateProfileCompletion = function () {
@@ -642,6 +679,27 @@ employeeSchema.methods.canBeDeleted = async function () {
     return !hasActiveSOWs && !isManager && this.status.employeeStatus !== 'Active';
 };
 
+employeeSchema.methods.checkCircularReporting = async function (manager, visited = new Set()) {
+    if (visited.has(manager._id.toString())) {
+        return true; // Circular reference found
+    }
+
+    if (manager._id.equals(this._id)) {
+        return true; // Manager points back to this employee
+    }
+
+    visited.add(manager._id.toString());
+
+    if (manager.reportingStructure?.directManager) {
+        const nextManager = await this.constructor.findById(manager.reportingStructure.directManager);
+        if (nextManager) {
+            return await this.checkCircularReporting(nextManager, visited);
+        }
+    }
+
+    return false;
+};
+
 // Static Methods
 employeeSchema.statics.findByCompany = function (companyRef, includeInactive = false) {
     const query = { companyRef };
@@ -698,8 +756,17 @@ employeeSchema.pre('save', async function (next) {
         this.updateProfileCompletion();
 
         // Validate reporting structure 
-        if (this.reportingStructure.directManager && this.reportingStructure.directManager.equals(this._id)) {
-            return next(new Error('Employee cannot be their own manager'));
+        if (this.reportingStructure?.directManager) {
+            // Check self-reporting
+            if (this.reportingStructure.directManager.equals(this._id)) {
+                return next(new Error('Employee cannot report to themselves'));
+            }
+
+            // Check circular reporting
+            const manager = await this.constructor.findById(this.reportingStructure.directManager);
+            if (manager && await this.checkCircularReporting(manager)) {
+                return next(new Error('Circular reporting structure detected'));
+            }
         }
 
         next();
@@ -720,6 +787,58 @@ employeeSchema.post('save', function (error, doc, next) {
         }
     } else {
         next(error);
+    }
+});
+
+// Implement cascade delete operations
+employeeSchema.post('deleteOne', { document: true, query: false }, async function () {
+    try {
+        // Remove employee from SOW assignments
+        await mongoose.model('SOW').updateMany(
+            { assignedEmployees: this._id },
+            { $pull: { assignedEmployees: this._id } }
+        );
+
+        // Update reporting structure - reassign direct reports
+        const directReports = await this.constructor.find({
+            'reportingStructure.directManager': this._id
+        });
+
+        for (const report of directReports) {
+            report.reportingStructure.directManager = this.reportingStructure?.directManager || null;
+            await report.save();
+        }
+
+        // Update claim assignments to floating pool
+        await mongoose.model('ClaimTask').updateMany(
+            { assignedEmployeeRef: this._id },
+            {
+                assignedEmployeeRef: null,
+                'workflowStatus.currentStatus': 'Floating Pool',
+                'workflowStatus.lastStatusChange': new Date()
+            }
+        );
+
+        // Archive related audit logs instead of deleting
+        await mongoose.model('AuditLog').updateMany(
+            { userRef: this._id },
+            {
+                'metadata.userDeleted': true,
+                'metadata.userDeletedAt': new Date()
+            }
+        );
+
+        // Archive related notes
+        await mongoose.model('Notes').updateMany(
+            { createdBy: this._id },
+            {
+                'systemInfo.creatorDeleted': true,
+                'systemInfo.creatorDeletedAt': new Date()
+            }
+        );
+
+    } catch (error) {
+        console.error('Cascade delete error for employee:', error);
     }
 });
 

@@ -491,21 +491,93 @@ sowSchema.methods.updateActivityMetrics = function (claimsData) {
 };
 
 sowSchema.methods.canEmployeeBeAssigned = function (employee) {
-    // Check if employee's role level meets requirement
+    const validationResult = {
+        canAssign: true,
+        reason: 'Eligible for assignment',
+        warnings: [],
+        requirements: {
+            roleLevel: false,
+            skills: false,
+            experience: false,
+            availability: false,
+            workload: false
+        }
+    };
+
+    // 1. Role Level Validation
     if (employee.roleRef.roleLevel < this.resourcePlanning.requiredRoleLevel) {
-        return { canAssign: false, reason: 'Insufficient role level' };
+        validationResult.canAssign = false;
+        validationResult.reason = 'Insufficient role level';
+        validationResult.requirements.roleLevel = false;
+        return validationResult;
+    }
+    validationResult.requirements.roleLevel = true;
+
+    // 2. Skills Validation with level checking
+    const empSkills = employee.skillsAndQualifications?.technicalSkills || [];
+    const reqSkills = this.resourcePlanning?.requiredSkills || [];
+
+    for (const reqSkill of reqSkills) {
+        const empSkill = empSkills.find(s => s.skillRef?.equals(reqSkill.skillRef));
+        if (!empSkill) {
+            validationResult.canAssign = false;
+            validationResult.reason = `Missing required skill: ${reqSkill.skill}`;
+            validationResult.requirements.skills = false;
+            return validationResult;
+        }
+
+        // Check skill level adequacy
+        const skillLevels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+        const empLevel = skillLevels.indexOf(empSkill.level);
+        const reqLevel = skillLevels.indexOf(reqSkill.level);
+
+        if (empLevel < reqLevel) {
+            validationResult.warnings.push(
+                `Skill level for ${reqSkill.skill} is ${empSkill.level}, required: ${reqSkill.level}`
+            );
+        }
+    }
+    validationResult.requirements.skills = true;
+
+    // 3. Experience Validation
+    const empExperience = employee.skillsAndQualifications?.totalExperienceYears || 0;
+    const reqExperience = this.resourcePlanning?.minExperienceYears || 0;
+
+    if (empExperience < reqExperience) {
+        validationResult.canAssign = false;
+        validationResult.reason = `Insufficient experience: ${empExperience}y, required: ${reqExperience}y`;
+        validationResult.requirements.experience = false;
+        return validationResult;
+    }
+    validationResult.requirements.experience = true;
+
+    // 4. Employee Status and Availability
+    if (employee.status?.employeeStatus !== 'Active') {
+        validationResult.canAssign = false;
+        validationResult.reason = 'Employee is not in active status';
+        validationResult.requirements.availability = false;
+        return validationResult;
     }
 
-    // Check if employee has required skills
-    const empSkills = employee.skillsAndQualifications.technicalSkills.map(s => s.skill);
-    const reqSkills = this.resourcePlanning.requiredSkills.map(s => s.skill);
-    const hasRequiredSkills = reqSkills.every(skill => empSkills.includes(skill));
+    // 5. Current Workload Check
+    const activeSOWs = employee.sowAssignments?.filter(a => a.isActive)?.length || 0;
+    const maxSOWs = employee.roleRef?.maxConcurrentSOWs || 3;
 
-    if (!hasRequiredSkills) {
-        return { canAssign: false, reason: 'Missing required skills' };
+    if (activeSOWs >= maxSOWs) {
+        validationResult.canAssign = false;
+        validationResult.reason = `Employee has reached maximum SOW assignments (${activeSOWs}/${maxSOWs})`;
+        validationResult.requirements.workload = false;
+        return validationResult;
+    }
+    validationResult.requirements.workload = true;
+
+    // 6. Department Alignment Check
+    if (this.serviceDetails?.departmentRestriction &&
+        !this.serviceDetails.departmentRestriction.includes(employee.departmentRef)) {
+        validationResult.warnings.push('Employee department may not be optimal for this SOW');
     }
 
-    return { canAssign: true, reason: 'Eligible for assignment' };
+    return validationResult;
 };
 
 // ** PRE-SAVE MIDDLEWARE **
@@ -515,11 +587,35 @@ sowSchema.pre('save', function (next) {
         this.volumeForecasting.expectedMonthlyVolume = this.volumeForecasting.expectedDailyVolume * 22;
     }
 
-    // Validate priority weights sum to 1
-    const { agingWeight, payerWeight, denialWeight } = this.allocationConfig.priorityFormula;
-    const totalWeight = agingWeight + payerWeight + denialWeight;
-    if (Math.abs(totalWeight - 1) > 0.01) {
-        return next(new Error('Priority weights must sum to 1.0'));
+    if (this.allocationConfig?.priorityFormula) {
+        const { agingWeight, payerWeight, denialWeight } = this.allocationConfig.priorityFormula;
+
+        // Validate individual weights
+        if (agingWeight < 0 || agingWeight > 1) {
+            return next(new Error('Aging weight must be between 0 and 1'));
+        }
+        if (payerWeight < 0 || payerWeight > 1) {
+            return next(new Error('Payer weight must be between 0 and 1'));
+        }
+        if (denialWeight < 0 || denialWeight > 1) {
+            return next(new Error('Denial weight must be between 0 and 1'));
+        }
+
+        // Validate sum equals 1
+        const totalWeight = agingWeight + payerWeight + denialWeight;
+        if (Math.abs(totalWeight - 1) > 0.01) {
+            return next(new Error('Priority weights must sum to 1.0'));
+        }
+
+        // Business logic validation - no weight should be too dominant
+        if (agingWeight > 0.7 || payerWeight > 0.7 || denialWeight > 0.7) {
+            return next(new Error('No single priority weight should exceed 0.7 (70%)'));
+        }
+
+        // Ensure minimum weight for aging (critical for workflow)
+        if (agingWeight < 0.2) {
+            return next(new Error('Aging weight must be at least 0.2 (20%) for proper workflow management'));
+        }
     }
 
     // Set lastModifiedAt

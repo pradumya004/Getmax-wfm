@@ -222,8 +222,22 @@ const clientSchema = new mongoose.Schema({
             },
             // Encrypted credentials - NEVER store in plain text
             encryptedCredentials: {
-                type: String, // Will store encrypted JSON
-                select: false // Never return in queries
+                encrypted: {
+                    type: String,
+                    select: false
+                },
+                salt: {
+                    type: String,
+                    select: false
+                },
+                iv: {
+                    type: String,
+                    select: false
+                },
+                authTag: {
+                    type: String,
+                    select: false
+                }
             },
             testEndpoint: {
                 type: String,
@@ -483,20 +497,52 @@ const clientSchema = new mongoose.Schema({
 // ** INDEXES FOR PERFORMANCE **
 clientSchema.index({ companyRef: 1, 'status.clientStatus': 1 });
 clientSchema.index({ 'clientInfo.clientType': 1, 'systemInfo.isActive': 1 });
-clientSchema.index({ 'integrationStrategy.workflowType': 1 });
-clientSchema.index({ 'integrationStrategy.ehrPmSystem.systemName': 1 });
-clientSchema.index({ 'status.onboardingStatus': 1 });
 
-// Compound indexes for complex queries
+// Client lifecycle
 clientSchema.index({
     companyRef: 1,
     'status.clientStatus': 1,
     'systemInfo.isActive': 1
 });
 
+// Onboarding workflow
 clientSchema.index({
+    companyRef: 1,
+    'status.onboardingStatus': 1,
+    'status.lastActivityDate': -1
+});
+
+// Integration queries with company scope
+clientSchema.index({
+    companyRef: 1,
     'integrationStrategy.workflowType': 1,
-    'integrationStrategy.ehrPmSystem.systemName': 1
+    'systemInfo.isActive': 1
+});
+
+clientSchema.index({
+    companyRef: 1,
+    'integrationStrategy.ehrPmSystem.systemName': 1,
+    'systemInfo.isActive': 1
+});
+
+// Financial reporting
+clientSchema.index({
+    companyRef: 1,
+    'financialInfo.totalRevenueGenerated': -1,
+    'status.clientStatus': 1
+});
+
+// Text search
+clientSchema.index({
+    'clientInfo.clientName': 'text',
+    'clientInfo.legalName': 'text'
+});
+
+// Activity tracking
+clientSchema.index({
+    companyRef: 1,
+    'status.lastActivityDate': -1,
+    'systemInfo.isActive': 1
 });
 
 // ** VIRTUAL FIELDS **
@@ -595,24 +641,55 @@ clientSchema.methods.canStartSOW = function () {
 clientSchema.methods.encryptCredentials = function (credentials) {
     const algorithm = 'aes-256-gcm';
     const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+
+    // Generate secure key from secret using scrypt
+    const salt = crypto.randomBytes(16);
+    const key = crypto.scryptSync(secretKey, salt, 32);
+
+    // Generate random IV for each encryption
     const iv = crypto.randomBytes(16);
 
-    const cipher = crypto.createCipher(algorithm, secretKey);
+    // Create cipher with proper GCM algorithm
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+
     let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    return encrypted;
+    // Get authentication tag
+    const tag = cipher.getAuthTag();
+
+    // Return encrypted credentials
+    return {
+        encrypted: encrypted,
+        iv: iv.toString('hex'),
+        tag: tag.toString('hex'),
+        salt: salt.toString('hex')
+    };
 };
 
 clientSchema.methods.decryptCredentials = function () {
-    if (!this.integrationStrategy.apiConfig.encryptedCredentials) return null;
+    const encryptedData = this.integrationStrategy?.apiConfig?.encryptedCredentials;
+    if (!encryptedData) return null;
 
     try {
         const algorithm = 'aes-256-gcm';
         const secretKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
 
-        const decipher = crypto.createDecipher(algorithm, secretKey);
-        let decrypted = decipher.update(this.integrationStrategy.apiConfig.encryptedCredentials, 'hex', 'utf8');
+        // Parse the encrypted data structure
+        const { encrypted, salt, iv, authTag } = typeof encryptedData === 'string'
+            ? JSON.parse(encryptedData)
+            : encryptedData;
+
+        // Recreate the key using stored salt
+        const key = crypto.scryptSync(secretKey, Buffer.from(salt, 'hex'), 32);
+
+        // Create decipher with proper GCM mode
+        const decipher = crypto.createDecipherGCM(algorithm, key, Buffer.from(iv, 'hex'));
+
+        // Set the authentication tag
+        decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
 
         return JSON.parse(decrypted);

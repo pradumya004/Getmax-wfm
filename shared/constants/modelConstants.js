@@ -88,6 +88,7 @@ export const EMPLOYEE_CONSTANTS = {
     TERMINATION_TYPES: ["Voluntary", "Retirement", "Contract End", "Layoff"],
     GENDER_OPTIONS: ["Male", "Female", "Other", "Prefer not to say"],
     BLOOD_GROUPS: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+    MARITAL_STATUS: ["Single", "Married", "Divorced", "Separated", "Widowed", "Prefer not to say"],
 };
 
 // VALIDATION PATTERNS

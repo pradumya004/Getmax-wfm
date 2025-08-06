@@ -12,7 +12,7 @@ const notesSchema = new mongoose.Schema({
         immutable: true,
         index: true
     },
-    
+
     // ** MAIN RELATIONSHIPS **
     companyRef: {
         type: mongoose.Schema.Types.ObjectId,
@@ -52,19 +52,41 @@ const notesSchema = new mongoose.Schema({
             enum: [
                 'Task Note', 'QA Note', 'Follow-up Note', 'Payment Note',
                 'Denial Note', 'Appeal Note', 'Call Note', 'Email Note',
-                'System Note', 'Escalation Note', 'Resolution Note'
+                'System Note', 'Escalation Note', 'Resolution Note',
+                'Authorization Note', 'Claim Review Note', 'Provider Note'
             ],
             required: [true, 'Note type is required'],
-            index: true
+            index: true,
+            validate: {
+                validator: function (v) {
+                    // Business logic: System notes can only be created by system
+                    if (v === 'System Note' && !this.noteInfo?.isSystemGenerated) {
+                        return false;
+                    }
+                    return true;
+                },
+                message: 'System notes can only be created by system processes'
+            }
         },
         noteSubType: {
             type: String,
             trim: true,
-            maxlength: [50, 'Note sub-type cannot exceed 50 characters']
+            maxlength: [50, 'Note sub-type cannot exceed 50 characters'],
+            validate: {
+                validator: function (v) {
+                    // Require sub-type for certain note types
+                    const requiresSubType = ['Call Note', 'Email Note', 'Denial Note', 'Appeal Note'];
+                    if (requiresSubType.includes(this.noteInfo?.noteType) && !v) {
+                        return false;
+                    }
+                    return true;
+                },
+                message: 'Sub-type is required for this note type'
+            }
         },
         priority: {
             type: String,
-            enum: ['Low', 'Normal', 'High', 'Critical'],
+            enum: ['Low', 'Normal', 'High', 'Critical', 'Emergency'],
             default: 'Normal',
             index: true
         },
@@ -79,7 +101,18 @@ const notesSchema = new mongoose.Schema({
         },
         isClientVisible: {
             type: Boolean,
-            default: true
+            default: true,
+            required: [true, 'Client visibility flag is required'],
+            validate: {
+                validator: function (v) {
+                    // Private notes cannot be client visible
+                    if (this.noteInfo?.isPrivate && v) {
+                        return false;
+                    }
+                    return true;
+                },
+                message: 'Private notes cannot be client visible'
+            }
         }
     },
 
@@ -161,55 +194,67 @@ const notesSchema = new mongoose.Schema({
                     'Wrong Number', 'Disconnected', 'Call Back Requested'
                 ]
             },
-            contactedPerson: {
-                name: {
-                    type: String,
-                    trim: true
-                },
-                role: {
-                    type: String,
-                    trim: true
-                },
-                department: {
-                    type: String,
-                    trim: true
-                }
-            }
+            callQuality: {
+                type: String,
+                enum: ['Excellent', 'Good', 'Fair', 'Poor'],
+                default: 'Good'
+            },
+            recordingAvailable: {
+                type: Boolean,
+                default: false
+            },
+            recordingId: String,
+            transferredTo: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee'
+            },
         },
         // For email notes
         emailDetails: {
-            fromAddress: {
+            emailSubject: {
                 type: String,
                 trim: true,
-                lowercase: true
+                maxlength: [200, 'Email subject cannot exceed 200 characters']
             },
-            toAddress: {
+            emailDirection: {
                 type: String,
-                trim: true,
-                lowercase: true
+                enum: ['Inbound', 'Outbound'],
+                default: 'Outbound'
             },
-            subject: {
+            recipientEmails: [{
                 type: String,
-                trim: true
+                validate: {
+                    validator: function (v) {
+                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+                    },
+                    message: 'Invalid email format'
+                }
+            }],
+            senderEmail: {
+                type: String,
+                validate: {
+                    validator: function (v) {
+                        return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+                    },
+                    message: 'Invalid sender email format'
+                }
+            },
+            emailDeliveryStatus: {
+                type: String,
+                enum: ['Sent', 'Delivered', 'Bounced', 'Failed', 'Pending'],
+                default: 'Pending'
             },
             hasAttachments: {
                 type: Boolean,
                 default: false
             },
+            attachmentCount: {
+                type: Number,
+                min: [0, 'Attachment count cannot be negative'],
+                default: 0
+            },
             emailSentDate: Date,
             emailReceivedDate: Date
-        },
-        // For written correspondence
-        correspondenceDetails: {
-            correspondenceType: {
-                type: String,
-                enum: ['Letter', 'Fax', 'Portal Message', 'Other']
-            },
-            recipientName: String,
-            recipientAddress: String,
-            sentDate: Date,
-            receivedDate: Date,
-            trackingNumber: String
         }
     },
 
@@ -221,6 +266,11 @@ const notesSchema = new mongoose.Schema({
             index: true
         },
         actionItemsList: [{
+            actionId: {
+                type: String,
+                default: () => `ACT-${uuidv4().substring(0, 8).toUpperCase()}`,
+                unique: true
+            },
             description: {
                 type: String,
                 required: true,
@@ -236,12 +286,12 @@ const notesSchema = new mongoose.Schema({
             },
             priority: {
                 type: String,
-                enum: ['Low', 'Normal', 'High', 'Critical'],
+                enum: ['Low', 'Normal', 'High', 'Critical', 'Emergency'],
                 default: 'Normal'
             },
             status: {
                 type: String,
-                enum: ['Pending', 'In Progress', 'Completed', 'Cancelled'],
+                enum: ['Pending', 'In Progress', 'Completed', 'Cancelled', 'On Hold'],
                 default: 'Pending'
             },
             completedDate: Date,
@@ -249,7 +299,26 @@ const notesSchema = new mongoose.Schema({
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Employee'
             },
-            notes: String
+            estimatedEffort: {
+                type: Number, // in hours
+                min: [0.1, 'Estimated effort must be at least 0.1 hours'],
+                max: [80, 'Estimated effort cannot exceed 80 hours']
+            },
+            actualEffort: {
+                type: Number, // in hours
+                min: [0, 'Actual effort cannot be negative']
+            },
+            notes: {
+                type: String,
+                trim: true,
+                maxlength: [1000, 'Action item notes cannot exceed 1000 characters']
+            },
+            escalationLevel: {
+                type: Number,
+                min: [0, 'Escalation level cannot be negative'],
+                max: [5, 'Escalation level cannot exceed 5'],
+                default: 0
+            }
         }],
         followUpRequired: {
             type: Boolean,
@@ -273,7 +342,12 @@ const notesSchema = new mongoose.Schema({
             type: Boolean,
             default: false
         },
-        followUpCompletedDate: Date
+        followUpCompletedDate: Date,
+        followUpNotes: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Follow-up notes cannot exceed 1000 characters']
+        }
     },
 
     // ** STATUS & WORKFLOW IMPACT **
@@ -286,7 +360,7 @@ const notesSchema = new mongoose.Schema({
             type: String,
             enum: [
                 'New', 'Assigned', 'In Progress', 'Pending Info', 'On Hold',
-                'Pending Payment', 'Appealed', 'Denied', 'Completed', 
+                'Pending Payment', 'Appealed', 'Denied', 'Completed',
                 'QA Review', 'QA Failed', 'Closed'
             ]
         },
@@ -369,30 +443,31 @@ const notesSchema = new mongoose.Schema({
             trim: true,
             lowercase: true
         }],
-        denialReasonCode: {
-            type: String,
-            trim: true
-        },
-        denialReason: {
-            type: String,
-            trim: true
-        },
-        rootCauseCategory: {
+        customClassifications: [{
+            classificationName: {
+                type: String,
+                required: true,
+                trim: true
+            },
+            classificationValue: {
+                type: String,
+                required: true,
+                trim: true
+            }
+        }],
+        businessProcess: {
             type: String,
             enum: [
-                'Provider Error', 'Payer Error', 'Patient Information', 
-                'Authorization Issue', 'Billing Error', 'System Error',
-                'Process Issue', 'Other'
-            ]
+                'Claims Processing', 'Prior Authorization', 'Appeals Management',
+                'Payment Posting', 'Denial Management', 'Quality Assurance',
+                'Customer Service', 'Provider Enrollment', 'Compliance Review'
+            ],
+            index: true
         }
     },
 
     // ** ATTACHMENTS & REFERENCES **
     attachments: {
-        hasAttachments: {
-            type: Boolean,
-            default: false
-        },
         attachmentsList: [{
             fileName: {
                 type: String,
@@ -536,6 +611,34 @@ const notesSchema = new mongoose.Schema({
             type: Number,
             default: 0,
             min: [0, 'View count cannot be negative']
+        },
+        processingStatus: {
+            type: String,
+            enum: ['Draft', 'Pending Review', 'Under Review', 'Approved', 'Published', 'Archived'],
+            default: 'Draft',
+            index: true
+        },
+        qualityScore: {
+            type: Number,
+            min: [0, 'Quality score cannot be negative'],
+            max: [100, 'Quality score cannot exceed 100'],
+            default: null
+        },
+        completenessScore: {
+            type: Number,
+            min: [0, 'Completeness score cannot be negative'],
+            max: [100, 'Completeness score cannot exceed 100'],
+            default: null
+        },
+        wordCount: {
+            type: Number,
+            default: 0,
+            min: [0, 'Word count cannot be negative']
+        },
+        characterCount: {
+            type: Number,
+            default: 0,
+            min: [0, 'Character count cannot be negative']
         }
     },
 
@@ -550,7 +653,47 @@ const notesSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Employee'
         },
-        lastAccessedAt: Date
+        lastAccessedAt: Date,
+        accessHistory: [{
+            accessedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Employee',
+                required: true
+            },
+            accessedAt: {
+                type: Date,
+                default: Date.now
+            },
+            accessType: {
+                type: String,
+                enum: ['View', 'Edit', 'Delete', 'Export', 'Print'],
+                required: true
+            },
+            ipAddress: String,
+            userAgent: String
+        }],
+        complianceInfo: {
+            isHIPAACompliant: {
+                type: Boolean,
+                default: true
+            },
+            dataClassification: {
+                type: String,
+                enum: ['Public', 'Internal', 'Confidential', 'Restricted'],
+                default: 'Internal'
+            },
+            retentionPeriod: {
+                type: Number, // in days
+                default: 2555, // 7 years
+                min: [365, 'Retention period must be at least 1 year']
+            },
+            retentionExpiryDate: {
+                type: Date,
+                default: function () {
+                    return new Date(Date.now() + (this.auditInfo?.complianceInfo?.retentionPeriod || 2555) * 24 * 60 * 60 * 1000);
+                }
+            }
+        }
     }
 }, {
     timestamps: true,
@@ -584,28 +727,28 @@ notesSchema.index({
 });
 
 // ** VIRTUAL FIELDS **
-notesSchema.virtual('isOverdue').get(function() {
+notesSchema.virtual('isOverdue').get(function () {
     if (!this.actionItems.followUpRequired || !this.actionItems.followUpDate) {
         return false;
     }
     return new Date() > this.actionItems.followUpDate && !this.actionItems.followUpCompleted;
 });
 
-notesSchema.virtual('wordCount').get(function() {
-    const freeFormWords = this.structuredContent.freeFormNote ? 
+notesSchema.virtual('wordCount').get(function () {
+    const freeFormWords = this.structuredContent.freeFormNote ?
         this.structuredContent.freeFormNote.split(/\s+/).length : 0;
-    
+
     const structuredWords = this.structuredContent.structuredFields.reduce((count, field) => {
         if (typeof field.fieldValue === 'string') {
             return count + field.fieldValue.split(/\s+/).length;
         }
         return count;
     }, 0);
-    
+
     return freeFormWords + structuredWords;
 });
 
-notesSchema.virtual('hasOutstandingActions').get(function() {
+notesSchema.virtual('hasOutstandingActions').get(function () {
     return this.actionItems.actionItemsList.some(
         action => action.status === 'Pending' || action.status === 'In Progress'
     );
@@ -626,23 +769,23 @@ notesSchema.virtual('author', {
 });
 
 // ** STATIC METHODS **
-notesSchema.statics.findByClaimId = function(claimRef, latestOnly = true) {
+notesSchema.statics.findByClaimId = function (claimRef, latestOnly = true) {
     const query = {
         claimRef,
         'systemInfo.isActive': true,
         'systemInfo.isDeleted': false
     };
-    
+
     if (latestOnly) {
         query['versionInfo.isLatestVersion'] = true;
     }
-    
+
     return this.find(query)
         .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
         .sort({ createdAt: -1 });
 };
 
-notesSchema.statics.findByNoteType = function(companyRef, noteType, limit = 50) {
+notesSchema.statics.findByNoteType = function (companyRef, noteType, limit = 50) {
     return this.find({
         companyRef,
         'noteInfo.noteType': noteType,
@@ -650,13 +793,13 @@ notesSchema.statics.findByNoteType = function(companyRef, noteType, limit = 50) 
         'systemInfo.isDeleted': false,
         'versionInfo.isLatestVersion': true
     })
-    .populate('claimRef', 'claimId workflowStatus.currentStatus')
-    .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
-    .sort({ createdAt: -1 })
-    .limit(limit);
+        .populate('claimRef', 'claimId workflowStatus.currentStatus')
+        .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
+        .sort({ createdAt: -1 })
+        .limit(limit);
 };
 
-notesSchema.statics.findActionItemsDue = function(companyRef, assignedTo = null) {
+notesSchema.statics.findActionItemsDue = function (companyRef, assignedTo = null) {
     const query = {
         companyRef,
         'actionItems.hasActionItems': true,
@@ -665,48 +808,48 @@ notesSchema.statics.findActionItemsDue = function(companyRef, assignedTo = null)
         'actionItems.followUpDate': { $lte: new Date() },
         'systemInfo.isActive': true
     };
-    
+
     if (assignedTo) {
         query['actionItems.followUpAssignedTo'] = assignedTo;
     }
-    
+
     return this.find(query)
         .populate('claimRef', 'claimId workflowStatus.currentStatus')
         .populate('actionItems.followUpAssignedTo', 'personalInfo.firstName personalInfo.lastName')
         .sort({ 'actionItems.followUpDate': 1 });
 };
 
-notesSchema.statics.findPendingApproval = function(companyRef, approver = null) {
+notesSchema.statics.findPendingApproval = function (companyRef, approver = null) {
     const query = {
         companyRef,
         'approvalInfo.approvalStatus': 'Pending',
         'systemInfo.isActive': true
     };
-    
+
     if (approver) {
         query['approvalInfo.approver'] = approver;
     }
-    
+
     return this.find(query)
         .populate('claimRef', 'claimId workflowStatus.currentStatus')
         .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
         .sort({ createdAt: 1 });
 };
 
-notesSchema.statics.findByCategory = function(companyRef, category, fromDate = null, toDate = null) {
+notesSchema.statics.findByCategory = function (companyRef, category, fromDate = null, toDate = null) {
     const query = {
         companyRef,
         'categorization.primaryCategory': category,
         'systemInfo.isActive': true,
         'versionInfo.isLatestVersion': true
     };
-    
+
     if (fromDate || toDate) {
         query.createdAt = {};
         if (fromDate) query.createdAt.$gte = new Date(fromDate);
         if (toDate) query.createdAt.$lte = new Date(toDate);
     }
-    
+
     return this.find(query)
         .populate('claimRef', 'claimId financialInfo.outstandingBalance')
         .populate('createdBy', 'personalInfo.firstName personalInfo.lastName')
@@ -714,7 +857,7 @@ notesSchema.statics.findByCategory = function(companyRef, category, fromDate = n
 };
 
 // ** INSTANCE METHODS **
-notesSchema.methods.addActionItem = function(description, assignedTo, dueDate, priority = 'Normal') {
+notesSchema.methods.addActionItem = function (description, assignedTo, dueDate, priority = 'Normal') {
     this.actionItems.hasActionItems = true;
     this.actionItems.actionItemsList.push({
         description,
@@ -723,7 +866,7 @@ notesSchema.methods.addActionItem = function(description, assignedTo, dueDate, p
         priority,
         status: 'Pending'
     });
-    
+
     // Set follow-up if not already set
     if (!this.actionItems.followUpRequired && dueDate) {
         this.actionItems.followUpRequired = true;
@@ -732,19 +875,19 @@ notesSchema.methods.addActionItem = function(description, assignedTo, dueDate, p
     }
 };
 
-notesSchema.methods.completeActionItem = function(actionItemId, completedBy, notes = '') {
+notesSchema.methods.completeActionItem = function (actionItemId, completedBy, notes = '') {
     const actionItem = this.actionItems.actionItemsList.id(actionItemId);
     if (actionItem) {
         actionItem.status = 'Completed';
         actionItem.completedDate = new Date();
         actionItem.completedBy = completedBy;
         actionItem.notes = notes;
-        
+
         // Check if all action items are completed
         const allCompleted = this.actionItems.actionItemsList.every(
             item => item.status === 'Completed' || item.status === 'Cancelled'
         );
-        
+
         if (allCompleted) {
             this.actionItems.followUpCompleted = true;
             this.actionItems.followUpCompletedDate = new Date();
@@ -752,53 +895,53 @@ notesSchema.methods.completeActionItem = function(actionItemId, completedBy, not
     }
 };
 
-notesSchema.methods.requestApproval = function(approver, reason = '') {
+notesSchema.methods.requestApproval = function (approver, reason = '') {
     this.approvalInfo.requiresApproval = true;
     this.approvalInfo.approvalStatus = 'Pending';
     this.approvalInfo.approver = approver;
     this.approvalInfo.approvalNotes = reason;
 };
 
-notesSchema.methods.approve = function(approver, notes = '') {
+notesSchema.methods.approve = function (approver, notes = '') {
     this.approvalInfo.approvalStatus = 'Approved';
     this.approvalInfo.approver = approver;
     this.approvalInfo.approvedDate = new Date();
     this.approvalInfo.approvalNotes = notes;
 };
 
-notesSchema.methods.reject = function(approver, reason) {
+notesSchema.methods.reject = function (approver, reason) {
     this.approvalInfo.approvalStatus = 'Rejected';
     this.approvalInfo.approver = approver;
     this.approvalInfo.rejectionReason = reason;
     this.approvalInfo.approvedDate = new Date();
 };
 
-notesSchema.methods.createRevision = function(revisedBy, reason, changes) {
+notesSchema.methods.createRevision = function (revisedBy, reason, changes) {
     // Mark current version as not latest
     this.versionInfo.isLatestVersion = false;
-    
+
     // Add to edit history
     this.versionInfo.editHistory.push({
         editedBy: revisedBy,
         editReason: reason,
         changesDescription: changes
     });
-    
+
     // Create new version
     const newNote = this.toObject();
     delete newNote._id;
     delete newNote.noteId;
-    
+
     newNote.versionInfo.version += 1;
     newNote.versionInfo.isLatestVersion = true;
     newNote.versionInfo.parentNoteId = this._id;
     newNote.auditInfo.lastModifiedBy = revisedBy;
     newNote.auditInfo.lastModifiedAt = new Date();
-    
+
     return new this.constructor(newNote);
 };
 
-notesSchema.methods.softDelete = function(deletedBy, reason) {
+notesSchema.methods.softDelete = function (deletedBy, reason) {
     this.systemInfo.isDeleted = true;
     this.systemInfo.isActive = false;
     this.systemInfo.deletedBy = deletedBy;
@@ -806,58 +949,91 @@ notesSchema.methods.softDelete = function(deletedBy, reason) {
     this.systemInfo.deletionReason = reason;
 };
 
-notesSchema.methods.generateSummary = function(maxLength = 200) {
-    let summary = '';
-    
-    // Start with free-form note
-    if (this.structuredContent.freeFormNote) {
-        summary = this.structuredContent.freeFormNote;
-    }
-    
-    // Add key structured fields
-    const keyFields = this.structuredContent.structuredFields
-        .filter(field => field.isRequired || ['outcome', 'result', 'action'].some(keyword => 
-            field.fieldName.toLowerCase().includes(keyword)
-        ))
-        .map(field => `${field.fieldLabel}: ${field.fieldValue}`)
-        .join('; ');
-    
-    if (keyFields) {
-        summary = summary ? `${summary}. ${keyFields}` : keyFields;
-    }
-    
-    // Truncate to max length
-    if (summary.length > maxLength) {
-        summary = summary.substring(0, maxLength - 3) + '...';
-    }
-    
-    this.structuredContent.summary = summary;
-    return summary;
-};
-
 // ** PRE-SAVE MIDDLEWARE **
-notesSchema.pre('save', function(next) {
-    // Generate summary if not provided
-    if (!this.structuredContent.summary) {
-        this.generateSummary();
+notesSchema.pre('save', function (next) {
+    try {
+        // Calculate word and character counts
+        let totalText = this.structuredContent?.freeFormNote || '';
+
+        if (this.structuredContent?.structuredFields) {
+            totalText += ' ' + this.structuredContent.structuredFields
+                .map(field => typeof field.fieldValue === 'string' ? field.fieldValue : '')
+                .join(' ');
+        }
+
+        this.systemInfo.wordCount = totalText.trim().split(/\s+/).filter(word => word.length > 0).length;
+        this.systemInfo.characterCount = totalText.length;
+
+        // Calculate completion percentage
+        let completionScore = 0;
+        let totalFields = 0;
+
+        // Required fields scoring
+        const requiredChecks = [
+            () => !!this.noteInfo?.noteType,
+            () => !!this.noteInfo?.priority,
+            () => !!this.structuredContent?.summary,
+            () => !!this.categorization?.primaryCategory,
+            () => this.structuredContent?.freeFormNote?.length > 10 ||
+                (this.structuredContent?.structuredFields?.length || 0) > 0
+        ];
+
+        totalFields = requiredChecks.length;
+        completionScore = requiredChecks.filter(check => check()).length;
+
+        // Structured fields completion
+        if (this.structuredContent?.structuredFields?.length > 0) {
+            const requiredFields = this.structuredContent.structuredFields.filter(f => f.isRequired);
+            const completedRequired = requiredFields.filter(f =>
+                f.fieldValue !== null && f.fieldValue !== undefined && f.fieldValue !== ''
+            );
+
+            if (requiredFields.length > 0) {
+                totalFields += requiredFields.length;
+                completionScore += completedRequired.length;
+            }
+        }
+
+        this.structuredContent.completionPercentage = totalFields > 0 ?
+            Math.round((completionScore / totalFields) * 100) : 0;
+        this.structuredContent.isComplete = this.structuredContent.completionPercentage >= 80;
+
+        // Auto-generate summary if not provided
+        if (!this.structuredContent?.summary && totalText.length > 0) {
+            this.structuredContent.summary = totalText.substring(0, 200) +
+                (totalText.length > 200 ? '...' : '');
+        }
+
+        // Validate business rules
+        if (this.noteInfo?.isPrivate && this.noteInfo?.isClientVisible) {
+            return next(new Error('Private notes cannot be client visible'));
+        }
+
+        // Set audit info
+        if (this.isModified() && !this.isNew) {
+            this.auditInfo.lastModifiedAt = new Date();
+        }
+
+        // Validate action items due dates
+        if (this.actionItems?.hasActionItems && this.actionItems?.actionItemsList?.length > 0) {
+            for (const action of this.actionItems.actionItemsList) {
+                if (action.status === 'Completed' && !action.completedDate) {
+                    action.completedDate = new Date();
+                }
+                if (action.status === 'Completed' && !action.completedBy) {
+                    action.completedBy = this.auditInfo?.lastModifiedBy || this.createdBy;
+                }
+            }
+        }
+
+        next();
+    } catch (error) {
+        next(error);
     }
-    
-    // Set lastModifiedAt if this is an update
-    if (this.isModified() && !this.isNew) {
-        this.auditInfo.lastModifiedAt = new Date();
-    }
-    
-    // Validate structured fields if template is specified
-    if (this.structuredContent.templateId) {
-        // This would typically validate against the template schema
-        // Implementation would depend on your NotesTemplate model
-    }
-    
-    next();
 });
 
 // ** PRE-REMOVE MIDDLEWARE **
-notesSchema.pre('remove', function(next) {
+notesSchema.pre('remove', function (next) {
     // Prevent hard deletion - require soft delete instead
     if (!this.systemInfo.isDeleted) {
         return next(new Error('Use softDelete() method instead of remove()'));
