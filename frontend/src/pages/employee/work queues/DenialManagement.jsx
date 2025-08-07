@@ -6,7 +6,7 @@ import { AlertTriangle, BarChart3, Edit, Eye, Trash2, Download, Plus, Clock, Shi
 // Common Components
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { ConfirmDialog } from "../../../components/common/ConfirmDialog.jsx";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { SearchBar } from "../../../components/common/SearchBar.jsx";
 import { ImportButton } from "../../../components/common/ImportButton.jsx";

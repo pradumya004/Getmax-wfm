@@ -19,7 +19,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";

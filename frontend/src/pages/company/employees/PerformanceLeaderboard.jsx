@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Trophy, Star, TrendingUp, Award, Filter } from "lucide-react";
 import { Card } from "../../../components/ui/Card.jsx";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { Select } from "../../../components/ui/Select.jsx";
 import { employeeAPI } from "../../../api/employee.api.js";
 import { useApi } from "../../../hooks/useApi.jsx";

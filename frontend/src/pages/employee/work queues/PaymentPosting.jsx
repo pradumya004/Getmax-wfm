@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { DollarSign, FileSpreadsheet, CheckCircle, AlertCircle, TrendingUp, Edit, Eye, Trash2, BarChart3, Plus } from "lucide-react";
 
 // Common Components
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { ImportButton } from "../../../components/common/ImportButton.jsx";

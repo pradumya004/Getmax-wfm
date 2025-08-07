@@ -11,7 +11,7 @@ import {
   Star,
 } from "lucide-react";
 import { Card } from "../../components/ui/Card.jsx";
-import StatCard from "../../components/common/StatCard.jsx";
+import {StatCard} from "../../components/common/StatCard.jsx";
 import { Badge } from "../../components/ui/Badge.jsx";
 import { employeeAPI } from "../../api/employee.api.js";
 import { useApi } from "../../hooks/useApi.jsx";

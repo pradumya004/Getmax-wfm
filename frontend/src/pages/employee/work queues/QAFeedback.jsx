@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { CheckCircle, Star, AlertCircle, TrendingUp, Eye, Check, BarChart3 } from "lucide-react";
 
 // Common Components
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { ConfirmDialog } from "../../../components/common/ConfirmDialog.jsx";

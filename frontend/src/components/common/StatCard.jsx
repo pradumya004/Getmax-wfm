@@ -6,7 +6,7 @@ import { Card } from "../ui/Card.jsx";
 import { getTheme } from "../../lib/theme.js";
 import { formatCurrency } from "../../lib/utils.js";
 
-const StatCard = ({
+export const  StatCard = ({
   title,
   value,
   change,
@@ -62,5 +62,3 @@ const StatCard = ({
     </Card>
   );
 };
-
-export default StatCard;

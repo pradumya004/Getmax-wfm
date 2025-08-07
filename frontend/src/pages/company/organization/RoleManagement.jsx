@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { AddRoleModal } from "../../../components/organization/roles/AddRoleModal.jsx";
 import { ConfirmDialog } from "../../../components/common/ConfirmDialog.jsx";

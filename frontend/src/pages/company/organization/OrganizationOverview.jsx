@@ -18,7 +18,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Card } from "../../../components/ui/Card.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { getTheme } from "../../../lib/theme.js";
 import { useOrganization } from "../../../hooks/useOrganization.jsx";

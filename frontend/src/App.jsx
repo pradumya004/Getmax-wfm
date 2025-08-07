@@ -110,6 +110,8 @@ import PayerList from "./pages/payer/PayerList.jsx";
 
 // Claim Pages
 import ClaimBulkUpload from "./pages/claim/ClaimBulkUpload.jsx";
+import ClaimList from "./pages/claim/ClaimList.jsx";
+import ClaimDetail from "./pages/claim/ClaimDetail.jsx";
 
 
 // Public Pages
@@ -293,6 +295,8 @@ function App() {
             <Route path="claims">
               {/* <Route path="intake" element={<ClaimIntake />} /> */}
               <Route path="bulk" element={<ClaimBulkUpload />} />
+              <Route path="list" element={<ClaimList />} />
+              <Route path=":claimId" element={<ClaimDetail />} />
             </Route>
           </Route>
 

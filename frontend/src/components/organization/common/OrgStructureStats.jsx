@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Building, Shield, Briefcase, Users } from "lucide-react";
-import StatCard from "../../common/StatCard.jsx";
+import {StatCard} from "../../common/StatCard.jsx";
 
 export const OrgStructureStats = ({
   orgData,

@@ -15,7 +15,7 @@ import {
 import { Card } from "../../../components/ui/Card.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
-import StatCard from "../../../components/common/StatCard.jsx";
+import {StatCard} from "../../../components/common/StatCard.jsx";
 import { DataTable } from "../../../components/common/DataTable.jsx";
 import { AddDepartmentModal } from "../../../components/organization/departments/AddDepartmentModal.jsx";
 import { ConfirmDialog } from "../../../components/common/ConfirmDialog.jsx";

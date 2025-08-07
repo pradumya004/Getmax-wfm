@@ -126,8 +126,16 @@ const ClaimBulkUpload = () => {
             description: "Total amount of adjustments applied to this claim."
         },
         "priorityInfo.isDenied": { label: "Is Denied?", required: false, description: "Set to TRUE or 1 if the claim has been denied." },
-    "denialInfo.denialCode": { label: "Denial Code", required: false, description: "The reason code for the denial (e.g., CO-16)." }, // CORRECT PATH
-    "denialInfo.denialReason": { label: "Denial Reason", required: false, description: "A short description of the denial reason." }
+        "priorityInfo.denialInfo.denialCode": { 
+            label: "Denial Code", 
+            required: false, 
+            description: "The reason code for the denial (e.g., CO-16)." 
+        },
+        "priorityInfo.denialInfo.denialReason": { 
+            label: "Denial Reason", 
+            required: false, 
+            description: "A short description of the denial reason." 
+        }
     };
 
     const requiredFields = Object.keys(claimFieldMappings).filter(key => claimFieldMappings[key].required);
