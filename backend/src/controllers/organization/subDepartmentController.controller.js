@@ -1,6 +1,6 @@
 // backend/src/controllers/organization/subDepartmentController.controller.js
 
-import { SubDepartment } from "../../models/subdepartment.model.js";
+import { SubDepartment } from "../../models/organization/subdepartment.model.js";
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';

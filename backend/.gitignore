@@ -31,13 +31,23 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
-# .env
+.env
+.env.local
+.env.staging
+.env.production
 
-# vercel
-.vercel
+# logs
+logs
+*.log
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# uploads
+public/uploads/*
+!public/uploads/.gitkeep
 
-*/frontend
+# temp files
+temp/
+*.tmp
+
+# OS generated files
+.DS_Store
+Thumbs.db

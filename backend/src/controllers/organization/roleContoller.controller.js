@@ -1,7 +1,7 @@
 // backend/src/controllers/organization/roleContoller.controller.js
 
 // backend/src/controllers/organization/roleController.controller.js
-import { Role } from '../../models/role.model.js';
+import { Role } from '../../models/organization/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';

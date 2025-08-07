@@ -35,29 +35,34 @@ router.use(verifyEmployeeToken);
 // ===================
 router.post(
   '/',
+  requirePermission('client', 'Create'), verifyEmployeeToken,
   createClient
 );
 
-router.post('/bulk-upload', bulkUploadClients);
+router.post('/bulk-upload', requirePermission('client', 'Create'), verifyEmployeeToken, bulkUploadClients);
 
 
 router.get(
   '/',
+  requirePermission('client', 'View'),
   getAllClients
 );
 
 router.get(
   '/details/:id',
+  requirePermission('client', 'View'),
   getClientById
 );
 
 router.put(
   '/:id',
+  requirePermission('client', 'Full'),
   updateClient
 );
 
 router.delete(
   '/:id',
+  requirePermission('client', 'Delete'),
   deactivateClient
 );
 
@@ -66,16 +71,19 @@ router.delete(
 // ===================
 router.put(
   '/:id/integration',
+  requirePermission('client', 'Update'),
   updateIntegrationConfig
 );
 
 router.put(
   '/:id/financial',
+  requirePermission('client', 'Update'),
   updateFinancialInfo
 );
 
 router.put(
   '/:id/sync-status',
+  requirePermission('client', 'Update'),
   updateSyncStatus
 );
 
@@ -84,6 +92,7 @@ router.put(
 // ===================
 router.put(
   '/:id/agreements',
+  requirePermission('client', 'Update'),
   uploadAgreements
 );
 
@@ -92,21 +101,25 @@ router.put(
 // ===================
 router.get(
   '/ehr/:ehr',
+  requirePermission('client', 'View'),
   getClientsByEHR
 );
 
 router.get(
   '/onboarding/pending',
+  requirePermission('client', 'View'),
   getClientsNeedingOnboarding
 );
 
 router.get(
   '/active/list',
+  requirePermission('client', 'View'),
   getActiveClients
 );
 
 router.get(
   '/:id/sow-ready',
+  requirePermission('client', 'View'),
   checkSOWReadiness
 );
 
@@ -115,6 +128,7 @@ router.get(
 // ===================
 router.get(
   '/:id/decrypted-creds',
+  requirePermission('client', 'ManageCredentials'), // or use requireRoleLevel(9)
   getDecryptedCredentials
 );
 

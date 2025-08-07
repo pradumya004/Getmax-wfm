@@ -1,7 +1,7 @@
 // backend/src/controllers/payer.controller.js
 
 import axios from 'axios';
-import { Payer } from '../../models/payer-model.js';
+import { Payer } from '../../models/data/payer.model.js';
 import { transformClaimMDPayer } from '../../scripts/adapters/claimmdAdapter.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -62,6 +62,7 @@ export const syncClaimMDPayers = async (req, res) => {
   }
 };
 
+
 export const getAllPayers = asyncHandler(async (req, res) => {
   const companyRef = req.company?._id;
   const { page = 1, limit = 50, sortBy = 'payerInfo.payerName', sortOrder = 'asc', ...queryParams } = req.query;
@@ -81,8 +82,8 @@ export const getAllPayers = asyncHandler(async (req, res) => {
     .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
-    // .select('...') // <-- THIS LINE HAS BEEN REMOVED
-    .lean();
+    .select('payerInfo.payerName payerInfo.payerType performanceMetrics.priorityScore systemConfig.isPreferred') // Select only needed fields
+    .lean(); // Use .lean() for faster read-only queries
 
   const totalPayers = await Payer.countDocuments(filter);
 

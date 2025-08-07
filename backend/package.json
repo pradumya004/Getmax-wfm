@@ -5,7 +5,11 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node src/scripts/seedData.js",
+    "migrate": "node src/scripts/migration.js",
+    "cleanup": "node src/scripts/cleanup.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +24,8 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.1.5",
+    "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.12.9",
     "mongoose": "^8.16.0",
@@ -27,6 +33,7 @@
     "nodemailer": "^7.0.4",
     "postal-codes-js": "^2.5.2",
     "uuid": "^11.1.0",
+    "winston": "^3.11.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

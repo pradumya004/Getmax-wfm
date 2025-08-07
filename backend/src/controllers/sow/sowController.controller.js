@@ -1,9 +1,9 @@
 // backend/src/controllers/sow/sowController.controller.js
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { SOW } from '../../models/sow.model.js';
-import { Client } from '../../models/client-model.js';
-import { Employee } from '../../models/employee.model.js';
+import { SOW } from '../../models/core/sow.model.js';
+import { Client } from '../../models/core/client.model.js';
+import { Employee } from '../../models/core/employee.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import mongoose from 'mongoose';

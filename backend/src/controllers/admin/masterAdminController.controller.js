@@ -6,8 +6,8 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { getMasterAdminInfo, generateMasterAdminToken } from "../../utils/jwtHelper.js";
-import { Company } from "../../models/company.model.js";
-import { Employee } from "../../models/employee.model.js";
+import { Company } from "../../models/core/company.model.js";
+import { Employee } from "../../models/core/employee.model.js";
 
 // ============= AUTHENTICATION =============
 

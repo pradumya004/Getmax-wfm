@@ -1,10 +1,9 @@
-
 // backend/src/controllers/patient.controller.js
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { Patient } from '../../models/patient-model.js';
-import { SOW } from '../../models/sow.model.js';
-import { Client } from '../../models/client-model.js';
+import { Patient } from '../../models/data/patient.model.js';
+import { SOW } from '../../models/core/sow.model.js';
+import { Client } from '../../models/core/client.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import xlsx from 'xlsx';

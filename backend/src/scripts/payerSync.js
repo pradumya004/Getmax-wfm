@@ -3,7 +3,7 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { Payer } from '../models/payer-model.js';
+import { Payer } from '../models/data/payer.model.js';
 import { transformClaimMDPayer } from './adapters/claimmdAdapter.js';
 
 dotenv.config();

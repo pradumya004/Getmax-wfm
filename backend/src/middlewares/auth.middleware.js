@@ -3,9 +3,9 @@
 import jwt from 'jsonwebtoken';
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { Employee } from '../models/employee.model.js';
-import { Company } from "../models/company.model.js";
-import { Role } from "../models/role.model.js";
+import { Employee } from '../models/core/employee.model.js';
+import { Company } from "../models/core/company.model.js";
+import { Role } from "../models/organization/role.model.js";
 import { getClientIP } from "../utils/helpers.js";
 
 // Verify Company Authentication Token

@@ -2,10 +2,10 @@
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import xlsx from 'xlsx';
-import { ClaimTasks } from '../../models/claimtasks-model.js';
-import { SOW } from '../../models/sow.model.js';
-import { Patient } from '../../models/patient-model.js';
-import { Client } from '../../models/client-model.js';
+import { ClaimTask } from '../../models/workflow/claimtasks.model.js';
+import { SOW } from '../../models/core/sow.model.js';
+import { Patient } from '../../models/data/patient.model.js';
+// import { Client } from '../../models/core/client.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 
@@ -23,7 +23,7 @@ export const createClaimTask = asyncHandler(async (req, res) => {
   const patient = await Patient.findOne({ _id: patientRef, clientRef, companyRef: companyId });
   if (!patient) throw new ApiError(404, "Patient not found or does not belong to the specified client.");
 
-  const claim = await ClaimTasks.create({
+  const claim = await ClaimTask.create({
     ...req.body,
     companyRef: companyId,
     auditInfo: {
@@ -44,7 +44,7 @@ export const getAllClaimTasks = asyncHandler(async (req, res) => {
   if (req.query.sowRef) filter.sowRef = req.query.sowRef;
   if (req.query.assignedTo) filter.assignedEmployeeRef = req.query.assignedTo;
 
-  const claims = await ClaimTasks.find(filter)
+  const claims = await ClaimTask.find(filter)
     .populate('patientRef', 'personalInfo.firstName personalInfo.lastName') // Corrected path
     .populate('sowRef', 'sowName')
     .populate('clientRef', 'clientInfo.clientName')
@@ -57,7 +57,7 @@ export const getAllClaimTasks = asyncHandler(async (req, res) => {
 
 // 3. Get one claim
 export const getClaimTaskById = asyncHandler(async (req, res) => {
-  const claim = await ClaimTasks.findOne({
+  const claim = await ClaimTask.findOne({
     _id: req.params.id,
     companyRef: req.company._id
   }).populate([
@@ -76,7 +76,7 @@ export const getClaimTaskById = asyncHandler(async (req, res) => {
 export const updateClaimTask = asyncHandler(async (req, res) => {
   const { auditInfo, companyRef, ...updateData } = req.body;
 
-  const claim = await ClaimTasks.findOne({ _id: req.params.id, companyRef: req.company._id });
+  const claim = await ClaimTask.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!claim) throw new ApiError(404, "Claim not found");
 
   Object.assign(claim, updateData);
@@ -88,7 +88,7 @@ export const updateClaimTask = asyncHandler(async (req, res) => {
 
 // 5. Soft delete claim
 export const deactivateClaimTask = asyncHandler(async (req, res) => {
-  const claim = await ClaimTasks.findOne({ _id: req.params.id, companyRef: req.company._id });
+  const claim = await ClaimTask.findOne({ _id: req.params.id, companyRef: req.company._id });
   if (!claim) throw new ApiError(404, "Claim not found");
 
   claim.systemInfo.isActive = false;
@@ -126,7 +126,7 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
   const sow = await SOW.findOne({ _id: sowRef, clientRef, companyRef: companyId }).select('_id');
   if (!sow) throw new ApiError(404, "SOW not found or not associated with the provided client.");
 
-  const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+  const workbook = xlsx.read(req.file.buffer, { type: 'buffer', cellDates: true });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = xlsx.utils.sheet_to_json(sheet);
 
@@ -184,6 +184,18 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
 
     // --- ⬇️ Step 2: Rebuild the code arrays into the correct format ⬇️ ---
 
+    if (claimData.priorityInfo?.isDenied) {
+        const val = String(claimData.priorityInfo.isDenied).toUpperCase();
+        claimData.priorityInfo.isDenied = (val === 'TRUE' || val === '1' || val === 'YES');
+    }
+
+    if (claimData.claimInfo?.dateOfService) {
+        claimData.claimInfo.dateOfService = new Date(claimData.claimInfo.dateOfService);
+    }
+    if (claimData.claimInfo?.dateOfServiceEnd) {
+        claimData.claimInfo.dateOfServiceEnd = new Date(claimData.claimInfo.dateOfServiceEnd);
+    }
+    
     // Handle Procedure Codes
     if (claimData.claimInfo?.procedureCodes?.cptCode) {
       const cptString = String(claimData.claimInfo.procedureCodes.cptCode);
@@ -209,6 +221,7 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
       }));
     }
 
+
     claimsToCreate.push({
       ...claimData,
       companyRef: companyId,
@@ -228,7 +241,7 @@ export const bulkUploadClaims = asyncHandler(async (req, res) => {
   console.log("Claims to create:", claimsToCreate);
   
   try {
-    const result = await ClaimTasks.insertMany(claimsToCreate, { ordered: false });
+    const result = await ClaimTask.insertMany(claimsToCreate, { ordered: false });
     res.status(201).json(new ApiResponse(
       201, 
       { insertedCount: result.length, totalRows: rows.length, errors }, 

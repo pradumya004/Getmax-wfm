@@ -1,8 +1,8 @@
 // backend/src/controllers/client/clientController.controller.js
 
-import { SOW } from '../../models/sow.model.js';
+import { SOW } from '../../models/core/sow.model.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { Client } from '../../models/client-model.js';
+import { Client } from '../../models/core/client.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 
